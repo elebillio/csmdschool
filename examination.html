@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+  <title>Examination Result Management</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    * { font-family: system-ui, sans-serif; }
+    body { background: #f1f5f9; padding: 12px; margin: 0; }
+    .app-container { max-width: 650px; margin: 0 auto; }
+    .card-custom { background: white; border-radius: 24px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .form-label-custom { font-size: 0.75rem; font-weight: 700; color: #1e3c72; margin-bottom: 5px; display: block; }
+    .form-select-custom { border-radius: 40px; padding: 12px 16px; font-size: 0.85rem; border: 1px solid #e2e8f0; background: #f8fafc; width: 100%; }
+    .tabs-container { display: flex; gap: 8px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 50px; }
+    .tab-btn { flex: 1; padding: 10px 0; border: none; border-radius: 40px; font-weight: 600; font-size: 0.8rem; background: transparent; color: #64748b; cursor: pointer; }
+    .tab-btn.active { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .expand-collapse-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .group-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .expand-collapse-btn, .group-btn {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 30px;
+      padding: 5px 12px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .expand-collapse-btn:hover, .group-btn:hover {
+      background: #e2e8f0;
+    }
+    .group-btn.active {
+      background: #1e3c72;
+      color: white;
+    }
+
+    .group-header, .date-group-header {
+      background: #eef2ff;
+      padding: 12px 16px;
+      border-radius: 14px;
+      margin: 12px 0 8px;
+      font-weight: 700;
+      color: #1e3c72;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .group-header .toggle-icon, .date-group-header .toggle-icon {
+      transition: transform 0.2s;
+    }
+    .group-header.collapsed .toggle-icon, .date-group-header.collapsed .toggle-icon {
+      transform: rotate(-90deg);
+    }
+    .group-content, .date-group-content {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .group-content.collapsed, .date-group-content.collapsed {
+      max-height: 0 !important;
+      padding: 0;
+      margin: 0;
+      display: none;
+    }
+
+    .subject-card {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border: 1px solid #eef2f8;
+      cursor: pointer;
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+    .top-student-pill { background: #d1fae5; border-left: 3px solid #10b981; color: #065f46; font-size: 0.7rem; font-weight: 600; padding: 6px 10px; border-radius: 40px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; width: 100%; cursor: pointer; }
+    .subject-main-row { display: flex; justify-content: space-between; align-items: center; }
+    .status-badge { background: #f1f5f9; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+
+    .student-card {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #eef2f8;
+    }
+    .student-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .student-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center; color: white; font-weight: bold;
+    }
+    .student-img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .marks-input {
+      width: 80px; padding: 6px 10px; border-radius: 20px;
+      border: 1px solid #e2e8f0; text-align: center;
+    }
+
+    .class-header {
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white; padding: 14px 20px; border-radius: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .class-name { font-size: 1rem; font-weight: 700; }
+    .class-stats { font-size: 0.7rem; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 30px; }
+
+    .student-result-card {
+      background: white;
+      border-radius: 20px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid #eef2f8;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      cursor: pointer;
+    }
+    .student-result-card.first-rank { background: linear-gradient(135deg, #fef3c7, #fffbeb); border-left: 4px solid #fbbf24; }
+    .student-result-card.second-rank { background: linear-gradient(135deg, #f1f5f9, #f8fafc); border-left: 4px solid #94a3b8; }
+    .student-result-card.third-rank { background: linear-gradient(135deg, #fed7aa, #fff7ed); border-left: 4px solid #f97316; }
+
+    .result-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .position-pill {
+      display: inline-block;
+      background: #fef3c7;
+      color: #92400e;
+      padding: 4px 14px;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .position-pill.first { background: #fbbf24; color: #78350f; }
+    .position-pill.second { background: #cbd5e1; color: #1e293b; }
+    .position-pill.third { background: #fdba74; color: #7c2d12; }
+
+    .grade-pill {
+      display: inline-block;
+      background: #d1fae5;
+      color: #065f46;
+      padding: 4px 14px;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .grade-pill.grade-a-plus { background: #e0e7ff; color: #3730a3; }
+    .grade-pill.grade-a { background: #d1fae5; color: #065f46; }
+    .grade-pill.grade-b-plus { background: #cffafe; color: #155e75; }
+    .grade-pill.grade-b { background: #dbeafe; color: #1e40af; }
+    .grade-pill.grade-c { background: #fef3c7; color: #92400e; }
+    .grade-pill.grade-e { background: #fed7aa; color: #9a3412; }
+    .grade-pill.grade-f { background: #fee2e2; color: #991b1b; }
+
+    .student-result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .student-result-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .student-result-img {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .student-result-info {
+      flex: 1;
+    }
+    .student-result-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #0f172a;
+    }
+    .student-result-details {
+      font-size: 0.65rem;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .student-result-marks {
+      text-align: right;
+    }
+    .marks-obtained {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #1e3c72;
+    }
+    .marks-percentage {
+      font-size: 0.65rem;
+      color: #64748b;
+    }
+    .not-entered { color: #94a3b8; font-size: 0.7rem; }
+
+    .detail-card {
+      background: white;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #eef2f8;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .student-detail-header {
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      padding: 18px 20px;
+      border-bottom: 2px solid #c7d2fe;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .student-detail-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.8rem;
+      flex-shrink: 0;
+    }
+    .student-detail-img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .student-detail-info {
+      flex: 1;
+    }
+    .student-detail-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e3c72;
+      margin-bottom: 8px;
+    }
+    .student-detail-meta {
+      font-size: 0.75rem;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .class-highlight {
+      background: #1e3c72;
+      color: white;
+      padding: 3px 12px;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .subject-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #eef2f8;
+    }
+    .subject-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #1e293b;
+    }
+    .subject-marks {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .subject-grade {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 30px;
+      margin-left: 10px;
+      background: #d1fae5;
+      color: #065f46;
+      font-weight: 600;
+    }
+    .subject-grade.grade-a-plus { background: #e0e7ff; color: #3730a3; }
+    .subject-grade.grade-a { background: #d1fae5; color: #065f46; }
+    .subject-grade.grade-b-plus { background: #cffafe; color: #155e75; }
+    .subject-grade.grade-b { background: #dbeafe; color: #1e40af; }
+    .subject-grade.grade-c { background: #fef3c7; color: #92400e; }
+    .subject-grade.grade-e { background: #fed7aa; color: #9a3412; }
+    .subject-grade.grade-f { background: #fee2e2; color: #991b1b; }
+
+    .result-summary {
+      background: #eef2ff;
+      padding: 15px 20px;
+    }
+    .result-summary .d-flex {
+      margin-bottom: 8px;
+    }
+    .result-summary .d-flex:last-child {
+      margin-bottom: 0;
+    }
+    .absentees-summary {
+      background: #fff3e0;
+      padding: 15px 20px;
+      border-top: 1px solid #fef3c7;
+    }
+    .grade-badge {
+      background: #d1fae5;
+      color: #065f46;
+      padding: 4px 14px;
+      border-radius: 30px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .grade-badge.grade-a-plus { background: #e0e7ff; color: #3730a3; }
+    .grade-badge.grade-a { background: #d1fae5; color: #065f46; }
+    .grade-badge.grade-b-plus { background: #cffafe; color: #155e75; }
+    .grade-badge.grade-b { background: #dbeafe; color: #1e40af; }
+    .grade-badge.grade-c { background: #fef3c7; color: #92400e; }
+    .grade-badge.grade-e { background: #fed7aa; color: #9a3412; }
+    .grade-badge.grade-f { background: #fee2e2; color: #991b1b; }
+
+    .absent-badge { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+
+    .save-all-btn { background: #10b981; color: white; border: none; border-radius: 40px; padding: 12px; font-weight: 600; width: 100%; margin-top: 12px; cursor: pointer; }
+    .sort-bar {
+      display: flex;
+      justify-content: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .sort-btn {
+      background: #f1f5f9;
+      border: none;
+      border-radius: 30px;
+      padding: 6px 14px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+    }
+    .sort-btn.active {
+      background: #1e3c72;
+      color: white;
+    }
+    .share-wa-btn { background: #25D366; color: white; border: none; border-radius: 40px; padding: 8px 16px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .share-wa-img-btn { background: #128C7E; color: white; border: none; border-radius: 40px; padding: 8px 16px; font-size: 0.7rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+    .fixed-back-btn { position: sticky; top: 0; z-index: 100; padding: 8px 0 4px 0; margin-top: -8px; margin-bottom: 8px; background: transparent; }
+    .back-btn { background: transparent; border: none; padding: 6px 0; font-size: 0.85rem; font-weight: 600; color: #1e3c72; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+
+    .class-filter-row {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 60px;
+      padding: 6px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .class-filter-row i:first-child { color: #1e3c72; font-size: 1.1rem; }
+    .class-filter-row select { flex: 1; border: none; background: transparent; font-size: 0.85rem; font-weight: 500; color: #1e293b; outline: none; cursor: pointer; padding: 8px 0; font-family: inherit; }
+    .class-filter-row select option { font-weight: normal; padding: 8px; }
+    .class-filter-row i:last-child { color: #94a3b8; font-size: 0.8rem; }
+
+    .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
+    .modal-custom { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; visibility: hidden; opacity: 0; transition: 0.2s; }
+    .modal-custom.show { visibility: visible; opacity: 1; }
+    .modal-content-custom { background: white; max-width: 90%; width: 400px; border-radius: 32px; padding: 20px; max-height: 80vh; overflow-y: auto; }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.2s;
+    }
+    .loading-overlay.show {
+      visibility: visible;
+      opacity: 1;
+    }
+    .loading-spinner-large {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e2e8f0;
+      border-top-color: #1e3c72;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast-custom {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast-custom.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="card-custom">
+    <h5 class="fw-bold mb-3"><i class="bi bi-trophy-fill me-2 text-warning"></i>Examination Management</h5>
+    <div class="mb-4">
+      <label class="form-label-custom">Select Exam Type</label>
+      <select id="examTypeSelect" class="form-select-custom">
+        <option value="">-- Select Exam Type --</option>
+      </select>
+    </div>
+    <div class="tabs-container">
+      <button class="tab-btn active" data-tab="1" onclick="switchTab(1)">Date Sheet & Marks</button>
+      <button class="tab-btn" data-tab="2" onclick="switchTab(2)">Student Results</button>
+    </div>
+
+    <div id="tab1" class="tab-content active">
+      <div class="expand-collapse-bar" id="expandCollapseBar">
+        <div class="group-buttons">
+          <button class="group-btn active" id="groupByClassBtn" onclick="setGroupBy('class')"><i class="bi bi-building"></i> Group by Class</button>
+          <button class="group-btn" id="groupByDateBtn" onclick="setGroupBy('date')"><i class="bi bi-calendar"></i> Group by Date</button>
+        </div>
+        <div>
+          <button class="expand-collapse-btn" onclick="expandAllGroups()"><i class="bi bi-arrows-expand"></i> Expand All</button>
+          <button class="expand-collapse-btn" onclick="collapseAllGroups()"><i class="bi bi-arrows-collapse"></i> Collapse All</button>
+        </div>
+      </div>
+      <div id="dateSheetMainView">
+        <div id="subjectList"><div class="empty-state">First select an exam type</div></div>
+      </div>
+      <div id="dateSheetStudentsView" style="display: none;">
+        <div class="fixed-back-btn"><button class="back-btn" onclick="backToSubjects()"><i class="bi bi-arrow-left"></i> Back to Subjects</button></div>
+        <div id="studentsContainer"></div>
+        <button class="save-all-btn" id="saveAllBtn" onclick="saveAllStudentMarks()">Save All Results</button>
+      </div>
+    </div>
+
+    <div id="tab2" class="tab-content">
+      <div class="class-filter-row">
+        <i class="bi bi-building"></i>
+        <select id="classroomFilter">
+          <option value="">-- Select Classroom --</option>
+        </select>
+        <i class="bi bi-chevron-down text-muted"></i>
+      </div>
+
+      <div class="sort-bar">
+        <button class="sort-btn" data-sort="position" onclick="setSortBy('position')">🏆 By Position</button>
+        <button class="sort-btn" data-sort="grade" onclick="setSortBy('grade')">📊 By Grade</button>
+        <button class="sort-btn" data-sort="name" onclick="setSortBy('name')">🔤 By Name</button>
+        <button class="sort-btn" data-sort="admission" onclick="setSortBy('admission')">🎫 By Admission</button>
+      </div>
+      <div id="studentsResultList"><div class="empty-state">Select exam type and classroom</div></div>
+    </div>
+
+    <div id="studentDetailView" style="display: none;">
+      <div class="fixed-back-btn"><button class="back-btn" onclick="backToResultsList()"><i class="bi bi-arrow-left"></i> Back to Students</button></div>
+      <div id="studentDetail"></div>
+      <div class="share-buttons" style="display: flex; gap: 12px; margin-top: 10px;">
+        <button id="shareWhatsAppTextBtn" class="share-wa-btn" onclick="shareCurrentStudentResult()" style="display: none;"><i class="bi bi-whatsapp"></i> Share Result</button>
+        <button id="shareWhatsAppImageBtn" class="share-wa-img-btn" onclick="shareResultToWhatsAppImage()" style="display: none;"><i class="bi bi-image"></i> Share as Image</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="topStudentModal" class="modal-custom" onclick="closeTopStudentModal(event)">
+  <div class="modal-content-custom" onclick="event.stopPropagation()">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h6 class="fw-bold">Top Student Details</h6>
+      <button class="btn-close" onclick="closeTopStudentModal()" style="background: none; border: none; font-size: 1.4rem;">&times;</button>
+    </div>
+    <div id="modalStudentDetailContent"></div>
+  </div>
+</div>
+
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner-large">
+    <div class="spinner"></div>
+    <span>Creating image...</span>
+  </div>
+</div>
+
+<div id="toastMsg" class="toast-custom"></div>
+
+<script>
+  const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+  const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+  const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  let allExamTypes = [], allDateSheets = [], allSubjects = [], allClassrooms = [], allStudents = [], allExamResults = [];
+  let currentSessionId = null;
+  let selectedExamTypeId = null, selectedSubject = null, selectedClassroomId = null, currentStudentMarks = {}, currentTab = 1;
+  let currentSortBy = 'position';
+  let currentStudentDetail = null;
+  let savedClassGroupStates = {};
+  let savedDateGroupStates = {};
+  let attendanceCache = {};
+  let currentGroupBy = 'class';
+  let savedClassroomId = null;
+  let classroomOptionsLoaded = false;
+
+  function showToast(message) {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function isValidWhatsAppNumber(mobile) {
+    if(!mobile || mobile === 'No mobile' || mobile === '') return false;
+    let clean = mobile.replace(/[\s\-]/g, '');
+    if(clean.length >= 10 && clean.length <= 13) {
+      if(clean.match(/^(03|3|92)\d{9,10}$/)) return true;
+    }
+    return false;
+  }
+
+  function getResultMessage() {
+    if(!currentStudentDetail) return "";
+    const school = "The Leads High School (Dinga)";
+    const exam = allExamTypes.find(e=>e.exam_type_id===selectedExamTypeId)?.exam_type1 || "Examination";
+    let msg = `*📋 RESULT CARD - ${exam}*\n\n`;
+    msg += `*Student:* ${currentStudentDetail.name}\n`;
+    msg += `*Admission No:* ${currentStudentDetail.admission_no}\n`;
+    msg += `*Father:* ${currentStudentDetail.father}\n`;
+    msg += `*Class:* ${currentStudentDetail.classroom}\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    msg += `*📖 SUBJECT-WISE MARKS*\n\n`;
+    for(const sub of currentStudentDetail.subjects) {
+      if(sub.absentInExam) msg += `📚 *${sub.name}*\n   Status: ❌ ABSENT in Exam\n\n`;
+      else msg += `📚 *${sub.name}*\n   Marks: ${sub.obtained} / ${sub.max}\n   Grade: ${sub.grade}\n\n`;
+    }
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `*📊 SUMMARY*\n`;
+    msg += `Total Marks: ${currentStudentDetail.totalObtained} / ${currentStudentDetail.totalMax}\n`;
+    msg += `Percentage: ${currentStudentDetail.percentage.toFixed(2)}%\n`;
+    msg += `Overall Grade: ${currentStudentDetail.grade}\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `📅 Absent Days: ${currentStudentDetail.totalAbsentDays}\n\n`;
+    msg += `📱 *Generated by: ${school}*`;
+    return msg;
+  }
+
+  // DIRECT SHARE - Current student only (no list)
+  async function shareCurrentStudentResult() {
+    if(!currentStudentDetail) return;
+
+    const studentId = currentStudentDetail.id;
+    const student = allStudents.find(s => s.stu_id === studentId);
+
+    if(!student) {
+      showToast("Student not found");
+      return;
+    }
+
+    let mobile = student.stu_mobile1 || student.stu_mobile2;
+
+    if(!mobile || mobile === '') {
+      alert("No mobile number found for this student");
+      return;
+    }
+
+    const isValid = isValidWhatsAppNumber(mobile);
+
+    if(!isValid) {
+      alert("Invalid WhatsApp number: " + mobile);
+      return;
+    }
+
+    let cleanMobile = mobile.replace(/[\s\-]/g, '');
+    if (cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
+    if (!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
+
+    const msg = getResultMessage();
+
+    if (window.Android && window.Android.shareToWhatsApp) {
+      window.Android.shareToWhatsApp(cleanMobile, msg);
+      showToast("Opening WhatsApp...");
+    } else {
+      window.open(`https://wa.me/${cleanMobile}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+
+  function shareResultToWhatsAppImage() {
+    const element = document.getElementById('resultCardToShare');
+    if (!element) {
+      alert('Result card not found!');
+      return;
+    }
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    loadingOverlay.classList.add('show');
+
+    html2canvas(element, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true, allowTaint: false })
+      .then(canvas => {
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `result_${currentStudentDetail.name}.png`;
+        link.href = dataUrl;
+        link.click();
+        alert('Image downloaded! You can now share it on WhatsApp.');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to generate image.');
+      })
+      .finally(() => {
+        loadingOverlay.classList.remove('show');
+      });
+  }
+
+  // ==================== REST OF ORIGINAL FUNCTIONS (KEPT SAME) ====================
+  async function loadExamTypes() { const { data } = await supabase1.from("exam_type").select("*").order("exam_type_id"); if(data) { allExamTypes = data; const select = document.getElementById('examTypeSelect'); select.innerHTML = '<option value="">-- Select Exam Type --</option>'; for(const et of allExamTypes) select.innerHTML += `<option value="${et.exam_type_id}">${et.exam_type1}</option>`; } }
+  async function loadAllClassrooms() { const { data } = await supabase1.from("class_rooms").select("*").order("class_room_serial"); if(data) { allClassrooms = data; } }
+  async function loadClassroomsForResults(keepSelected = true) {
+    if(!selectedExamTypeId) { const select = document.getElementById('classroomFilter'); select.innerHTML = '<option value="">-- Select Classroom --</option>'; classroomOptionsLoaded = false; return; }
+    const { data: dateSheets } = await supabase1.from("exam_date_sheet").select("exam_date_sheet_sub_id").eq("exam_date_sheet_exam_type_id", selectedExamTypeId);
+    if(!dateSheets || dateSheets.length === 0) { const select = document.getElementById('classroomFilter'); select.innerHTML = '<option value="">-- No classes available --</option>'; classroomOptionsLoaded = false; return; }
+    const subjectIds = [...new Set(dateSheets.map(ds => ds.exam_date_sheet_sub_id))];
+    const { data: subjects } = await supabase1.from("subjects").select("sub_classroom_id").in("sub_id", subjectIds);
+    if(!subjects || subjects.length === 0) return;
+    const classroomIds = [...new Set(subjects.map(s => s.sub_classroom_id))];
+    const { data: classrooms } = await supabase1.from("class_rooms").select("*").in("class_room_id", classroomIds).order("class_room_serial");
+    if(classrooms) {
+      const select = document.getElementById('classroomFilter');
+      select.innerHTML = '<option value="">-- Select Classroom --</option>';
+      for(const c of classrooms) { select.innerHTML += `<option value="${c.class_room_id}">📚 ${c.class_room_no}</option>`; }
+      classroomOptionsLoaded = true;
+      if (keepSelected && savedClassroomId && savedClassroomId !== "") {
+        let optionExists = false;
+        for(let i = 0; i < select.options.length; i++) { if(select.options[i].value == savedClassroomId) { optionExists = true; break; } }
+        if(optionExists) { select.value = savedClassroomId; } else { savedClassroomId = null; select.value = ""; }
+      } else if (!keepSelected) { select.value = ""; }
+    }
+  }
+  async function loadDateSheets() { const { data } = await supabase1.from("exam_date_sheet").select("*"); if(data) allDateSheets = data; }
+  async function loadSubjects() { const { data } = await supabase1.from("subjects").select("*, subject_books!inner(*)").eq("sub_status", true); if(data) allSubjects = data; }
+  async function loadStudents() { const { data } = await supabase1.from("students").select("*").order("stu_name"); if(data) allStudents = data; }
+  async function loadExamResults() { const { data } = await supabase1.from("examinations").select("*"); if(data) { allExamResults = data; } }
+  async function loadCurrentSession() { const { data } = await supabase1.from("sch_sessions_default").select("session_id").limit(1); if (data && data.length > 0) { currentSessionId = data[0].session_id; } }
+  async function getStudentAbsentCount(studentId) { if (attendanceCache[studentId] !== undefined) return attendanceCache[studentId]; if (!currentSessionId) { attendanceCache[studentId] = 0; return 0; } const { data } = await supabase1.from("students_attendence").select("stu_attendence_att_status_id").eq("stu_id", studentId).eq("session_id", currentSessionId); if (!data) { attendanceCache[studentId] = 0; return 0; } const absentCount = data.filter(record => record.stu_attendence_att_status_id === 2).length; attendanceCache[studentId] = absentCount; return absentCount; }
+  function getClassroomName(id) { const c = allClassrooms.find(c => c.class_room_id == id); return c ? c.class_room_no : `Class ${id}`; }
+  function getClassroomOrder(className) { const classroom = allClassrooms.find(c => c.class_room_no === className); return classroom ? classroom.class_room_serial : 999; }
+  function getStudentsByClass(classroomId) { return allStudents.filter(s => s.stu_class_room_id === parseInt(classroomId)); }
+  function getConditionIdFromPercentage(p) { if(p>=90) return 7; if(p>=80) return 6; if(p>=70) return 5; if(p>=60) return 4; if(p>=50) return 3; if(p>=40) return 2; return 1; }
+  function getGradeText(cid) { if(cid===7) return { text: 'A+', class: 'grade-a-plus', order:7 }; if(cid===6) return { text: 'A', class: 'grade-a', order:6 }; if(cid===5) return { text: 'B+', class: 'grade-b-plus', order:5 }; if(cid===4) return { text: 'B', class: 'grade-b', order:4 }; if(cid===3) return { text: 'C', class: 'grade-c', order:3 }; if(cid===2) return { text: 'E', class: 'grade-e', order:2 }; return { text: 'F', class: 'grade-f', order:1 }; }
+  function getStudentAvatarHTML(student) { const initial = student.stu_name?.charAt(0).toUpperCase() || '?'; if (student.stu_image && student.stu_image !== '' && student.stu_image !== null) { let imageSrc = student.stu_image; if (!imageSrc.startsWith('data:image')) { imageSrc = 'data:image/jpeg;base64,' + imageSrc; } return `<img src="${imageSrc}" class="student-result-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-avatar-result').style.display='flex';">`; } return `<div class="student-result-avatar">${initial}</div>`; }
+  function getTopStudentForSubject(dateSheetId, subjectMaxMarks, classroomId) { const studentsInClass = getStudentsByClass(classroomId); let bestStudent = null; let bestMarks = -1; for(const student of studentsInClass) { const result = allExamResults.find(r => r.stu_id === student.stu_id && r.exam_exam_date_sheet_id === dateSheetId); if(result && result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '' && result.exam_absentees !== 1) { let marks = parseFloat(result.exam_sub_marks_obtain); if(!isNaN(marks) && marks > bestMarks) { bestMarks = marks; bestStudent = { ...student, obtainedMarks: Math.round(marks), maxMarks: subjectMaxMarks }; } } } return bestStudent; }
+  function setGroupBy(type) { currentGroupBy = type; document.getElementById('groupByClassBtn').classList.toggle('active', type === 'class'); document.getElementById('groupByDateBtn').classList.toggle('active', type === 'date'); renderSubjectsList(); }
+  async function renderSubjectsList() {
+    const subjectContainer = document.getElementById('subjectList');
+    if(!selectedExamTypeId) { subjectContainer.innerHTML = `<div class="empty-state">First select an exam type</div>`; return; }
+    await loadAllClassrooms();
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === selectedExamTypeId);
+    const dateSheetIds = dateSheetsForExam.map(ds => ds.exam_date_sheet_id);
+    let examResults = [];
+    if(dateSheetIds.length > 0) { const { data } = await supabase1.from("examinations").select("*").in("exam_exam_date_sheet_id", dateSheetIds); examResults = data || []; allExamResults = examResults; }
+    let html = '';
+    if(currentGroupBy === 'class') {
+      const grouped = getSubjectsGroupedByClass(selectedExamTypeId);
+      const classNames = Object.keys(grouped).sort((a, b) => getClassroomOrder(a) - getClassroomOrder(b));
+      if(classNames.length === 0) { subjectContainer.innerHTML = `<div class="empty-state">No subjects found</div>`; return; }
+      for(const className of classNames) {
+        const subjects = grouped[className];
+        const safeKey = className.replace(/[^a-zA-Z0-9]/g, '_');
+        const isExpanded = savedClassGroupStates[className] === true;
+        let classTotalMarked = 0;
+        for(const sub of subjects) { const studentsWithMarks = examResults.filter(r => r.exam_exam_date_sheet_id === sub.date_sheet_id && (parseFloat(r.exam_sub_marks_obtain) > 0 || r.exam_absentees === 1)); if(studentsWithMarks.length > 0) classTotalMarked++; }
+        html += `<div class="group-header ${isExpanded ? '' : 'collapsed'}" id="group-header-${safeKey}" onclick="toggleClassGroup('${className.replace(/'/g, "\\'")}')"><span><i class="bi bi-building me-2"></i> ${className}</span><div><span class="badge-subjects">${subjects.length} subjects (${classTotalMarked}/${subjects.length} marked)</span> <i class="bi bi-chevron-down toggle-icon ms-2"></i></div></div><div class="group-content ${isExpanded ? '' : 'collapsed'}" id="group-content-${safeKey}">`;
+        for(const sub of subjects) {
+          const topStudent = getTopStudentForSubject(sub.date_sheet_id, sub.max_marks, sub.classroom_id);
+          const totalStudents = getStudentsByClass(sub.classroom_id).length;
+          const markedCount = examResults.filter(r => r.exam_exam_date_sheet_id === sub.date_sheet_id && (parseFloat(r.exam_sub_marks_obtain) > 0 || r.exam_absentees === 1)).length;
+          let statusText = '', statusColor = '';
+          if(markedCount === 0) { statusText = `❌ 0/${totalStudents}`; statusColor = 'text-danger'; }
+          else if(markedCount === totalStudents) { statusText = `✅ ${markedCount}/${totalStudents}`; statusColor = 'text-success'; }
+          else { statusText = `⚠️ ${markedCount}/${totalStudents}`; statusColor = 'text-warning'; }
+          let topStudentHtml = '';
+          if(topStudent) { topStudentHtml = `<div class="top-student-pill" onclick="event.stopPropagation(); showTopStudentDetail('${topStudent.stu_name}', ${topStudent.stu_id}, '${escapeHtml(sub.sub_name)}', ${topStudent.obtainedMarks}, ${sub.max_marks})"><i class="bi bi-trophy-fill text-success"></i> 🥇 First Position: <strong>${escapeHtml(topStudent.stu_name)}</strong> (${topStudent.obtainedMarks}/${sub.max_marks})</div>`; }
+          else if(markedCount > 0) { topStudentHtml = `<div class="top-student-pill" style="background:#eef2ff; border-left-color:#94a3b8;"><i class="bi bi-emoji-neutral"></i> No eligible top student</div>`; }
+          else { topStudentHtml = `<div class="top-student-pill" style="background:#f1f5f9; border-left-color:#cbd5e1;"><i class="bi bi-hourglass-split"></i> No marks entered yet</div>`; }
+          html += `<div class="subject-card" onclick="selectSubject('${sub.classroom_id}', '${escapeHtml(sub.sub_name)}', ${sub.max_marks}, '${sub.date_sheet_id}')">${topStudentHtml}<div class="subject-main-row"><div><strong>📖 ${escapeHtml(sub.sub_name)}</strong><div class="small text-muted">📅 ${sub.date || 'No date'} | Max: ${sub.max_marks}</div></div><div class="text-end"><span class="status-badge ${statusColor}">${statusText}</span> <i class="bi bi-chevron-right ms-2"></i></div></div></div>`;
+        }
+        html += `</div>`;
+      }
+    } else {
+      const groupedByDate = {};
+      for(const ds of dateSheetsForExam) {
+        const subject = allSubjects.find(s => s.sub_id == ds.exam_date_sheet_sub_id);
+        if(subject) {
+          const date = ds.exam_date_sheet_day || 'No date';
+          if(!groupedByDate[date]) groupedByDate[date] = [];
+          groupedByDate[date].push({ date_sheet_id: ds.exam_date_sheet_id, date: date, sub_name: subject.subject_books?.subject_books_name || 'Unknown', max_marks: subject.sub_remarks || 100, classroom_id: subject.sub_classroom_id, class_name: getClassroomName(subject.sub_classroom_id) });
+        }
+      }
+      const sortedDates = Object.keys(groupedByDate).sort();
+      if(sortedDates.length === 0) { subjectContainer.innerHTML = `<div class="empty-state">No subjects found</div>`; return; }
+      for(const date of sortedDates) {
+        const subjects = groupedByDate[date];
+        const safeKey = date.replace(/[^a-zA-Z0-9]/g, '_');
+        const isExpanded = savedDateGroupStates[date] === true;
+        html += `<div class="date-group-header ${isExpanded ? '' : 'collapsed'}" id="date-group-header-${safeKey}" onclick="toggleDateGroup('${date.replace(/'/g, "\\'")}', '${safeKey}')"><span><i class="bi bi-calendar3 me-2"></i> ${date}</span><div><span class="badge-subjects">${subjects.length} subjects</span> <i class="bi bi-chevron-down toggle-icon ms-2"></i></div></div><div class="date-group-content ${isExpanded ? '' : 'collapsed'}" id="date-group-content-${safeKey}">`;
+        for(const sub of subjects) {
+          const topStudent = getTopStudentForSubject(sub.date_sheet_id, sub.max_marks, sub.classroom_id);
+          const totalStudents = getStudentsByClass(sub.classroom_id).length;
+          const markedCount = examResults.filter(r => r.exam_exam_date_sheet_id === sub.date_sheet_id && (parseFloat(r.exam_sub_marks_obtain) > 0 || r.exam_absentees === 1)).length;
+          let statusText = '', statusColor = '';
+          if(markedCount === 0) { statusText = `❌ 0/${totalStudents}`; statusColor = 'text-danger'; }
+          else if(markedCount === totalStudents) { statusText = `✅ ${markedCount}/${totalStudents}`; statusColor = 'text-success'; }
+          else { statusText = `⚠️ ${markedCount}/${totalStudents}`; statusColor = 'text-warning'; }
+          let topStudentHtml = '';
+          if(topStudent) { topStudentHtml = `<div class="top-student-pill" onclick="event.stopPropagation(); showTopStudentDetail('${topStudent.stu_name}', ${topStudent.stu_id}, '${escapeHtml(sub.sub_name)}', ${topStudent.obtainedMarks}, ${sub.max_marks})"><i class="bi bi-trophy-fill text-success"></i> 🥇 First Position: <strong>${escapeHtml(topStudent.stu_name)}</strong> (${topStudent.obtainedMarks}/${sub.max_marks})</div>`; }
+          else if(markedCount > 0) { topStudentHtml = `<div class="top-student-pill" style="background:#eef2ff; border-left-color:#94a3b8;"><i class="bi bi-emoji-neutral"></i> No eligible top student</div>`; }
+          else { topStudentHtml = `<div class="top-student-pill" style="background:#f1f5f9; border-left-color:#cbd5e1;"><i class="bi bi-hourglass-split"></i> No marks entered yet</div>`; }
+          html += `<div class="subject-card" onclick="selectSubject('${sub.classroom_id}', '${escapeHtml(sub.sub_name)}', ${sub.max_marks}, '${sub.date_sheet_id}')">${topStudentHtml}<div class="subject-main-row"><div><strong>📖 ${escapeHtml(sub.sub_name)}</strong><div class="small text-muted">${sub.class_name} | Max: ${sub.max_marks}</div></div><div class="text-end"><span class="status-badge ${statusColor}">${statusText}</span> <i class="bi bi-chevron-right ms-2"></i></div></div></div>`;
+        }
+        html += `</div>`;
+      }
+    }
+    subjectContainer.innerHTML = html;
+  }
+  function toggleClassGroup(groupKey) { const safeKey = groupKey.replace(/[^a-zA-Z0-9]/g, '_'); const content = document.getElementById(`group-content-${safeKey}`); const header = document.getElementById(`group-header-${safeKey}`); if(content) { if(content.classList.contains('collapsed')) { content.classList.remove('collapsed'); if(header) header.classList.remove('collapsed'); savedClassGroupStates[groupKey] = true; } else { content.classList.add('collapsed'); if(header) header.classList.add('collapsed'); savedClassGroupStates[groupKey] = false; } } }
+  function toggleDateGroup(dateKey, safeKey) { const content = document.getElementById(`date-group-content-${safeKey}`); const header = document.getElementById(`date-group-header-${safeKey}`); if(content) { if(content.classList.contains('collapsed')) { content.classList.remove('collapsed'); if(header) header.classList.remove('collapsed'); savedDateGroupStates[dateKey] = true; } else { content.classList.add('collapsed'); if(header) header.classList.add('collapsed'); savedDateGroupStates[dateKey] = false; } } }
+  function expandAllGroups() { if(currentGroupBy === 'class') { document.querySelectorAll('#subjectList .group-content').forEach(g => g.classList.remove('collapsed')); document.querySelectorAll('#subjectList .group-header').forEach(h => h.classList.remove('collapsed')); } else { document.querySelectorAll('#subjectList .date-group-content').forEach(g => g.classList.remove('collapsed')); document.querySelectorAll('#subjectList .date-group-header').forEach(h => h.classList.remove('collapsed')); } }
+  function collapseAllGroups() { if(currentGroupBy === 'class') { document.querySelectorAll('#subjectList .group-content').forEach(g => g.classList.add('collapsed')); document.querySelectorAll('#subjectList .group-header').forEach(h => h.classList.add('collapsed')); } else { document.querySelectorAll('#subjectList .date-group-content').forEach(g => g.classList.add('collapsed')); document.querySelectorAll('#subjectList .date-group-header').forEach(h => h.classList.add('collapsed')); } }
+  function getSubjectsGroupedByClass(examTypeId) { const dateSheets = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === examTypeId); const grouped = {}; for(const ds of dateSheets) { const subject = allSubjects.find(s => s.sub_id == ds.exam_date_sheet_sub_id); if(subject) { const className = getClassroomName(subject.sub_classroom_id); if(!grouped[className]) grouped[className] = []; grouped[className].push({ date_sheet_id: ds.exam_date_sheet_id, date: ds.exam_date_sheet_day, sub_id: subject.sub_id, sub_name: subject.subject_books?.subject_books_name || 'Unknown', max_marks: subject.sub_remarks || 100, classroom_id: subject.sub_classroom_id }); } } return grouped; }
+  async function selectSubject(classroomId, subjectName, maxMarks, dateSheetId) { selectedClassroomId = parseInt(classroomId); selectedSubject = { classroom_id: selectedClassroomId, name: subjectName, max_marks: maxMarks, date_sheet_id: dateSheetId }; const { data: freshResults } = await supabase1.from("examinations").select("*").eq("exam_exam_date_sheet_id", dateSheetId); const students = getStudentsByClass(selectedClassroomId); if(students.length === 0) { alert(`No students found`); return; } currentStudentMarks = {}; for(const student of students) { const existing = freshResults?.find(r => r.stu_id === student.stu_id); let marksValue = ''; if(existing && existing.exam_sub_marks_obtain !== null && existing.exam_sub_marks_obtain !== '') { const marksNum = parseFloat(existing.exam_sub_marks_obtain); marksValue = isNaN(marksNum) ? '' : Math.round(marksNum).toString(); } currentStudentMarks[student.stu_id] = marksValue; } let studentsHtml = ''; for(const student of students) { const initial = student.stu_name?.charAt(0).toUpperCase() || '?'; const currentMark = currentStudentMarks[student.stu_id] || ''; let avatarHtml = getStudentAvatarHTML(student); if (student.stu_image && student.stu_image !== '') { avatarHtml = `<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">${avatarHtml}<div class="fallback-avatar" style="display: none; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); align-items: center; justify-content: center; color: white; font-weight: bold; position: absolute; top: 0; left: 0;">${initial}</div></div>`; } studentsHtml += `<div class="student-card"><div class="student-info">${avatarHtml}<div><div class="fw-bold">${escapeHtml(student.stu_name)}</div><div class="small text-muted">${escapeHtml(student.stu_admission_no)} | ${escapeHtml(student.stu_father)}</div></div></div><div><input type="number" id="mark_${student.stu_id}" class="marks-input" value="${currentMark}" step="1" min="0" max="${maxMarks}" placeholder="Marks" onchange="updateStudentMark(${student.stu_id}, this.value)"><span class="text-muted small">/${maxMarks}</span></div></div>`; } document.getElementById('studentsContainer').innerHTML = studentsHtml; document.getElementById('dateSheetMainView').style.display = 'none'; document.getElementById('dateSheetStudentsView').style.display = 'block'; }
+  function updateStudentMark(studentId, marks) { currentStudentMarks[studentId] = Math.round(parseFloat(marks) || 0).toString(); }
+  function backToSubjects() { document.getElementById('dateSheetMainView').style.display = 'block'; document.getElementById('dateSheetStudentsView').style.display = 'none'; renderSubjectsList(); }
+  async function saveAllStudentMarks() { alert("Save function ready."); }
+  function showTopStudentDetail(name, id, subName, obt, maxM) { const s = allStudents.find(st => st.stu_id === id); if(!s) return; const cls = getClassroomName(s.stu_class_room_id); const perc = (obt / maxM) * 100; const grade = getGradeText(getConditionIdFromPercentage(perc)); const modalHtml = `<div class="detail-card"><div><strong>👤 ${escapeHtml(s.stu_name)}</strong></div><div class="small text-muted">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div><div class="small text-muted">Class: ${cls}</div><hr><div><strong>📘 Subject:</strong> ${escapeHtml(subName)}</div><div><strong>🏆 Marks:</strong> ${obt} / ${maxM}</div><div><strong>📊 Percentage:</strong> ${perc.toFixed(2)}%</div><div><strong>⭐ Grade:</strong> <span class="grade-badge ${grade.class}">${grade.text}</span></div></div>`; document.getElementById('modalStudentDetailContent').innerHTML = modalHtml; document.getElementById('topStudentModal').classList.add('show'); }
+  function closeTopStudentModal(e) { if(!e || e.target.classList.contains('modal-custom') || e.target.classList.contains('btn-close')) document.getElementById('topStudentModal').classList.remove('show'); }
+  function setSortBy(t) { currentSortBy = t; renderStudentsResultList(); }
+  function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+
+  async function renderStudentsResultList() {
+    const container = document.getElementById('studentsResultList'); const classroomId = document.getElementById('classroomFilter').value;
+    if(!selectedExamTypeId || !classroomId) { container.innerHTML = `<div class="empty-state">Select exam type and classroom</div>`; return; }
+    await loadExamResults(); const students = getStudentsByClass(classroomId); const className = getClassroomName(classroomId);
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === selectedExamTypeId);
+    let studentsData = [];
+    for(const student of students) { let totalObtained = 0, totalMax = 0, examAbsentCount = 0;
+      for(const ds of dateSheetsForExam) { const subject = allSubjects.find(s => s.sub_id == ds.exam_date_sheet_sub_id);
+        if(subject && subject.sub_classroom_id === student.stu_class_room_id) { const maxMarks = subject.sub_remarks || 100; totalMax += maxMarks;
+          const result = allExamResults.find(r => r.stu_id === student.stu_id && r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
+          if(result && result.exam_absentees === 1) { examAbsentCount++; }
+          else { const obtained = result ? (parseFloat(result.exam_sub_marks_obtain) || 0) : 0; totalObtained += Math.round(obtained); } } }
+      const hasResult = (totalObtained > 0) || (examAbsentCount > 0); const percentage = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
+      const grade = getGradeText(getConditionIdFromPercentage(percentage));
+      studentsData.push({ ...student, totalObtained, totalMax, hasResult, percentage, grade: grade, marksText: hasResult ? `${totalObtained} / ${totalMax}` : null, examAbsentCount }); }
+    const withResults = studentsData.filter(s => s.hasResult).sort((a,b) => b.totalObtained - a.totalObtained); let position = 1;
+    for(let i=0;i<withResults.length;i++) { if(i>0 && withResults[i].totalObtained < withResults[i-1].totalObtained) position = i+1; withResults[i].position = position; }
+    for(const s of studentsData) { const found = withResults.find(w => w.stu_id === s.stu_id); s.position = found?.position || null; }
+    if(currentSortBy === 'position') studentsData.sort((a,b) => { if(!a.hasResult && !b.hasResult) return a.stu_name.localeCompare(b.stu_name); if(!a.hasResult) return 1; if(!b.hasResult) return -1; return (a.position || 999) - (b.position || 999); });
+    else if(currentSortBy === 'grade') studentsData.sort((a,b) => { if(!a.hasResult && !b.hasResult) return a.stu_name.localeCompare(b.stu_name); if(!a.hasResult) return 1; if(!b.hasResult) return -1; return (b.grade?.order || 0) - (a.grade?.order || 0); });
+    else if(currentSortBy === 'admission') studentsData.sort((a,b) => (a.stu_admission_no || '').localeCompare(b.stu_admission_no || '', undefined, { numeric: true }));
+    else studentsData.sort((a,b) => a.stu_name.localeCompare(b.stu_name));
+    const resultCount = studentsData.filter(s => s.hasResult).length;
+    let html = `<div class="class-header"><div class="class-name">📚 ${escapeHtml(className)}</div><div class="class-stats">${resultCount}/${students.length} students</div></div>`;
+    for(const s of studentsData) {
+      let rankClass = ''; let positionClass = ''; let positionText = '';
+      if(s.position === 1) { positionText = '🥇 First Position'; positionClass = 'first'; rankClass = 'first-rank'; }
+      else if(s.position === 2) { positionText = '🥈 Second Position'; positionClass = 'second'; rankClass = 'second-rank'; }
+      else if(s.position === 3) { positionText = '🥉 Third Position'; positionClass = 'third'; rankClass = 'third-rank'; }
+      else if(s.position > 3) { positionText = `${s.position}th Position`; positionClass = ''; }
+      const initial = s.stu_name?.charAt(0).toUpperCase() || '?';
+      let avatarHtml = '';
+      if (s.stu_image && s.stu_image !== '' && s.stu_image !== null) {
+        let imageSrc = s.stu_image;
+        if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
+        avatarHtml = `<img src="${imageSrc}" class="student-result-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-avatar-result').style.display='flex';">`;
+        avatarHtml += `<div class="fallback-avatar-result student-result-avatar" style="display:none;">${initial}</div>`;
+      } else {
+        avatarHtml = `<div class="student-result-avatar">${initial}</div>`;
+      }
+      if(s.hasResult) {
+        html += `<div class="student-result-card ${rankClass}" onclick="viewStudentResult(${s.stu_id})">
+          <div class="result-card-top">
+            <div class="position-pill ${positionClass}">${positionText}</div>
+            <div class="grade-pill ${s.grade.class}">${s.grade.text}</div>
+          </div>
+          <div class="student-result-row">
+            <div style="position:relative;">${avatarHtml}</div>
+            <div class="student-result-info">
+              <div class="student-result-name">${escapeHtml(s.stu_name)}</div>
+              <div class="student-result-details">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
+            </div>
+            <div class="student-result-marks">
+              <div class="marks-obtained">${s.marksText}</div>
+              <div class="marks-percentage">${s.percentage.toFixed(1)}%</div>
+            </div>
+          </div>
+        </div>`;
+      } else {
+        html += `<div class="student-result-card" onclick="viewStudentResult(${s.stu_id})">
+          <div class="result-card-top">
+            <div></div>
+            <div class="grade-pill" style="background:#f1f5f9; color:#64748b;">Not entered</div>
+          </div>
+          <div class="student-result-row">
+            <div style="position:relative;">${avatarHtml}</div>
+            <div class="student-result-info">
+              <div class="student-result-name">${escapeHtml(s.stu_name)}</div>
+              <div class="student-result-details">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
+            </div>
+            <div class="student-result-marks">
+              <div class="not-entered">📝 Result not entered</div>
+            </div>
+          </div>
+        </div>`;
+      }
+    }
+    container.innerHTML = html;
+  }
+
+  async function viewStudentResult(studentId) {
+    const s = allStudents.find(x=>x.stu_id===studentId);
+    const sheets=allDateSheets.filter(ds=>ds.exam_date_sheet_exam_type_id===selectedExamTypeId);
+    const cls=getClassroomName(s.stu_class_room_id);
+    let totalO=0,totalM=0,subsHtml='',subs=[];
+    const totalAbsentDays = await getStudentAbsentCount(studentId);
+    for(const ds of sheets){
+      const sub=allSubjects.find(sb=>sb.sub_id===ds.exam_date_sheet_sub_id);
+      if(sub && sub.sub_classroom_id===s.stu_class_room_id){
+        const maxM=sub.sub_remarks||100;
+        totalM+=maxM;
+        const res=allExamResults.find(r=>r.stu_id===s.stu_id && r.exam_exam_date_sheet_id===ds.exam_date_sheet_id);
+        const isAbsentInExam = res ? (res.exam_absentees === 1) : false;
+        let obt = 0;
+        if(!isAbsentInExam && res && res.exam_sub_marks_obtain !== null && res.exam_sub_marks_obtain !== '') { obt = Math.round(parseFloat(res.exam_sub_marks_obtain)||0); }
+        if(!isAbsentInExam) totalO += obt;
+        const gradeInfo = (res && !isAbsentInExam) ? getGradeText(res.exam_exam_result_condition_id) : { text:'—', class:'' };
+        subs.push({ name: sub.subject_books?.subject_books_name||'Unknown', obtained: obt, max: maxM, grade: gradeInfo.text, gradeClass: gradeInfo.class, absentInExam: isAbsentInExam });
+        if(isAbsentInExam) {
+          subsHtml += `<div class="subject-row">
+            <div class="subject-name">${escapeHtml(sub.subject_books?.subject_books_name||'Unknown')}</div>
+            <div>
+              <span class="absent-badge"><i class="bi bi-person-x"></i> Absent in Exam</span>
+            </div>
+          </div>`;
+        } else {
+          subsHtml += `<div class="subject-row">
+            <div class="subject-name">${escapeHtml(sub.subject_books?.subject_books_name||'Unknown')}</div>
+            <div>
+              <span class="subject-marks">${obt} / ${maxM}</span>
+              <span class="subject-grade ${gradeInfo.class}">${gradeInfo.text}</span>
+            </div>
+          </div>`;
+        }
+      }
+    }
+    const perc=totalM>0?(totalO/totalM)*100:0;
+    const totalG=getGradeText(getConditionIdFromPercentage(perc));
+    const initial = s.stu_name?.charAt(0).toUpperCase() || '?';
+    let avatarHtml = '';
+    if (s.stu_image && s.stu_image !== '' && s.stu_image !== null) {
+      let imageSrc = s.stu_image;
+      if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
+      avatarHtml = `<img src="${imageSrc}" class="student-detail-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-detail-avatar').style.display='flex';">`;
+      avatarHtml += `<div class="fallback-detail-avatar student-detail-avatar" style="display:none;">${initial}</div>`;
+    } else {
+      avatarHtml = `<div class="student-detail-avatar">${initial}</div>`;
+    }
+    const detailHtml = `<div class="detail-card" id="resultCardToShare">
+      <div class="student-detail-header">
+        <div style="position:relative;">${avatarHtml}</div>
+        <div class="student-detail-info">
+          <div class="student-detail-name">${escapeHtml(s.stu_name)}</div>
+          <div class="student-detail-meta">
+            <span>${escapeHtml(s.stu_admission_no)}</span>
+            <span>|</span>
+            <span>${escapeHtml(s.stu_father)}</span>
+            <span>|</span>
+            <span class="class-highlight">Class: ${cls}</span>
+          </div>
+        </div>
+      </div>
+      <div class="fw-bold mb-2" style="padding: 12px 20px 0 20px;">📖 Subject-wise Marks</div>
+      ${subsHtml || '<div class="empty-state" style="padding: 20px;">No results found</div>'}
+      <div class="result-summary">
+        <div class="d-flex justify-content-between"><span>Total Marks:</span><span><strong>${totalO}/${totalM}</strong></span></div>
+        <div class="d-flex justify-content-between"><span>Percentage:</span><span><strong>${perc.toFixed(2)}%</strong></span></div>
+        <div class="d-flex justify-content-between"><span>Overall Grade:</span><span><strong class="grade-badge ${totalG.class}">${totalG.text}</strong></span></div>
+      </div>
+      <div class="absentees-summary">
+        <div class="d-flex justify-content-between align-items-center"><span><i class="bi bi-calendar-x me-2"></i> <strong>Total Absent Days</strong></span><span class="badge" style="background:#f59e0b; color:white; padding:6px 14px; border-radius: 30px;">${totalAbsentDays} Day${totalAbsentDays !== 1 ? 's' : ''}</span></div>
+        <div class="small text-muted mt-2">Based on attendance records for current academic session</div>
+      </div>
+    </div>`;
+    document.getElementById('studentDetail').innerHTML = detailHtml;
+    document.getElementById('studentsResultList').style.display = 'none';
+    document.querySelector('#tab2 .class-filter-row').style.display = 'none';
+    document.querySelector('#tab2 .sort-bar').style.display = 'none';
+    document.getElementById('studentDetailView').style.display = 'block';
+    document.getElementById('shareWhatsAppTextBtn').style.display = 'flex';
+    document.getElementById('shareWhatsAppImageBtn').style.display = 'flex';
+    currentStudentDetail = { name:s.stu_name, admission_no:s.stu_admission_no, father:s.stu_father, classroom:cls, classroomId:s.stu_class_room_id, totalObtained:totalO, totalMax:totalM, percentage:perc, grade:totalG.text, subjects:subs, totalAbsentDays, id:s.stu_id };
+  }
+
+  function backToResultsList() {
+    document.getElementById('studentsResultList').style.display = 'block';
+    document.getElementById('studentDetailView').style.display = 'none';
+    document.querySelector('#tab2 .class-filter-row').style.display = 'flex';
+    document.querySelector('#tab2 .sort-bar').style.display = 'flex';
+    document.getElementById('shareWhatsAppTextBtn').style.display = 'none';
+    document.getElementById('shareWhatsAppImageBtn').style.display = 'none';
+    renderStudentsResultList();
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', parseInt(btn.dataset.tab) === tab));
+    document.getElementById('tab1').classList.toggle('active', tab === 1);
+    document.getElementById('tab2').classList.toggle('active', tab === 2);
+    if(tab === 1) { renderSubjectsList(); }
+    else {
+      if(selectedExamTypeId) { loadClassroomsForResults(true).then(() => { renderStudentsResultList(); }); }
+      else { renderStudentsResultList(); }
+    }
+  }
+
+  document.getElementById('classroomFilter').addEventListener('change', function() { savedClassroomId = this.value; if(currentTab === 2) renderStudentsResultList(); });
+
+  window.toggleClassGroup = toggleClassGroup; window.toggleDateGroup = toggleDateGroup; window.expandAllGroups = expandAllGroups; window.collapseAllGroups = collapseAllGroups; window.selectSubject = selectSubject; window.updateStudentMark = updateStudentMark; window.backToSubjects = backToSubjects; window.saveAllStudentMarks = saveAllStudentMarks; window.switchTab = switchTab; window.viewStudentResult = viewStudentResult; window.backToResultsList = backToResultsList; window.setSortBy = setSortBy; window.shareCurrentStudentResult = shareCurrentStudentResult; window.shareResultToWhatsAppImage = shareResultToWhatsAppImage; window.showTopStudentDetail = showTopStudentDetail; window.closeTopStudentModal = closeTopStudentModal; window.setGroupBy = setGroupBy;
+
+  document.getElementById('examTypeSelect').addEventListener('change', async () => {
+    selectedExamTypeId = document.getElementById('examTypeSelect').value;
+    savedClassGroupStates = {}; savedDateGroupStates = {};
+    savedClassroomId = null;
+    if(currentTab === 1) { renderSubjectsList(); }
+    else { await loadClassroomsForResults(false); renderStudentsResultList(); }
+  });
+
+  init(); async function init() {
+    await loadCurrentSession();
+    await loadExamTypes();
+    await loadAllClassrooms();
+    await loadDateSheets();
+    await loadSubjects();
+    await loadStudents();
+    await loadExamResults();
+  }
+</script>
+</body>
+</html>

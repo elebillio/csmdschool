@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+  <title>Syllabus & Date Sheet Management</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * { font-family: system-ui, sans-serif; }
+    body { background: #f1f5f9; padding: 0; margin: 0; }
+    .app-container { max-width: 550px; margin: 0 auto; padding: 12px; padding-bottom: 80px; }
+
+    .list-card { background: white; border-radius: 24px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 16px; }
+
+    .tabs-container { display: flex; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 50px; }
+    .tab-btn { flex: 1; padding: 10px 0; border: none; border-radius: 40px; font-weight: 600; font-size: 0.75rem; background: transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
+    .tab-btn.active { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+
+    .add-exam-btn { background: #eef2ff; border: none; border-radius: 40px; padding: 8px 16px; font-size: 0.7rem; font-weight: 600; color: #1e3c72; margin-bottom: 16px; width: 100%; }
+
+    .expand-collapse-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; }
+
+    .exam-group { margin-bottom: 12px; border-radius: 16px; background: white; border: 1px solid #eef2f8; overflow: hidden; }
+    .exam-group-header {
+      background: linear-gradient(135deg, #f0f4ff, #e8edf8);
+      padding: 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #d1dbe8;
+    }
+    .exam-group-header .title { font-weight: 800; font-size: 1rem; color: #1e3c72; }
+    .exam-group-header .badge-date { font-size: 0.65rem; background: #e2e8f0; padding: 3px 10px; border-radius: 30px; color: #1e3c72; font-weight: 600; display: inline-block; margin-top: 5px; }
+    .exam-group-header .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
+    .exam-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+    .exam-group-content { overflow: hidden; transition: max-height 0.3s ease; background: white; }
+    .exam-group-content.collapsed { max-height: 0 !important; padding: 0; }
+
+    .exam-detail { padding: 16px; border-top: 1px solid #eef2f8; }
+    .edit-exam-btn, .delete-exam-btn { background: transparent; border: none; font-size: 0.75rem; padding: 4px 8px; border-radius: 30px; }
+    .edit-exam-btn { color: #3b82f6; }
+    .delete-exam-btn { color: #ef4444; }
+
+    .loading-container { text-align: center; padding: 30px; }
+    .loading-spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    .loading-text { font-size: 0.7rem; color: #64748b; margin-top: 8px; }
+
+    .class-group { margin-top: 16px; border-radius: 12px; background: #fefefe; border: 1px solid #eef2f8; overflow: hidden; }
+    .class-group-header { background: #f1f5f9; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .class-group-header .class-title { font-weight: 600; font-size: 0.85rem; color: #1e3c72; }
+    .class-group-header .class-stats { font-size: 0.65rem; display: flex; align-items: center; gap: 10px; }
+    .class-group-header .class-stats span { background: white; padding: 2px 8px; border-radius: 30px; }
+    .share-wa-btn { background: #25D366; border: none; border-radius: 30px; padding: 4px 10px; font-size: 0.6rem; color: white; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .share-wa-btn.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .class-group-header .toggle-icon { transition: transform 0.2s; font-size: 0.8rem; }
+    .class-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+    .class-group-content { overflow: hidden; transition: max-height 0.3s ease; }
+    .class-group-content.collapsed { max-height: 0 !important; padding: 0; }
+
+    .subjects-list { padding: 12px; }
+    .subject-item { background: #f8fafc; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+    .subject-item:hover { background: #f1f5f9; transform: scale(0.99); }
+    .subject-name { font-weight: 600; font-size: 0.85rem; color: #1e293b; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .subject-badges { display: flex; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
+    .badge-syllabus { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-no-syllabus { background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-datesheet { background: #dbeafe; color: #1e40af; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-no-datesheet { background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .badge-marks { background: #fef9c3; color: #854d0e; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; }
+    .syllabus-preview { font-size: 0.7rem; color: #475569; margin-top: 6px; padding-top: 4px; border-top: 1px dashed #e2e8f0; }
+
+    .empty-state { text-align: center; padding: 30px; color: #94a3b8; font-size: 0.8rem; }
+
+    .student-list-modal { max-height: 450px; overflow-y: auto; }
+    .student-item-wa { padding: 12px 16px; border-bottom: 1px solid #eef2f8; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: background 0.2s ease; }
+    .student-item-wa.selected { background: #d1fae5; }
+    .student-checkbox-wrapper { flex-shrink: 0; }
+    .student-checkbox-custom { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #cbd5e1; background: white; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .student-checkbox-custom.checked { background: #25D366; border-color: #25D366; color: white; }
+    .student-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; }
+    .student-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: bold; font-size: 1.1rem; }
+    .student-info { flex: 1; }
+    .student-name-wa { font-weight: 700; font-size: 0.9rem; color: #0f172a; margin-bottom: 2px; }
+    .student-details { font-size: 0.65rem; color: #64748b; }
+    .student-mobile { font-size: 0.6rem; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .student-mobile.valid { color: #059669; }
+    .student-mobile.invalid { color: #ef4444; }
+
+    .selection-bar { background: #f8fafc; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eef2f8; position: sticky; top: 0; z-index: 10; background: white; }
+    .select-all-wrapper { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .select-all-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: #25D366; }
+    .selected-badge { background: #25D366; color: white; padding: 4px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+
+    .search-input { border-radius: 40px; padding: 10px 16px; font-size: 0.8rem; border: 1px solid #e2e8f0; background: #f8fafc; width: 100%; outline: none; }
+    .search-input:focus { border-color: #25D366; background: white; }
+
+    .modal-dialog { margin: 10px; }
+    .modal-content { border-radius: 24px; overflow: hidden; }
+
+    .syllabus-three-col { display: flex; gap: 16px; flex-wrap: wrap; }
+    .syllabus-col { flex: 1; min-width: 180px; }
+    .syllabus-col .form-label { font-weight: 600; font-size: 0.75rem; margin-bottom: 4px; color: #1e3c72; }
+
+    .toast-custom {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast-custom.show { opacity: 1; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="mainView">
+  <div class="app-container">
+    <div class="list-card">
+      <button class="add-exam-btn" onclick="openAddExamModal()"><i class="bi bi-plus-circle me-1"></i> Add New Exam Type</button>
+
+      <div class="tabs-container">
+        <button class="tab-btn active" data-tab="1" onclick="switchTab(1)"><i class="bi bi-pencil-square me-1"></i> Home Work</button>
+        <button class="tab-btn" data-tab="2" onclick="switchTab(2)"><i class="bi bi-suitcase-lg me-1"></i> Vocation Work</button>
+        <button class="tab-btn" data-tab="3" onclick="switchTab(3)"><i class="bi bi-calendar-year me-1"></i> Annual Work</button>
+      </div>
+
+      <div class="expand-collapse-bar" id="expandCollapseBar" style="display: none;">
+        <button class="expand-collapse-btn" onclick="expandAllClasses()"><i class="bi bi-arrows-expand"></i> Expand All</button>
+        <button class="expand-collapse-btn" onclick="collapseAllClasses()"><i class="bi bi-arrows-collapse"></i> Collapse All</button>
+      </div>
+
+      <div id="examGroupsContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Student Selection Modal -->
+<div class="modal fade" id="studentSelectionModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-whatsapp"></i> Select Students to Share</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="selection-bar">
+          <div class="select-all-wrapper" onclick="toggleSelectAll()">
+            <input type="checkbox" id="selectAllCheckbox" class="select-all-checkbox" onclick="event.stopPropagation(); toggleSelectAll()">
+            <span class="small fw-bold">Select All</span>
+          </div>
+          <div class="selected-badge" id="selectedCount">0 selected</div>
+        </div>
+        <div class="p-3 border-bottom">
+          <input type="text" id="waStudentSearch" class="search-input" placeholder="🔍 Search by name, admission, or mobile...">
+        </div>
+        <div id="waStudentList" class="student-list-modal"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success btn-sm" id="sendWhatsAppBtn" onclick="sendWhatsAppToSelected()"><i class="bi bi-whatsapp"></i> Share Links</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Share Links Modal -->
+<div class="modal fade" id="shareLinksModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-whatsapp"></i> Share to Selected Students</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="shareLinksList" class="student-list-modal"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Exam Type Modal -->
+<div class="modal fade" id="examModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Add Exam Type</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <input type="hidden" id="exam_modal_id">
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Select Session</label>
+          <select id="exam_session_id" class="form-select">
+            <option value="">Select Session</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Term Condition</label>
+          <select id="exam_term_condition_id" class="form-select">
+            <option value="">Select</option>
+            <option value="1">Home Work</option>
+            <option value="2">Vocation Work</option>
+            <option value="3">Annual Work</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Category Name</label>
+          <input type="text" id="exam_type1" class="form-control" placeholder="e.g., Summer Vacation 2025">
+        </div>
+
+        <div class="row">
+          <div class="col-6">
+            <label class="form-label small fw-bold">Start Date</label>
+            <input type="date" id="exam_type_start_date" class="form-control">
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-bold">End Date</label>
+            <input type="date" id="exam_type_end_date" class="form-control">
+          </div>
+        </div>
+
+        <div class="mb-3 mt-2">
+          <label class="form-label small fw-bold">Days / Duration</label>
+          <input type="text" id="exam_type_days" class="form-control" placeholder="e.g., 15 days">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveExamType()">Save Exam Type</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Syllabus + Date Sheet + Marks Modal -->
+<div class="modal fade" id="syllabusModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Syllabus, Date Sheet & Marks</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <input type="hidden" id="syllabus_modal_id">
+        <input type="hidden" id="syllabus_subject_id">
+        <input type="hidden" id="syllabus_exam_type_id">
+        <input type="hidden" id="syllabus_class_id">
+        <input type="hidden" id="syllabus_date_sheet_id">
+
+        <div class="row mb-3">
+          <div class="col-4">
+            <label class="form-label small fw-bold">Subject</label>
+            <input type="text" id="syllabus_subject_name" class="form-control" readonly>
+          </div>
+          <div class="col-4">
+            <label class="form-label small fw-bold">Class</label>
+            <input type="text" id="syllabus_class_name" class="form-control" readonly>
+          </div>
+          <div class="col-4">
+            <label class="form-label small fw-bold">Total Marks</label>
+            <input type="number" id="syllabus_marks" class="form-control" placeholder="e.g., 100" step="any">
+          </div>
+        </div>
+
+        <div class="syllabus-three-col">
+          <div class="syllabus-col">
+            <label class="form-label"><i class="bi bi-journal-bookmark-fill"></i> Syllabus Text</label>
+            <textarea id="syllabus_text" class="form-control" rows="8" placeholder="Enter syllabus details..."></textarea>
+          </div>
+          <div class="syllabus-col">
+            <label class="form-label"><i class="bi bi-calendar-event-fill"></i> Date Sheet</label>
+            <input type="date" id="datesheet_date" class="form-control">
+            <small class="text-muted mt-1 d-block">📅 Exam/Test date</small>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveSyllabusAndDateSheet()">Save Syllabus, Date Sheet & Marks</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Message -->
+<div id="toastMsg" class="toast-custom"></div>
+
+<script>
+  const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+  const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+  const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+  let currentTab = 1;
+  let allExamTypes = [];
+  let allClasses = [];
+  let allSessions = [];
+  let currentStudentsList = [];
+  let expandedExamGroups = {};
+  let expandedClassGroups = {};
+  let currentShareData = null;
+  let selectedStudents = new Set();
+
+  // CACHE VARIABLES for faster loading
+  let cachedSubjects = {};
+  let cachedClassStats = {};
+
+  function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+
+  function showToast(message) {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function clearCache() {
+    cachedSubjects = {};
+    cachedClassStats = {};
+    console.log("Cache cleared");
+  }
+
+  // ==================== AUTO ID GENERATION ====================
+  async function getNextExamTypeId() {
+    const { data } = await supabase1.from("exam_type").select("exam_type_id").order("exam_type_id", { ascending: true });
+    if (data && data.length > 0) {
+      let maxNum = 0;
+      for (let item of data) {
+        let id = item.exam_type_id;
+        if (id && id.toString().includes('-')) {
+          let parts = id.toString().split('-');
+          if (parts.length >= 2) {
+            let num = parseInt(parts[1]) || 0;
+            if (num > maxNum) maxNum = num;
+          }
+        } else if (id && !isNaN(parseInt(id))) {
+          let num = parseInt(id) || 0;
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      let nextNum = maxNum + 1;
+      return `AET-${String(nextNum).padStart(6, '0')}`;
+    }
+    return "AET-000001";
+  }
+
+  async function getNextSyllabusId() {
+    const { data } = await supabase1.from("syllabus").select("syllabus_id").order("syllabus_id", { ascending: true });
+    if (data && data.length > 0) {
+      let maxNum = 0;
+      for (let item of data) {
+        let id = item.syllabus_id;
+        if (id && id.toString().includes('-')) {
+          let parts = id.toString().split('-');
+          if (parts.length >= 2) {
+            let num = parseInt(parts[1]) || 0;
+            if (num > maxNum) maxNum = num;
+          }
+        } else if (id && !isNaN(parseInt(id))) {
+          let num = parseInt(id) || 0;
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      let nextNum = maxNum + 1;
+      return `ASY-${String(nextNum).padStart(6, '0')}`;
+    }
+    return "ASY-000001";
+  }
+
+  async function getNextDateSheetId() {
+    const { data } = await supabase1.from("exam_date_sheet").select("exam_date_sheet_id").order("exam_date_sheet_id", { ascending: true });
+    if (data && data.length > 0) {
+      let maxNum = 0;
+      for (let item of data) {
+        let id = item.exam_date_sheet_id;
+        if (id && id.toString().includes('-')) {
+          let parts = id.toString().split('-');
+          if (parts.length >= 2) {
+            let num = parseInt(parts[1]) || 0;
+            if (num > maxNum) maxNum = num;
+          }
+        } else if (id && !isNaN(parseInt(id))) {
+          let num = parseInt(id) || 0;
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      let nextNum = maxNum + 1;
+      return `ADS-${String(nextNum).padStart(6, '0')}`;
+    }
+    return "ADS-000001";
+  }
+
+  // ==================== LOAD FUNCTIONS ====================
+  async function loadSessions() {
+    const { data } = await supabase1.from("sessions").select("*").order("session_id", { ascending: false });
+    if (data && data.length > 0) {
+      allSessions = data;
+    } else {
+      allSessions = [
+        { session_id: 1, session_name: "2024-2025" },
+        { session_id: 2, session_name: "2025-2026" },
+        { session_id: 3, session_name: "2026-2027" }
+      ];
+    }
+    const sessionSelect = document.getElementById('exam_session_id');
+    if (sessionSelect) {
+      sessionSelect.innerHTML = '<option value="">Select Session</option>';
+      for (let s of allSessions) {
+        sessionSelect.innerHTML += `<option value="${s.session_id}">${escapeHtml(s.session_name)}</option>`;
+      }
+    }
+  }
+
+  async function loadExamTypes() {
+    const { data } = await supabase1.from("exam_type").select(`*, term_conditions!term_conditions_id (*)`).order("exam_type_id", { ascending: false });
+    if(data) allExamTypes = data;
+    renderExamGroups();
+  }
+
+  async function loadClasses() {
+    const { data } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
+    if(data) allClasses = data;
+  }
+
+  async function loadStudentsForClass(classId) {
+    const { data } = await supabase1.from("students").select("*").eq("stu_class_room_id", classId).order("stu_name");
+    return data || [];
+  }
+
+  async function loadSubjectsForClass(classId) {
+    if(!classId) return [];
+    try {
+      const { data, error } = await supabase1.from("subjects").select("*").eq("sub_classroom_id", classId);
+      if(error || !data) return [];
+      return data.filter(sub => sub.sub_status === true);
+    } catch(e) { return []; }
+  }
+
+  async function loadSyllabusForSubject(examTypeId, subjectId) {
+    if(!examTypeId || !subjectId) return [];
+    const { data } = await supabase1.from("syllabus").select("*").eq("exam_type_id", examTypeId).eq("syllabus_sub_id", subjectId);
+    return data || [];
+  }
+
+  async function loadDateSheetForSubject(examTypeId, subjectId) {
+    if(!examTypeId || !subjectId) return [];
+    const { data } = await supabase1.from("exam_date_sheet").select("*").eq("exam_date_sheet_exam_type_id", examTypeId).eq("exam_date_sheet_sub_id", subjectId);
+    return data || [];
+  }
+
+  async function getSubjectsWithSyllabusStatus(examTypeId, classId) {
+    const subjects = await loadSubjectsForClass(classId);
+    if(subjects.length === 0) return [];
+    let subjectsWithStatus = [];
+    for(let sub of subjects) {
+      const syllabusData = await loadSyllabusForSubject(examTypeId, sub.sub_id);
+      const dateSheetData = await loadDateSheetForSubject(examTypeId, sub.sub_id);
+      const marks = sub.sub_remarks;
+      subjectsWithStatus.push({
+        ...sub,
+        hasSyllabus: syllabusData.length > 0,
+        syllabusText: syllabusData.length > 0 ? syllabusData[0].syllabus_text : null,
+        syllabusId: syllabusData.length > 0 ? syllabusData[0].syllabus_id : null,
+        hasDateSheet: dateSheetData.length > 0,
+        dateSheetDate: dateSheetData.length > 0 ? dateSheetData[0].exam_date_sheet_day : null,
+        dateSheetId: dateSheetData.length > 0 ? dateSheetData[0].exam_date_sheet_id : null,
+        marks: marks
+      });
+    }
+    return subjectsWithStatus;
+  }
+
+  async function updateSubjectMarks(subjectId, marks) {
+    const { error } = await supabase1.from("subjects").update({ sub_remarks: marks }).eq("sub_id", subjectId);
+    if(error) console.error("Error updating marks:", error);
+    return !error;
+  }
+
+  async function getSyllabusMessage(examTypeId, classId, className, studentName = null) {
+    const subjectsWithStatus = await getSubjectsWithSyllabusStatus(examTypeId, classId);
+    const examType = allExamTypes.find(et => et.exam_type_id === examTypeId);
+    const examName = examType?.exam_type1 || 'Syllabus';
+    const termName = currentTab === 1 ? 'Home Work' : (currentTab === 2 ? 'Vocation Work' : 'Annual Work');
+
+    let message = `*📋 SYLLABUS, DATE SHEET & MARKS*\n\n`;
+    if(studentName) message += `*Student:* ${studentName}\n`;
+    message += `*Exam Type:* ${termName}\n`;
+    message += `*Category:* ${examName}\n`;
+    message += `*Class:* ${className}\n`;
+    message += `*Date:* ${new Date().toLocaleDateString()}\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    for(let sub of subjectsWithStatus) {
+      let bookName = "Book not found";
+      const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", sub.sub_subject_book_id).single();
+      if(bookData) bookName = bookData.subject_books_name;
+
+      message += `📖 *${bookName}*\n`;
+      if(sub.marks && sub.marks > 0) message += `⭐ *Marks:* ${sub.marks}\n`;
+      if(sub.hasDateSheet && sub.dateSheetDate) message += `📅 *Date:* ${sub.dateSheetDate}\n`;
+      if(sub.hasSyllabus) message += `📝 *Syllabus:* ${sub.syllabusText}\n`;
+      else message += `⚠️ No syllabus added yet\n`;
+      message += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    }
+
+    message += `\n📱 *Generated by: The Leads High School (Dinga)*`;
+    return message;
+  }
+
+  // ==================== WHATSAPP SHARE ====================
+  function openWhatsAppDirect(mobile, message) {
+    if (window.Android && window.Android.shareToWhatsApp) {
+      try {
+        window.Android.shareToWhatsApp(mobile, message);
+        return true;
+      } catch(e) {
+        console.log("Android interface error:", e);
+      }
+    }
+    let cleanMobile = mobile.replace(/[\s\-]/g, '');
+    if (cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
+    if (!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+    return true;
+  }
+
+  async function openStudentSelectionModal(examTypeId, classId, className) {
+    const students = await loadStudentsForClass(classId);
+    if(students.length === 0) {
+      alert("No students found in this class");
+      return;
+    }
+    currentShareData = { examTypeId, classId, className };
+    currentStudentsList = students;
+    selectedStudents.clear();
+    renderStudentListForWA(students);
+    updateSelectionCount();
+    document.getElementById('selectAllCheckbox').checked = false;
+    document.getElementById('waStudentSearch').value = '';
+    new bootstrap.Modal(document.getElementById('studentSelectionModal')).show();
+  }
+
+  function renderStudentListForWA(students) {
+    const container = document.getElementById('waStudentList');
+    if(!container) return;
+    if(students.length === 0) {
+      container.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-3"></i><p class="mt-2">No students found</p></div>';
+      return;
+    }
+    let html = '';
+    for(let s of students) {
+      const imgUrl = s.stu_image && s.stu_image.length > 10 ? s.stu_image : null;
+      const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
+      const isSelected = selectedStudents.has(s.stu_id);
+      const mobile = s.stu_mobile1 || s.stu_mobile2 || '';
+      const isValid = isValidWhatsAppNumber(mobile);
+      const displayMobile = formatMobileForDisplay(mobile);
+      const mobileClass = isValid ? 'valid' : 'invalid';
+      const mobileIcon = isValid ? 'bi-whatsapp' : 'bi-exclamation-triangle';
+
+      html += `<div class="student-item-wa ${isSelected ? 'selected' : ''}" onclick="toggleStudentSelection(${s.stu_id})">
+        <div class="student-checkbox-wrapper" onclick="event.stopPropagation(); toggleStudentSelection(${s.stu_id})">
+          <div class="student-checkbox-custom ${isSelected ? 'checked' : ''}">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>
+        </div>
+        ${imgUrl ? `<img src="${imgUrl}" class="student-avatar" onerror="this.outerHTML='<div class=\\'student-avatar-placeholder\\'>${initial}</div>'">` : `<div class="student-avatar-placeholder">${initial}</div>`}
+        <div class="student-info">
+          <div class="student-name-wa">${escapeHtml(s.stu_name)}</div>
+          <div class="student-details">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
+          <div class="student-mobile ${mobileClass}"><i class="bi ${mobileIcon}"></i> ${escapeHtml(displayMobile)} ${isValid ? '<span class="badge bg-success ms-1" style="font-size:0.55rem;">WhatsApp Available</span>' : '<span class="badge bg-secondary ms-1" style="font-size:0.55rem;">No WhatsApp</span>'}</div>
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  function toggleStudentSelection(studentId) {
+    if(selectedStudents.has(studentId)) selectedStudents.delete(studentId);
+    else selectedStudents.add(studentId);
+    updateSelectionCount();
+    const searchTerm = document.getElementById('waStudentSearch')?.value || '';
+    const filtered = currentStudentsList.filter(s =>
+      s.stu_name?.toLowerCase().includes(searchTerm) ||
+      s.stu_admission_no?.toLowerCase().includes(searchTerm) ||
+      (s.stu_mobile1 && s.stu_mobile1.toLowerCase().includes(searchTerm)) ||
+      (s.stu_mobile2 && s.stu_mobile2.toLowerCase().includes(searchTerm))
+    );
+    renderStudentListForWA(filtered);
+    const allVisibleSelected = filtered.length > 0 && filtered.every(s => selectedStudents.has(s.stu_id));
+    document.getElementById('selectAllCheckbox').checked = allVisibleSelected;
+  }
+
+  function toggleSelectAll() {
+    const searchTerm = document.getElementById('waStudentSearch')?.value || '';
+    const filtered = currentStudentsList.filter(s =>
+      s.stu_name?.toLowerCase().includes(searchTerm) ||
+      s.stu_admission_no?.toLowerCase().includes(searchTerm) ||
+      (s.stu_mobile1 && s.stu_mobile1.toLowerCase().includes(searchTerm)) ||
+      (s.stu_mobile2 && s.stu_mobile2.toLowerCase().includes(searchTerm))
+    );
+    const selectAll = !document.getElementById('selectAllCheckbox').checked;
+    document.getElementById('selectAllCheckbox').checked = selectAll;
+    if(selectAll) filtered.forEach(s => selectedStudents.add(s.stu_id));
+    else filtered.forEach(s => selectedStudents.delete(s.stu_id));
+    updateSelectionCount();
+    renderStudentListForWA(filtered);
+  }
+
+  function updateSelectionCount() {
+    const count = selectedStudents.size;
+    document.getElementById('selectedCount').innerHTML = count + ' selected';
+    const sendBtn = document.getElementById('sendWhatsAppBtn');
+    if(sendBtn) sendBtn.innerHTML = `<i class="bi bi-whatsapp"></i> Share (${count})`;
+  }
+
+  async function sendWhatsAppToSelected() {
+    if(selectedStudents.size === 0) { alert("Please select at least one student"); return; }
+
+    const searchTerm = document.getElementById('waStudentSearch')?.value || '';
+    const filtered = currentStudentsList.filter(s =>
+      s.stu_name?.toLowerCase().includes(searchTerm) ||
+      s.stu_admission_no?.toLowerCase().includes(searchTerm) ||
+      (s.stu_mobile1 && s.stu_mobile1.toLowerCase().includes(searchTerm)) ||
+      (s.stu_mobile2 && s.stu_mobile2.toLowerCase().includes(searchTerm))
+    );
+    const selectedList = filtered.filter(s => selectedStudents.has(s.stu_id));
+
+    if(selectedList.length === 1) {
+      const student = selectedList[0];
+      let mobile = student.stu_mobile1 || student.stu_mobile2;
+      const isValid = isValidWhatsAppNumber(mobile);
+
+      if(isValid) {
+        const message = await getSyllabusMessage(
+          currentShareData.examTypeId,
+          currentShareData.classId,
+          currentShareData.className,
+          student.stu_name
+        );
+
+        openWhatsAppDirect(mobile, message);
+        bootstrap.Modal.getInstance(document.getElementById('studentSelectionModal')).hide();
+        showToast("Opening WhatsApp...");
+        return;
+      } else {
+        alert("No valid WhatsApp number for this student");
+        return;
+      }
+    }
+
+    let shareLinksHtml = '';
+    for(let student of selectedList) {
+      let mobile = student.stu_mobile1 || student.stu_mobile2;
+      const isValid = isValidWhatsAppNumber(mobile);
+      const displayMobile = formatMobileForDisplay(mobile);
+
+      if(isValid) {
+        const message = await getSyllabusMessage(
+          currentShareData.examTypeId,
+          currentShareData.classId,
+          currentShareData.className,
+          student.stu_name
+        );
+        const encodedMessage = encodeURIComponent(message);
+        let cleanMobile = mobile.replace(/[\s\-]/g, '');
+        if(cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
+        if(!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
+        const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodedMessage}`;
+
+        shareLinksHtml += `<div class="student-item-wa" style="cursor: default;">
+          <div class="student-info">
+            <div class="student-name-wa">${escapeHtml(student.stu_name)}</div>
+            <div class="student-details">${escapeHtml(student.stu_admission_no)} | ${escapeHtml(student.stu_father)}</div>
+            <div class="student-mobile valid"><i class="bi bi-whatsapp"></i> ${escapeHtml(displayMobile)}</div>
+          </div>
+          <a href="${whatsappUrl}" class="btn btn-success btn-sm rounded-pill" style="background:#25D366; border:none; white-space:nowrap;" target="_blank">
+            <i class="bi bi-whatsapp"></i> Share
+          </a>
+        </div>`;
+      } else {
+        shareLinksHtml += `<div class="student-item-wa" style="cursor: default; opacity: 0.6;">
+          <div class="student-info">
+            <div class="student-name-wa">${escapeHtml(student.stu_name)}</div>
+            <div class="student-details">${escapeHtml(student.stu_admission_no)} | ${escapeHtml(student.stu_father)}</div>
+            <div class="student-mobile invalid"><i class="bi bi-exclamation-triangle"></i> ${escapeHtml(displayMobile)}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm rounded-pill" disabled><i class="bi bi-whatsapp"></i> No WhatsApp</button>
+        </div>`;
+      }
+    }
+
+    document.getElementById('shareLinksList').innerHTML = shareLinksHtml;
+    bootstrap.Modal.getInstance(document.getElementById('studentSelectionModal')).hide();
+    new bootstrap.Modal(document.getElementById('shareLinksModal')).show();
+  }
+
+  // ==================== UPDATE CLASS HEADER STATS ====================
+  async function updateClassHeaderStats(examTypeId, classId) {
+    const subjects = await loadSubjectsForClass(classId);
+    let syllabusCount = 0;
+    for(let sub of subjects) {
+      const syllabus = await loadSyllabusForSubject(examTypeId, sub.sub_id);
+      if(syllabus.length > 0) syllabusCount++;
+    }
+    const statsSpan = document.querySelector(`.class-group[data-exam-id="${examTypeId}"][data-class-id="${classId}"] .class-stats span`);
+    if(statsSpan) statsSpan.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> ${syllabusCount}/${subjects.length}`;
+    const waBtn = document.querySelector(`.class-group[data-exam-id="${examTypeId}"][data-class-id="${classId}"] .share-wa-btn`);
+    if(waBtn) {
+      if(syllabusCount === 0) { waBtn.classList.add('disabled'); waBtn.setAttribute('disabled', 'disabled'); }
+      else { waBtn.classList.remove('disabled'); waBtn.removeAttribute('disabled'); }
+    }
+    // Update cache
+    cachedClassStats[`${examTypeId}_${classId}`] = { syllabusCount, totalSubjects: subjects.length };
+  }
+
+  // ==================== RENDER FUNCTIONS (OPTIMIZED WITH CACHE) ====================
+  async function renderExamGroups() {
+    const container = document.getElementById('examGroupsContainer');
+    if(!container) return;
+    let filtered = allExamTypes.filter(et => et.term_conditions_id === currentTab);
+    if(filtered.length === 0) {
+      container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p>No exam types added. Click "Add New Exam Type"</p></div>`;
+      document.getElementById('expandCollapseBar').style.display = 'none';
+      return;
+    }
+    document.getElementById('expandCollapseBar').style.display = 'flex';
+    let html = '';
+    for(let et of filtered) {
+      let isExpanded = expandedExamGroups[et.exam_type_id] === true;
+      html += `<div class="exam-group" data-exam-id="${et.exam_type_id}">
+        <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${et.exam_type_id}')">
+          <div>
+            <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(et.exam_type1)}</div>
+            <div class="badge-date mt-1"><i class="bi bi-calendar me-1"></i> ${et.exam_type_start_date || 'Start date not set'} to ${et.exam_type_end_date || 'End date not set'}${et.exam_type_days ? ` | 📅 ${escapeHtml(et.exam_type_days)}` : ''}</div>
+          </div>
+          <div>
+            <button class="edit-exam-btn" onclick="event.stopPropagation(); openEditExamModal('${et.exam_type_id}')"><i class="bi bi-pencil-square"></i></button>
+            <button class="delete-exam-btn" onclick="event.stopPropagation(); deleteExamType('${et.exam_type_id}')"><i class="bi bi-trash3"></i></button>
+            <i class="bi bi-chevron-down toggle-icon ms-2"></i>
+          </div>
+        </div>
+        <div class="exam-group-content ${isExpanded ? '' : 'collapsed'}" id="exam-group-content-${et.exam_type_id}">
+          <div class="exam-detail"><div id="classGroupsContainer-${et.exam_type_id}"><div class="loading-container"><div class="loading-spinner"></div><div class="loading-text">Loading classes...</div></div></div></div>
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+    for(let et of filtered) { if(expandedExamGroups[et.exam_type_id] === true) await renderClassGroups(et.exam_type_id); }
+  }
+
+  async function renderClassGroups(examTypeId) {
+    const container = document.getElementById(`classGroupsContainer-${examTypeId}`);
+    if(!container) return;
+
+    container.innerHTML = `<div class="loading-container"><div class="loading-spinner"></div><div class="loading-text">Loading classes...</div></div>`;
+
+    if(allClasses.length === 0) {
+      container.innerHTML = '<div class="empty-state">No classes found</div>';
+      return;
+    }
+
+    // Check cache for class stats
+    let classStats = {};
+    let needFetch = [];
+
+    for(let cls of allClasses) {
+      const cacheKey = `${examTypeId}_${cls.class_room_id}`;
+      if (cachedClassStats[cacheKey]) {
+        classStats[cls.class_room_id] = cachedClassStats[cacheKey];
+      } else {
+        needFetch.push(cls);
+      }
+    }
+
+    // Fetch only uncached data in parallel
+    if (needFetch.length > 0) {
+      let batchPromises = [];
+      for(let cls of needFetch) {
+        batchPromises.push((async () => {
+          const subjects = await loadSubjectsForClass(cls.class_room_id);
+          let syllabusCount = 0;
+          for(let sub of subjects) {
+            const syllabus = await loadSyllabusForSubject(examTypeId, sub.sub_id);
+            if(syllabus.length > 0) syllabusCount++;
+          }
+          classStats[cls.class_room_id] = { totalSubjects: subjects.length, syllabusCount: syllabusCount };
+          cachedClassStats[`${examTypeId}_${cls.class_room_id}`] = { totalSubjects: subjects.length, syllabusCount: syllabusCount };
+        })());
+      }
+      await Promise.all(batchPromises);
+    }
+
+    let html = '';
+    for(let cls of allClasses) {
+      let isExpanded = expandedClassGroups[`${examTypeId}_${cls.class_room_id}`] === true;
+      let stats = classStats[cls.class_room_id] || { totalSubjects: 0, syllabusCount: 0 };
+      let shareDisabled = stats.syllabusCount === 0 ? 'disabled' : '';
+
+      html += `<div class="class-group" data-exam-id="${examTypeId}" data-class-id="${cls.class_room_id}">
+        <div class="class-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleClassGroup('${examTypeId}', ${cls.class_room_id})">
+          <span class="class-title"><i class="bi bi-building me-2"></i>${escapeHtml(cls.class_room_no)}</span>
+          <div class="class-stats">
+            <button class="share-wa-btn ${shareDisabled}" onclick="event.stopPropagation(); openStudentSelectionModal('${examTypeId}', ${cls.class_room_id}, '${escapeHtml(cls.class_room_no)}')" ${shareDisabled}><i class="bi bi-whatsapp"></i> Share</button>
+            <span><i class="bi bi-check-circle-fill text-success"></i> ${stats.syllabusCount}/${stats.totalSubjects}</span>
+            <i class="bi bi-chevron-down toggle-icon ms-1"></i>
+          </div>
+        </div>
+        <div class="class-group-content ${isExpanded ? '' : 'collapsed'}" id="class-group-content-${examTypeId}-${cls.class_room_id}">
+          <div class="subjects-list" id="subjectsList-${examTypeId}-${cls.class_room_id}"><div class="loading-container"><div class="loading-spinner"></div><div class="loading-text">Loading subjects...</div></div></div>
+        </div>
+      </div>`;
+    }
+
+    container.innerHTML = html;
+
+    // Load only expanded groups' subjects
+    for(let cls of allClasses) {
+      if(expandedClassGroups[`${examTypeId}_${cls.class_room_id}`] === true) {
+        await loadSubjectsForClassGroup(examTypeId, cls.class_room_id);
+      }
+    }
+  }
+
+  async function loadSubjectsForClassGroup(examTypeId, classId) {
+    const subjectsContainer = document.getElementById(`subjectsList-${examTypeId}-${classId}`);
+    if(!subjectsContainer) return;
+
+    const cacheKey = `${examTypeId}_${classId}`;
+    if (cachedSubjects[cacheKey]) {
+      subjectsContainer.innerHTML = cachedSubjects[cacheKey];
+      return;
+    }
+
+    subjectsContainer.innerHTML = `<div class="loading-container"><div class="loading-spinner"></div><div class="loading-text">Loading subjects...</div></div>`;
+
+    const subjectsWithStatus = await getSubjectsWithSyllabusStatus(examTypeId, classId);
+    const className = allClasses.find(c => c.class_room_id === classId)?.class_room_no || '';
+
+    if(subjectsWithStatus.length === 0) {
+      subjectsContainer.innerHTML = '<div class="empty-state">No active subjects found for this class</div>';
+      return;
+    }
+
+    let html = '';
+    for(let sub of subjectsWithStatus) {
+      let bookName = "Book not found";
+      const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", sub.sub_subject_book_id).single();
+      if(bookData) bookName = bookData.subject_books_name;
+
+      let hasSyllabus = sub.hasSyllabus;
+      let hasDateSheet = sub.hasDateSheet;
+      let syllabusPreview = hasSyllabus ? sub.syllabusText?.substring(0, 80) : '';
+      let dateDisplay = hasDateSheet ? sub.dateSheetDate : '';
+      let marksDisplay = sub.marks && sub.marks > 0 ? `⭐ ${sub.marks} Marks` : '';
+
+      html += `<div class="subject-item" onclick="openSyllabusModal('${examTypeId}', ${sub.sub_id}, '${escapeHtml(bookName)}', '${escapeHtml(className)}', ${classId}, ${sub.marks || 0})">
+        <div style="flex:1;">
+          <div class="subject-name">
+            <span>📖 ${escapeHtml(bookName)}</span>
+            ${marksDisplay ? `<span class="badge-marks">${marksDisplay}</span>` : ''}
+          </div>
+          <div class="subject-badges">
+            ${hasSyllabus ?
+              '<span class="badge-syllabus"><i class="bi bi-check-circle-fill"></i> Syllabus Added</span>' :
+              '<span class="badge-no-syllabus"><i class="bi bi-plus-circle"></i> No Syllabus</span>'
+            }
+            ${hasDateSheet ?
+              '<span class="badge-datesheet"><i class="bi bi-calendar-check-fill"></i> Date: ' + dateDisplay + '</span>' :
+              '<span class="badge-no-datesheet"><i class="bi bi-calendar-plus"></i> No Date Sheet</span>'
+            }
+          </div>
+          ${hasSyllabus ? `<div class="syllabus-preview">📝 ${escapeHtml(syllabusPreview)}${sub.syllabusText?.length > 80 ? '...' : ''}</div>` : '<div class="syllabus-preview text-muted">Click to add syllabus, date sheet & marks</div>'}
+        </div>
+        <i class="bi ${hasSyllabus || hasDateSheet ? 'bi-check-circle-fill text-success' : 'bi-plus-circle text-primary'} fs-5"></i>
+      </div>`;
+    }
+
+    cachedSubjects[cacheKey] = html;
+    subjectsContainer.innerHTML = html;
+  }
+
+  // ==================== TOGGLE FUNCTIONS ====================
+  function toggleExamGroup(examTypeId) {
+    expandedExamGroups[examTypeId] = !expandedExamGroups[examTypeId];
+    const content = document.getElementById(`exam-group-content-${examTypeId}`);
+    const header = document.querySelector(`.exam-group[data-exam-id="${examTypeId}"] .exam-group-header`);
+    if(content) {
+      if(expandedExamGroups[examTypeId]) {
+        content.classList.remove('collapsed');
+        header?.classList.remove('collapsed');
+        renderClassGroups(examTypeId);
+      } else {
+        content.classList.add('collapsed');
+        header?.classList.add('collapsed');
+      }
+    }
+  }
+
+  function toggleClassGroup(examTypeId, classId) {
+    const key = `${examTypeId}_${classId}`;
+    expandedClassGroups[key] = !expandedClassGroups[key];
+    const content = document.getElementById(`class-group-content-${examTypeId}-${classId}`);
+    const header = document.querySelector(`.class-group[data-exam-id="${examTypeId}"][data-class-id="${classId}"] .class-group-header`);
+    if(content) {
+      if(expandedClassGroups[key]) {
+        content.classList.remove('collapsed');
+        header?.classList.remove('collapsed');
+        loadSubjectsForClassGroup(examTypeId, classId);
+      } else {
+        content.classList.add('collapsed');
+        header?.classList.add('collapsed');
+      }
+    }
+  }
+
+  function expandAllClasses() {
+    for(let examType of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
+      if(expandedExamGroups[examType.exam_type_id]) {
+        for(let cls of allClasses) {
+          const key = `${examType.exam_type_id}_${cls.class_room_id}`;
+          if(!expandedClassGroups[key]) {
+            expandedClassGroups[key] = true;
+            const content = document.getElementById(`class-group-content-${examType.exam_type_id}-${cls.class_room_id}`);
+            const header = document.querySelector(`.class-group[data-exam-id="${examType.exam_type_id}"][data-class-id="${cls.class_room_id}"] .class-group-header`);
+            if(content) {
+              content.classList.remove('collapsed');
+              header?.classList.remove('collapsed');
+              loadSubjectsForClassGroup(examType.exam_type_id, cls.class_room_id);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function collapseAllClasses() {
+    for(let examType of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
+      for(let cls of allClasses) {
+        const key = `${examType.exam_type_id}_${cls.class_room_id}`;
+        if(expandedClassGroups[key]) {
+          expandedClassGroups[key] = false;
+          const content = document.getElementById(`class-group-content-${examType.exam_type_id}-${cls.class_room_id}`);
+          const header = document.querySelector(`.class-group[data-exam-id="${examType.exam_type_id}"][data-class-id="${cls.class_room_id}"] .class-group-header`);
+          if(content) { content.classList.add('collapsed'); header?.classList.add('collapsed'); }
+        }
+      }
+    }
+  }
+
+  // ==================== EXAM TYPE CRUD ====================
+  function openAddExamModal() {
+    document.getElementById('exam_modal_id').value = '';
+    document.getElementById('exam_session_id').value = '';
+    document.getElementById('exam_term_condition_id').value = currentTab;
+    document.getElementById('exam_type1').value = '';
+    document.getElementById('exam_type_start_date').value = '';
+    document.getElementById('exam_type_end_date').value = '';
+    document.getElementById('exam_type_days').value = '';
+    new bootstrap.Modal(document.getElementById('examModal')).show();
+  }
+
+  function openEditExamModal(examTypeId) {
+    const examType = allExamTypes.find(et => et.exam_type_id === examTypeId);
+    if(!examType) return;
+    document.getElementById('exam_modal_id').value = examType.exam_type_id;
+    document.getElementById('exam_session_id').value = examType.session_id || '';
+    document.getElementById('exam_term_condition_id').value = examType.term_conditions_id;
+    document.getElementById('exam_type1').value = examType.exam_type1 || '';
+    document.getElementById('exam_type_start_date').value = examType.exam_type_start_date || '';
+    document.getElementById('exam_type_end_date').value = examType.exam_type_end_date || '';
+    document.getElementById('exam_type_days').value = examType.exam_type_days || '';
+    new bootstrap.Modal(document.getElementById('examModal')).show();
+  }
+
+  async function saveExamType() {
+    const sessionId = document.getElementById('exam_session_id').value;
+    const termConditionId = document.getElementById('exam_term_condition_id').value;
+    const examType1 = document.getElementById('exam_type1').value;
+    const startDate = document.getElementById('exam_type_start_date').value;
+    const endDate = document.getElementById('exam_type_end_date').value;
+    const days = document.getElementById('exam_type_days').value;
+
+    if(!sessionId) { alert("Please select Session"); return; }
+    if(!termConditionId || !examType1) { alert("Please fill Term Condition and Category Name"); return; }
+
+    const newExamId = await getNextExamTypeId();
+
+    const { data: existing } = await supabase1.from("exam_type").select("exam_type_id").eq("exam_type_id", newExamId);
+    if (existing && existing.length > 0) {
+      alert(`ID ${newExamId} already exists! Please try again.`);
+      return;
+    }
+
+    const data = {
+      exam_type_id: newExamId,
+      session_id: parseInt(sessionId),
+      term_conditions_id: parseInt(termConditionId),
+      exam_type1: examType1
+    };
+    if(startDate) data.exam_type_start_date = startDate;
+    if(endDate) data.exam_type_end_date = endDate;
+    if(days) data.exam_type_days = days;
+
+    const { error } = await supabase1.from("exam_type").insert([data]);
+    if(error) {
+      alert("Error: " + error.message);
+      return;
+    }
+
+    clearCache();
+    alert(`Exam Type Added! ID: ${newExamId}`);
+    bootstrap.Modal.getInstance(document.getElementById('examModal')).hide();
+    await loadExamTypes();
+  }
+
+  async function deleteExamType(examTypeId) {
+    if(!confirm("Delete this exam type? All associated syllabus and date sheet will also be deleted.")) return;
+    await supabase1.from("syllabus").delete().eq("exam_type_id", examTypeId);
+    await supabase1.from("exam_date_sheet").delete().eq("exam_date_sheet_exam_type_id", examTypeId);
+    const { error } = await supabase1.from("exam_type").delete().eq("exam_type_id", examTypeId);
+    if(error) { alert("Error: " + error.message); return; }
+    clearCache();
+    alert("Exam Type Deleted!");
+    await loadExamTypes();
+  }
+
+  // ==================== SYLLABUS CRUD ====================
+  async function openSyllabusModal(examTypeId, subjectId, subjectName, className, classId, currentMarks) {
+    const syllabusList = await loadSyllabusForSubject(examTypeId, subjectId);
+    const dateSheetList = await loadDateSheetForSubject(examTypeId, subjectId);
+
+    let existingSyllabus = syllabusList.length > 0 ? syllabusList[0] : null;
+    let existingDateSheet = dateSheetList.length > 0 ? dateSheetList[0] : null;
+
+    document.getElementById('syllabus_modal_id').value = existingSyllabus?.syllabus_id || '';
+    document.getElementById('syllabus_subject_id').value = subjectId;
+    document.getElementById('syllabus_exam_type_id').value = examTypeId;
+    document.getElementById('syllabus_class_id').value = classId;
+    document.getElementById('syllabus_subject_name').value = subjectName;
+    document.getElementById('syllabus_class_name').value = className;
+    document.getElementById('syllabus_text').value = existingSyllabus?.syllabus_text || '';
+    document.getElementById('syllabus_date_sheet_id').value = existingDateSheet?.exam_date_sheet_id || '';
+    document.getElementById('datesheet_date').value = existingDateSheet?.exam_date_sheet_day || '';
+    document.getElementById('syllabus_marks').value = currentMarks || '';
+
+    new bootstrap.Modal(document.getElementById('syllabusModal')).show();
+  }
+
+  async function saveSyllabusAndDateSheet() {
+    const syllabusId = document.getElementById('syllabus_modal_id').value;
+    const dateSheetId = document.getElementById('syllabus_date_sheet_id').value;
+    const examTypeId = document.getElementById('syllabus_exam_type_id').value;
+    const subjectId = document.getElementById('syllabus_subject_id').value;
+    const classId = document.getElementById('syllabus_class_id').value;
+    const syllabusText = document.getElementById('syllabus_text').value;
+    const dateSheetDate = document.getElementById('datesheet_date').value;
+    const marks = document.getElementById('syllabus_marks').value;
+
+    if(syllabusText && syllabusText.trim()) {
+      if(syllabusId) {
+        await supabase1.from("syllabus").update({
+          exam_type_id: examTypeId,
+          syllabus_sub_id: subjectId,
+          syllabus_text: syllabusText
+        }).eq("syllabus_id", syllabusId);
+      } else {
+        const newSyllabusId = await getNextSyllabusId();
+        await supabase1.from("syllabus").insert([{
+          syllabus_id: newSyllabusId,
+          exam_type_id: examTypeId,
+          syllabus_sub_id: subjectId,
+          syllabus_text: syllabusText
+        }]);
+      }
+    } else if(syllabusId) {
+      await supabase1.from("syllabus").delete().eq("syllabus_id", syllabusId);
+    }
+
+    if(dateSheetDate) {
+      if(dateSheetId) {
+        await supabase1.from("exam_date_sheet").update({
+          exam_date_sheet_exam_type_id: examTypeId,
+          exam_date_sheet_sub_id: subjectId,
+          exam_date_sheet_day: dateSheetDate
+        }).eq("exam_date_sheet_id", dateSheetId);
+      } else {
+        const newDateSheetId = await getNextDateSheetId();
+        await supabase1.from("exam_date_sheet").insert([{
+          exam_date_sheet_id: newDateSheetId,
+          exam_date_sheet_exam_type_id: examTypeId,
+          exam_date_sheet_sub_id: subjectId,
+          exam_date_sheet_day: dateSheetDate
+        }]);
+      }
+    } else if(dateSheetId) {
+      await supabase1.from("exam_date_sheet").delete().eq("exam_date_sheet_id", dateSheetId);
+    }
+
+    if(marks !== undefined && marks !== '') {
+      await updateSubjectMarks(parseInt(subjectId), parseFloat(marks));
+    }
+
+    clearCache();
+    alert("Syllabus, Date Sheet & Marks Saved Successfully!");
+    bootstrap.Modal.getInstance(document.getElementById('syllabusModal')).hide();
+    await loadSubjectsForClassGroup(examTypeId, parseInt(classId));
+    await updateClassHeaderStats(examTypeId, parseInt(classId));
+  }
+
+  function switchTab(tabId) {
+    currentTab = tabId;
+    expandedExamGroups = {};
+    expandedClassGroups = {};
+    document.querySelectorAll('.tab-btn').forEach(btn => { if(parseInt(btn.dataset.tab) === tabId) btn.classList.add('active'); else btn.classList.remove('active'); });
+    renderExamGroups();
+  }
+
+  // ==================== VALIDATE WHATSAPP NUMBER ====================
+  function isValidWhatsAppNumber(mobile) {
+    if(!mobile || mobile === 'No mobile' || mobile === '') return false;
+    let clean = mobile.replace(/[\s\-]/g, '');
+    if(clean.length >= 10 && clean.length <= 13) {
+      if(clean.match(/^(03|3|92)\d{9,10}$/)) return true;
+    }
+    return false;
+  }
+
+  function formatMobileForDisplay(mobile) {
+    if(!mobile || mobile === '') return 'No mobile number';
+    return mobile;
+  }
+
+  async function init() {
+    await loadSessions();
+    await loadClasses();
+    await loadExamTypes();
+  }
+  init();
+</script>
+</body>
+</html>

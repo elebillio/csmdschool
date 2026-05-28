@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Fee Management System | Auto ID AFE-000001 | Receipt AFR-000001</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #f1f5f9; padding: 16px; margin: 0; }
+  .app-container { max-width: 550px; margin: 0 auto; }
+  
+  .list-card { background: white; border-radius: 28px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
+  .search-box { background: #f8fafc; border-radius: 48px; padding: 6px 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+  .search-box input { border: none; background: transparent; flex: 1; outline: none; font-size: 0.8rem; }
+  
+  .fee-card { background: white; border-radius: 20px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; transition: all 0.15s; }
+  .fee-card:active { background: #f8fafc; transform: scale(0.99); }
+  .fee-amount { font-size: 1.2rem; font-weight: 700; color: #1e3c72; }
+  .fee-status-paid { color: #10b981; font-weight: 600; }
+  .fee-status-due { color: #ef4444; font-weight: 600; }
+  
+  .group-header { background: #eef2ff; padding: 12px 16px; border-radius: 12px; margin: 8px 0; font-weight: bold; color: #1e3c72; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+  .group-header:active { background: #e0e7ff; }
+  .group-header .toggle-icon { transition: transform 0.2s; }
+  .group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .group-content { overflow: hidden; transition: max-height 0.3s ease; }
+  .group-content.collapsed { max-height: 0 !important; padding: 0; margin: 0; }
+  
+  .detail-card { background: white; border-radius: 32px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+  .detail-header { background: linear-gradient(135deg, #059669, #10b981); padding: 24px 20px; color: white; display: flex; align-items: center; justify-content: space-between; }
+  .info-grid { padding: 20px; background: #ffffff; }
+  .info-row { display: flex; padding: 12px 0; border-bottom: 1px solid #eef2f8; }
+  .info-label { width: 35%; font-weight: 700; font-size: 0.75rem; color: #475569; }
+  .info-value { width: 65%; font-size: 0.85rem; font-weight: 500; color: #0f172a; }
+  .action-bar { display: flex; gap: 12px; padding: 16px 20px; background: #fefefe; border-top: 1px solid #ecf3f8; }
+  .btn-action { flex: 1; border-radius: 60px; padding: 10px 0; font-weight: 600; }
+  
+  .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-row select, .filter-row input { flex: 1; border-radius: 30px; border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 0.75rem; background: #f8fafc; }
+  .modal-sm-custom { max-width: 450px; }
+  
+  .empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+  .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px; border-radius: 0 0 28px 28px; margin-bottom: 16px; }
+  .header h2 { margin: 0; font-size: 1.4rem; }
+  .header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- Main Card -->
+  <div class="list-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0"><i class="bi bi-cash-stack me-2 text-success"></i>Fee Records</h5>
+      <button class="btn btn-outline-secondary rounded-pill btn-sm" onclick="loadFees()"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+    </div>
+    
+    <div class="filter-row">
+      <input type="text" id="feeSearchInput" class="form-control" placeholder="🔍 Search by student name or invoice..." style="flex: 2;">
+      <select id="sessionFilter" class="form-select" style="flex: 1;">
+        <option value="all">All Sessions</option>
+      </select>
+    </div>
+    
+    <div class="filter-row">
+      <select id="yearFilter" class="form-select">
+        <option value="all">All Years</option>
+      </select>
+      <select id="monthFilter" class="form-select">
+        <option value="all">All Months</option>
+        <option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option>
+        <option value="4">Apr</option><option value="5">May</option><option value="6">Jun</option>
+        <option value="7">Jul</option><option value="8">Aug</option><option value="9">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <select id="groupBySelect" class="form-select">
+        <option value="month">Group by Month</option>
+        <option value="session">Group by Session</option>
+        <option value="classroom">Group by Classroom</option>
+        <option value="none">No Grouping</option>
+      </select>
+    </div>
+    
+    <div id="feeListContainer">
+      <div class="text-center py-4"><span class="loading-spinner"></span> Loading fees...</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEE DETAIL VIEW -->
+<div id="feeDetailView" style="display: none;" class="app-container">
+  <div class="detail-card">
+    <div class="detail-header">
+      <div class="flex-grow-1">
+        <h4 id="feeDetailStudent" class="fw-bold mb-1">-</h4>
+        <p id="feeDetailInvoice" class="mb-0 opacity-75">Invoice: --</p>
+      </div>
+      <button class="btn btn-sm btn-light rounded-pill" onclick="backToFeeList()"><i class="bi bi-arrow-left"></i> Back</button>
+    </div>
+    <div class="info-grid" id="feeDetailInfo"></div>
+    <div class="action-bar">
+      <button class="btn btn-outline-primary btn-action" id="editFeeBtn"><i class="bi bi-pencil-square"></i> Edit Payment</button>
+      <button class="btn btn-outline-danger btn-action" id="deleteFeeBtn"><i class="bi bi-trash3"></i> Delete Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEE EDIT MODAL -->
+<div class="modal fade" id="feeEditModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable modal-sm-custom">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Edit Payment</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <input type="hidden" id="edit_fee_id">
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Fee ID (AFE-XXXXXX)</label>
+          <input type="text" id="edit_fee_id_display" class="form-control form-control-sm" readonly>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Invoice No</label>
+          <input type="text" id="edit_invoice" class="form-control form-control-sm" readonly>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Student Name</label>
+          <input type="text" id="edit_student_name" class="form-control form-control-sm" readonly>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Total Amount (PKR)</label>
+          <input type="text" id="edit_total" class="form-control form-control-sm" readonly>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Paid Amount (PKR)</label>
+          <input type="number" id="edit_paid" class="form-control form-control-sm" step="0.01" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Payment Date</label>
+          <input type="date" id="edit_pay_date" class="form-control form-control-sm">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-bold">Receipt Number</label>
+          <input type="text" id="edit_receipt" class="form-control form-control-sm" readonly style="background:#f0f0f0;">
+          <small class="text-muted">Auto-generated (AFR-XXXXXX format)</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="updateFeePayment()">Update Payment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======================= SUPABASE INIT =======================
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let allStudents = [];
+let allFees = [];
+let allClassrooms = [];
+let currentFee = null;
+let groupStates = {};
+
+function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+
+function getClassroomName(classroomId) {
+    if (!classroomId) return 'Unknown Class';
+    const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
+    return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+// =====================================================
+// AUTO GENERATE RECEIPT ID: AFR-000001, AFR-000002...
+// =====================================================
+async function getNextReceiptId() {
+    try {
+        const { data, error } = await supabase1
+            .from("student_pay_scale")
+            .select("stu_receipt")
+            .order("stu_receipt", { ascending: true });
+        
+        if (error) {
+            console.error("Error fetching receipts:", error);
+            return "AFR-000001";
+        }
+        
+        let maxNumber = 0;
+        const prefix = "AFR";
+        
+        if (data && data.length > 0) {
+            for (const record of data) {
+                const id = record.stu_receipt;
+                if (id && id.startsWith(prefix + "-")) {
+                    const numericPart = id.substring(prefix.length + 1);
+                    const num = parseInt(numericPart, 10);
+                    if (!isNaN(num) && num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+        }
+        
+        const nextNumber = maxNumber + 1;
+        const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
+        console.log("Generated new Receipt ID:", newId);
+        return newId;
+        
+    } catch (err) {
+        console.error("Error in getNextReceiptId:", err);
+        return "AFR-000001";
+    }
+}
+
+// =====================================================
+// AUTO GENERATE FEE ID: AFE-000001, AFE-000002...
+// =====================================================
+async function getNextFeeId() {
+    try {
+        const { data, error } = await supabase1
+            .from("student_pay_scale")
+            .select("stu_pay_id")
+            .order("stu_pay_id", { ascending: true });
+        
+        if (error) {
+            console.error("Error fetching IDs:", error);
+            return "AFE-000001";
+        }
+        
+        let maxNumber = 0;
+        const prefix = "AFE";
+        
+        if (data && data.length > 0) {
+            for (const record of data) {
+                const id = record.stu_pay_id;
+                if (id && id.startsWith(prefix + "-")) {
+                    const numericPart = id.substring(prefix.length + 1);
+                    const num = parseInt(numericPart, 10);
+                    if (!isNaN(num) && num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+        }
+        
+        const nextNumber = maxNumber + 1;
+        const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
+        console.log("Generated new Fee ID:", newId);
+        return newId;
+        
+    } catch (err) {
+        console.error("Error in getNextFeeId:", err);
+        return "AFE-000001";
+    }
+}
+
+// ======================= DATA LOADING =======================
+async function loadAllData() {
+    await loadClassrooms();
+    await loadStudents();
+    await loadFees();
+}
+
+async function loadClassrooms() {
+    const { data, error } = await supabase1.from("class_rooms").select("*").order("class_room_no", { ascending: true });
+    if (!error && data) {
+        allClassrooms = data;
+    }
+    return allClassrooms;
+}
+
+async function loadStudents() {
+    const { data, error } = await supabase1.from("students").select("*").order("stu_name", { ascending: true });
+    if (!error && data) {
+        allStudents = data;
+    }
+    return allStudents;
+}
+
+async function loadFees() {
+    const { data, error } = await supabase1.from("student_pay_scale").select("*").order("stu_pay_id", { ascending: false });
+    if (!error && data) {
+        allFees = data;
+        renderFeeList();
+        populateFilters();
+    }
+    return allFees;
+}
+
+function populateFilters() {
+    const years = [...new Set(allFees.map(f => f.stu_issu_date ? new Date(f.stu_issu_date).getFullYear() : null).filter(y => y))];
+    const yearSelect = document.getElementById('yearFilter');
+    if(yearSelect) {
+        yearSelect.innerHTML = '<option value="all">All Years</option>';
+        years.sort().reverse().forEach(y => { yearSelect.innerHTML += `<option value="${y}">${y}</option>`; });
+    }
+    
+    const sessions = [...new Set(allFees.map(f => f.session_id).filter(s => s))];
+    const sessionSelect = document.getElementById('sessionFilter');
+    if(sessionSelect) {
+        sessionSelect.innerHTML = '<option value="all">All Sessions</option>';
+        sessions.sort().forEach(s => { sessionSelect.innerHTML += `<option value="${s}">Session ${s}</option>`; });
+    }
+}
+
+// ======================= FEE UI with Expandable Groups =======================
+function toggleGroup(groupKey) {
+    const content = document.getElementById(`group-content-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    const header = document.getElementById(`group-header-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    if (content) {
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            header?.classList.remove('collapsed');
+            groupStates[groupKey] = true;
+        } else {
+            content.classList.add('collapsed');
+            header?.classList.add('collapsed');
+            groupStates[groupKey] = false;
+        }
+    }
+}
+
+function renderFeeList() {
+    const container = document.getElementById('feeListContainer');
+    if(!container) return;
+    
+    let filtered = [...allFees];
+    
+    const searchTerm = document.getElementById('feeSearchInput')?.value.toLowerCase() || '';
+    const sessionFilter = document.getElementById('sessionFilter')?.value;
+    const yearFilter = document.getElementById('yearFilter')?.value;
+    const monthFilter = document.getElementById('monthFilter')?.value;
+    const groupBy = document.getElementById('groupBySelect')?.value || 'month';
+    
+    if (searchTerm) {
+        filtered = filtered.filter(f => {
+            const student = allStudents.find(s => s.stu_id === f.stu_id);
+            return (student?.stu_name?.toLowerCase().includes(searchTerm)) ||
+                   (f.stu_invoice?.toLowerCase().includes(searchTerm));
+        });
+    }
+    if (sessionFilter && sessionFilter !== 'all') filtered = filtered.filter(f => f.session_id == sessionFilter);
+    if (yearFilter && yearFilter !== 'all') filtered = filtered.filter(f => f.stu_issu_date && new Date(f.stu_issu_date).getFullYear() == yearFilter);
+    if (monthFilter && monthFilter !== 'all') filtered = filtered.filter(f => f.stu_issu_date && new Date(f.stu_issu_date).getMonth() + 1 == monthFilter);
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state"><i class="bi bi-receipt fs-3"></i><p>No fee records found</p></div>`;
+        return;
+    }
+    
+    let groupedData = {};
+    
+    if (groupBy === 'month') {
+        filtered.forEach(f => {
+            const date = f.stu_issu_date ? new Date(f.stu_issu_date) : null;
+            const key = date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')} - ${date.toLocaleString('default', { month: 'long' })} ${date.getFullYear()}` : 'No Date';
+            if (!groupedData[key]) groupedData[key] = [];
+            groupedData[key].push(f);
+        });
+    } else if (groupBy === 'session') {
+        filtered.forEach(f => {
+            const key = f.session_id ? `Session ${f.session_id}` : 'No Session';
+            if (!groupedData[key]) groupedData[key] = [];
+            groupedData[key].push(f);
+        });
+    } else if (groupBy === 'classroom') {
+        filtered.forEach(f => {
+            const student = allStudents.find(s => s.stu_id === f.stu_id);
+            const classroomId = student?.stu_class_room_id;
+            const key = getClassroomName(classroomId);
+            if (!groupedData[key]) groupedData[key] = [];
+            groupedData[key].push(f);
+        });
+    } else {
+        groupedData['All Records'] = filtered;
+    }
+    
+    let sortedKeys = Object.keys(groupedData);
+    if (groupBy === 'month') {
+        sortedKeys.sort().reverse();
+    } else if (groupBy === 'classroom') {
+        sortedKeys.sort();
+    }
+    
+    let html = "";
+    for (const groupKey of sortedKeys) {
+        const fees = groupedData[groupKey];
+        const groupTotal = fees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
+        const safeKey = groupKey.replace(/[^a-zA-Z0-9]/g, '_');
+        const isExpanded = groupStates[groupKey] !== undefined ? groupStates[groupKey] : false;
+        
+        html += `<div class="group-header ${isExpanded ? '' : 'collapsed'}" id="group-header-${safeKey}" onclick="toggleGroup('${groupKey.replace(/'/g, "\\'")}')">
+            <span><i class="bi bi-folder2-open me-2"></i> ${groupKey}</span>
+            <div>
+                <span class="badge bg-primary rounded-pill me-2">${fees.length} records</span>
+                <span class="badge bg-success rounded-pill">PKR ${groupTotal.toLocaleString()}</span>
+                <i class="bi bi-chevron-down toggle-icon ms-2"></i>
+            </div>
+        </div>`;
+        
+        html += `<div class="group-content ${isExpanded ? '' : 'collapsed'}" id="group-content-${safeKey}">`;
+        for (const f of fees) {
+            const student = allStudents.find(s => s.stu_id === f.stu_id);
+            const paid = Number(f.stu_paid) || 0;
+            const due = Number(f.stu_due) || 0;
+            const status = due === 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
+            const statusClass = due === 0 ? 'fee-status-paid' : 'fee-status-due';
+            html += `<div class="fee-card" data-id="${f.stu_pay_id}">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>${escapeHtml(student?.stu_name || 'Unknown')}</strong>
+                        <br><small class="text-muted">${f.stu_invoice || 'No Invoice'} | ${getClassroomName(student?.stu_class_room_id)}</small>
+                        <br><small class="text-muted">Fee ID: ${f.stu_pay_id} | Receipt: ${f.stu_receipt || 'Not issued'}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fee-amount">PKR ${paid.toLocaleString()}</div>
+                        <small class="${statusClass}">${status}</small>
+                    </div>
+                </div>
+                <div class="mt-2 small text-muted">
+                    Date: ${f.stu_pay_date || f.stu_issu_date || '—'} | 
+                    Due: PKR ${due.toLocaleString()} | 
+                    Session: ${f.session_id || '—'}
+                </div>
+            </div>`;
+        }
+        html += `</div>`;
+    }
+    container.innerHTML = html;
+    
+    document.querySelectorAll("#feeListContainer .fee-card").forEach(el => {
+        el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const feeId = el.dataset.id;
+            const fee = allFees.find(f => f.stu_pay_id === feeId);
+            if (fee) showFeeDetail(fee);
+        });
+    });
+}
+
+function showFeeDetail(fee) {
+    currentFee = fee;
+    const student = allStudents.find(s => s.stu_id === fee.stu_id);
+    document.getElementById("feeDetailStudent").innerText = student?.stu_name || 'Unknown';
+    document.getElementById("feeDetailInvoice").innerHTML = `Fee ID: ${fee.stu_pay_id} | Invoice: ${fee.stu_invoice || '—'} | Receipt: ${fee.stu_receipt || 'Not issued'}`;
+    
+    const paid = Number(fee.stu_paid) || 0;
+    const due = Number(fee.stu_due) || 0;
+    const status = due === 0 ? 'Paid' : (paid > 0 ? 'Partial' : 'Unpaid');
+    const statusBadge = due === 0 ? 'bg-success' : (paid > 0 ? 'bg-warning' : 'bg-danger');
+    
+    document.getElementById("feeDetailInfo").innerHTML = `
+        <div class="info-row"><div class="info-label">Fee ID</div><div class="info-value"><code>${fee.stu_pay_id}</code></div></div>
+        <div class="info-row"><div class="info-label">Receipt No</div><div class="info-value"><code>${fee.stu_receipt || 'Not issued'}</code></div></div>
+        <div class="info-row"><div class="info-label">Issue Date</div><div class="info-value">${fee.stu_issu_date || '—'}</div></div>
+        <div class="info-row"><div class="info-label">Payment Date</div><div class="info-value">${fee.stu_pay_date || '—'}</div></div>
+        <div class="info-row"><div class="info-label">Session ID</div><div class="info-value">${fee.session_id || '—'}</div></div>
+        <div class="info-row"><div class="info-label">Classroom</div><div class="info-value">${getClassroomName(student?.stu_class_room_id)}</div></div>
+        <div class="info-row"><div class="info-label">Fee Fix</div><div class="info-value">PKR ${Number(fee.stu_fee_fix || 0).toLocaleString()}</div></div>
+        <div class="info-row"><div class="info-label">Concession</div><div class="info-value">PKR ${Number(fee.stu_fee_con || 0).toLocaleString()}</div></div>
+        <div class="info-row"><div class="info-label">Fee Scale</div><div class="info-value">PKR ${Number(fee.stu_fee_scale || 0).toLocaleString()}</div></div>
+        <div class="info-row"><div class="info-label">Total Amount</div><div class="info-value fw-bold">PKR ${Number(fee.stu_total || 0).toLocaleString()}</div></div>
+        <div class="info-row"><div class="info-label">Paid Amount</div><div class="info-value text-success fw-bold">PKR ${paid.toLocaleString()}</div></div>
+        <div class="info-row"><div class="info-label">Due Amount</div><div class="info-value text-danger fw-bold">PKR ${due.toLocaleString()}</div></div>
+        <div class="info-row"><div class="info-label">Status</div><div class="info-value"><span class="badge ${statusBadge}">${status}</span></div></div>
+    `;
+    
+    document.getElementById('feeListContainer').parentElement.style.display = 'none';
+    document.getElementById('feeDetailView').style.display = 'block';
+}
+
+function backToFeeList() {
+    document.getElementById('feeDetailView').style.display = 'none';
+    document.getElementById('feeListContainer').parentElement.style.display = 'block';
+    renderFeeList();
+}
+
+// ======================= FEE CRUD OPERATIONS =======================
+async function deleteFeeRecord() {
+    if (!currentFee) return;
+    if (!confirm(`⚠️ Delete fee record ${currentFee.stu_pay_id} (Invoice: ${currentFee.stu_invoice}) permanently?`)) return;
+    
+    const { error } = await supabase1.from("student_pay_scale").delete().eq("stu_pay_id", currentFee.stu_pay_id);
+    if (error) {
+        alert("Delete failed: " + error.message);
+        return;
+    }
+    alert("✅ Fee record deleted successfully!");
+    backToFeeList();
+    await loadFees();
+}
+
+function editFeeRecord() {
+    if (!currentFee) return;
+    const student = allStudents.find(s => s.stu_id === currentFee.stu_id);
+    
+    document.getElementById("edit_fee_id").value = currentFee.stu_pay_id;
+    document.getElementById("edit_fee_id_display").value = currentFee.stu_pay_id;
+    document.getElementById("edit_invoice").value = currentFee.stu_invoice || '';
+    document.getElementById("edit_student_name").value = student?.stu_name || 'Unknown';
+    document.getElementById("edit_total").value = Number(currentFee.stu_total || 0).toLocaleString();
+    document.getElementById("edit_paid").value = currentFee.stu_paid || 0;
+    document.getElementById("edit_pay_date").value = currentFee.stu_pay_date || '';
+    
+    // Generate new receipt number automatically
+    getNextReceiptId().then(newReceipt => {
+        document.getElementById("edit_receipt").value = newReceipt;
+    });
+    
+    new bootstrap.Modal(document.getElementById("feeEditModal")).show();
+}
+
+async function updateFeePayment() {
+    const feeId = document.getElementById("edit_fee_id").value;
+    const paid = parseFloat(document.getElementById("edit_paid").value) || 0;
+    const payDate = document.getElementById("edit_pay_date").value;
+    const receipt = document.getElementById("edit_receipt").value;
+    
+    const currentFeeRec = allFees.find(f => f.stu_pay_id === feeId);
+    if (!currentFeeRec) return;
+    
+    const total = Number(currentFeeRec.stu_total) || 0;
+    const due = total - paid;
+    
+    const updateData = {
+        stu_paid: paid,
+        stu_due: due,
+        stu_receipt: receipt,
+        stu_fee_status_id: due === 0 ? 2 : 1
+    };
+    if (payDate) updateData.stu_pay_date = payDate;
+    
+    const { error } = await supabase1.from("student_pay_scale").update(updateData).eq("stu_pay_id", feeId);
+    if (error) {
+        alert("Update failed: " + error.message);
+        return;
+    }
+    alert("✅ Payment updated successfully!");
+    bootstrap.Modal.getInstance(document.getElementById("feeEditModal")).hide();
+    await loadFees();
+    if (currentFee) {
+        const updatedFee = allFees.find(f => f.stu_pay_id === feeId);
+        if (updatedFee) showFeeDetail(updatedFee);
+    }
+}
+
+// ======================= EVENT BINDING =======================
+document.getElementById('feeSearchInput')?.addEventListener('input', () => renderFeeList());
+document.getElementById('sessionFilter')?.addEventListener('change', () => renderFeeList());
+document.getElementById('yearFilter')?.addEventListener('change', () => renderFeeList());
+document.getElementById('monthFilter')?.addEventListener('change', () => renderFeeList());
+document.getElementById('groupBySelect')?.addEventListener('change', () => renderFeeList());
+document.getElementById('editFeeBtn')?.addEventListener('click', editFeeRecord);
+document.getElementById('deleteFeeBtn')?.addEventListener('click', deleteFeeRecord);
+
+// Make functions global for onclick events
+window.toggleGroup = toggleGroup;
+window.updateFeePayment = updateFeePayment;
+
+// Initialize
+loadAllData();
+</script>
+</body>
+</html>

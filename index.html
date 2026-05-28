@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>School Dashboard | Complete Management System</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #f0f4f8; padding: 0; margin: 0; }
+  
+  /* Fixed Full Width Ticker at Top - CHOTI HEIGHT */
+  .ticker-container-full {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    z-index: 9999;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .ticker-inner {
+    max-width: 550px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .ticker-label-full {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #f59e0b;
+    color: white;
+    padding: 4px 12px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 0 30px 30px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 2;
+    letter-spacing: 0.5px;
+  }
+  .ticker-label-full i {
+    font-size: 0.7rem;
+  }
+  .ticker-wrapper-full {
+    margin-left: 95px;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 6px 0;
+  }
+  .ticker-full {
+    display: inline-block;
+    white-space: nowrap;
+    animation: tickerScroll 30s linear infinite;
+  }
+  .ticker-full span {
+    display: inline-block;
+    margin-right: 40px;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  .ticker-full span i {
+    margin-right: 5px;
+    font-size: 0.7rem;
+  }
+  .ticker-full:hover {
+    animation-play-state: paused;
+  }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  
+  /* Edit Announcement Button */
+  .edit-announcement-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 3px 8px;
+    font-size: 0.55rem;
+    color: white;
+    cursor: pointer;
+    z-index: 3;
+    transition: background 0.2s;
+  }
+  .edit-announcement-btn i {
+    font-size: 0.6rem;
+  }
+  .edit-announcement-btn:hover {
+    background: rgba(255,255,255,0.3);
+  }
+  
+  /* Add padding to body to prevent content hiding under fixed ticker */
+  body {
+    padding-top: 42px;
+  }
+  
+  .dashboard-container { max-width: 550px; margin: 0 auto; padding: 20px 16px; min-height: 100vh; }
+  
+  /* Header Styles */
+  .header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    color: white; 
+    padding: 24px 20px; 
+    border-radius: 28px; 
+    margin-bottom: 20px; 
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+  }
+  .header h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .header p { margin: 6px 0 0; opacity: 0.85; font-size: 0.7rem; }
+  
+  /* Stats Cards */
+  .stats-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-card { 
+    background: white; 
+    border-radius: 20px; 
+    padding: 12px 10px; 
+    text-align: center; 
+    flex: 1;
+    min-width: 90px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 1px solid #eef2f8;
+  }
+  .stat-card:active { transform: scale(0.98); }
+  .stat-card i { font-size: 1.5rem; margin-bottom: 6px; }
+  .stat-card h3 { font-size: 1.2rem; font-weight: 800; margin: 0; color: #1e293b; }
+  .stat-card p { margin: 4px 0 0; font-size: 0.6rem; color: #64748b; font-weight: 500; }
+  
+  .fee-stats-row { display: flex; gap: 12px; margin-bottom: 20px; }
+  
+  /* Module Cards */
+  .module-card {
+    background: white;
+    border-radius: 20px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #eef2f8;
+  }
+  .module-card:active { transform: scale(0.99); }
+  .module-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: white;
+  }
+  .module-icon.students { background: linear-gradient(135deg, #667eea, #764ba2); }
+  .module-icon.attendance { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .module-icon.fee { background: linear-gradient(135deg, #f093fb, #f5576c); }
+  .module-icon.syllabus { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .module-icon.notification { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
+  .module-icon.result { background: linear-gradient(135deg, #8B5CF6, #6D28D9); }
+  .module-icon.exam { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+  .module-info { flex: 1; }
+  .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; color: #0f172a; }
+  .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
+  .module-arrow { color: #94a3b8; font-size: 1rem; transition: transform 0.2s; }
+  .module-card:active .module-arrow { transform: translateX(4px); }
+  
+  /* Welcome Banner */
+  .welcome-banner {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 20px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #fcd34d;
+  }
+  .welcome-banner i { font-size: 1.5rem; color: #d97706; }
+  .welcome-banner div h4 { margin: 0; font-size: 0.85rem; font-weight: 700; color: #92400e; }
+  .welcome-banner div p { margin: 3px 0 0; font-size: 0.6rem; color: #b45309; }
+  
+  /* Date Time */
+  .datetime { 
+    text-align: center; 
+    font-size: 0.6rem; 
+    color: #64748b; 
+    margin-top: 16px;
+    padding: 10px;
+    background: white;
+    border-radius: 40px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  
+  /* Iframe Container */
+  .iframe-container {
+    position: fixed;
+    top: 42px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 42px);
+    background: white;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+  }
+  .iframe-header {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+  .iframe-header h3 { margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .close-iframe {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 40px;
+    padding: 5px 14px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  iframe { 
+    width: 100%; 
+    flex: 1; 
+    border: none;
+    display: block;
+  }
+  
+  .attendance-summary { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 6px; border-top: 1px solid #eef2f8; }
+  .attendance-summary span { font-size: 0.55rem; }
+  
+  /* Notification Modal Styles */
+  .notification-modal { max-width: 500px; }
+  .student-list-modal-container { max-height: 350px; overflow-y: auto; }
+  .student-item { padding: 10px 12px; border-bottom: 1px solid #eef2f8; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.2s; }
+  .student-item.selected { background: #d1fae5; }
+  .student-checkbox-custom { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #cbd5e1; background: white; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+  .student-checkbox-custom.checked { background: #25D366; border-color: #25D366; color: white; }
+  .selection-bar { background: #f8fafc; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eef2f8; position: sticky; top: 0; background: white; z-index: 10; }
+  .quick-templates { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .template-chip { background: #eef2ff; border-radius: 30px; padding: 4px 10px; font-size: 0.65rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .search-input-fast { border-radius: 40px; padding: 8px 14px; font-size: 0.75rem; border: 1px solid #e2e8f0; background: #f8fafc; width: 100%; outline: none; }
+  .class-selector { margin-bottom: 12px; }
+  .class-selector select { width: 100%; padding: 8px 14px; border-radius: 40px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.75rem; }
+  .student-badge { background: #25D366; color: white; padding: 3px 10px; border-radius: 30px; font-size: 0.65rem; font-weight: 600; }
+  
+  .announcement-list { max-height: 400px; overflow-y: auto; }
+  .announcement-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #eef2f8; }
+  .announcement-text { flex: 1; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.75rem; }
+  
+  @media (max-width: 640px) {
+    .ticker-label-full {
+      padding: 3px 10px;
+      font-size: 0.55rem;
+    }
+    .ticker-wrapper-full {
+      margin-left: 85px;
+      padding: 5px 0;
+    }
+    .ticker-full span {
+      font-size: 0.65rem;
+      margin-right: 30px;
+    }
+    body {
+      padding-top: 38px;
+    }
+    .iframe-container {
+      top: 38px;
+      height: calc(100% - 38px);
+    }
+    .edit-announcement-btn {
+      right: 4px;
+      padding: 2px 6px;
+      font-size: 0.5rem;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Fixed Full Width Ticker at Top - Choti Height -->
+<div class="ticker-container-full">
+  <div class="ticker-inner">
+    <div class="ticker-label-full">
+      <i class="bi bi-megaphone-fill"></i> NEWS
+    </div>
+    <div class="ticker-wrapper-full">
+      <div class="ticker-full" id="tickerText">
+        <!-- Announcements will be dynamically loaded here -->
+      </div>
+    </div>
+    <button class="edit-announcement-btn" onclick="openEditAnnouncementModal()">
+      <i class="bi bi-pencil"></i> Edit
+    </button>
+  </div>
+</div>
+
+<div class="dashboard-container" id="dashboardView">
+  
+  <!-- Header -->
+  <div class="header">
+    <h1><i class="bi bi-backpack4-fill"></i> School Manager</h1>
+    <p>Complete School Management System</p>
+  </div>
+  
+  <!-- Welcome Banner -->
+  <div class="welcome-banner">
+    <i class="bi bi-emoji-smile"></i>
+    <div>
+      <h4>Welcome back, Admin!</h4>
+      <p>Manage students, attendance, fees, syllabus & notifications</p>
+    </div>
+  </div>
+  
+  <!-- Stats Row 1 -->
+  <div class="stats-row">
+    <div class="stat-card" id="statStudents">
+      <i class="bi bi-people-fill text-primary"></i>
+      <h3 id="totalStudents">0</h3>
+      <p>Total Students</p>
+    </div>
+    <div class="stat-card" id="statClasses">
+      <i class="bi bi-building text-secondary"></i>
+      <h3 id="totalClasses">0</h3>
+      <p>Total Classes</p>
+    </div>
+  </div>
+  
+  <!-- Stats Row 2 -->
+  <div class="stats-row">
+    <div class="stat-card" id="statAttendance">
+      <i class="bi bi-calendar-check-fill text-success"></i>
+      <h3 id="totalPresent">0</h3>
+      <p>Present Today</p>
+      <div class="attendance-summary">
+        <span>Absent: <strong id="totalAbsent">0</strong></span>
+        <span>Leave: <strong id="totalLeave">0</strong></span>
+      </div>
+    </div>
+    <div class="stat-card" id="statAttendanceRate">
+      <i class="bi bi-graph-up text-info"></i>
+      <h3 id="attendanceRate">0%</h3>
+      <p>Attendance Rate</p>
+    </div>
+  </div>
+  
+  <!-- Fee Stats Row -->
+  <div class="fee-stats-row">
+    <div class="stat-card" id="statTotalFee">
+      <i class="bi bi-cash-stack text-warning"></i>
+      <h3 id="totalFees">0</h3>
+      <p>Total Collected</p>
+    </div>
+    <div class="stat-card" id="statPendingFee">
+      <i class="bi bi-clock-history text-danger"></i>
+      <h3 id="pendingFees">0</h3>
+      <p>Pending Amount</p>
+    </div>
+    <div class="stat-card" id="statTodayCollection">
+      <i class="bi bi-calendar-day text-success"></i>
+      <h3 id="todayCollection">0</h3>
+      <p>Today's Collection</p>
+    </div>
+  </div>
+  
+  <!-- Modules -->
+  <div class="module-card" id="studentsModule">
+    <div class="module-icon students"><i class="bi bi-people-fill"></i></div>
+    <div class="module-info"><h3>Student Management</h3><p>Add, edit, delete students | View profiles</p></div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
+  <div class="module-card" id="attendanceModule">
+    <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
+    <div class="module-info"><h3>Attendance Management</h3><p>Mark daily attendance | View reports</p></div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
+  <div class="module-card" id="feeModule">
+    <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
+    <div class="module-info"><h3>Fee Management</h3><p>Manage fee records | Track payments</p></div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
+  <div class="module-card" id="syllabusModule">
+    <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
+    <div class="module-info"><h3>Syllabus Management</h3><p>Home Work | Vocation Work | Annual Work</p></div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
+  <div class="module-card" id="examModule">
+    <div class="module-icon exam"><i class="bi bi-trophy-fill"></i></div>
+    <div class="module-info"><h3>Examination Result</h3><p>Enter marks | Generate result cards</p></div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
+  <div class="module-card" id="notificationModule">
+    <div class="module-icon notification"><i class="bi bi-megaphone-fill"></i></div>
+    <div class="module-info">
+      <h3>Student Notifications</h3>
+      <p>Write message first, then select students</p>
+    </div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
+  <!-- Date Time -->
+  <div class="datetime" id="dateTimeDisplay"></div>
+</div>
+
+<!-- Edit Announcement Modal -->
+<div class="modal fade" id="editAnnouncementModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white py-2">
+        <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2"></i>Edit Announcements</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="alert alert-info alert-sm p-2 mb-3" style="font-size:0.7rem;">
+          <i class="bi bi-info-circle"></i> Add or edit announcements below.
+        </div>
+        <div id="announcementList" class="announcement-list"></div>
+        <button class="btn btn-outline-primary btn-sm w-100 mt-3" onclick="addNewAnnouncement()">
+          <i class="bi bi-plus-circle"></i> Add New
+        </button>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveAnnouncements()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Iframe Container -->
+<div class="iframe-container" id="iframeContainer">
+  <div class="iframe-header">
+    <h3 id="iframeTitle"><i class="bi bi-people-fill"></i> Student Management</h3>
+    <button class="close-iframe" onclick="closeIframe()"><i class="bi bi-arrow-left"></i> Back</button>
+  </div>
+  <iframe id="moduleIframe" src=""></iframe>
+</div>
+
+<!-- Notification Modal -->
+<div class="modal fade" id="notificationModal" tabindex="-1">
+  <div class="modal-dialog notification-modal">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; padding: 12px;">
+        <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2"></i>Write Notification</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="mb-2">
+          <label class="form-label fw-bold small">📋 Quick Templates</label>
+          <div class="quick-templates">
+            <span class="template-chip" onclick="setTemplate('absent')">❌ Absent</span>
+            <span class="template-chip" onclick="setTemplate('bag')">🎒 New Bag</span>
+            <span class="template-chip" onclick="setTemplate('hair')">✂️ Hair</span>
+            <span class="template-chip" onclick="setTemplate('shoe')">👞 Shoe</span>
+            <span class="template-chip" onclick="setTemplate('uniform')">👔 Uniform</span>
+            <span class="template-chip" onclick="setTemplate('books')">📚 Books</span>
+            <span class="template-chip" onclick="setTemplate('fee')">💰 Fee Due</span>
+            <span class="template-chip" onclick="setTemplate('exam')">📝 Exam</span>
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-bold small">✏️ Message</label>
+          <textarea id="notificationMessage" class="form-control" rows="4" placeholder="Type your message here..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="goToStudentSelection()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); border: none;">
+          Next <i class="bi bi-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Student List Modal -->
+<div class="modal fade" id="studentListModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable notification-modal">
+    <div class="modal-content">
+      <div class="modal-header" style="background: linear-gradient(135deg,#11998e,#38ef7d); color: white; padding: 12px;">
+        <h5 class="modal-title"><i class="bi bi-people-fill me-2"></i>Select Students</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div class="alert alert-warning alert-sm p-2 mb-2" style="font-size:0.7rem; background:#fef3c7;">
+          <strong><i class="bi bi-chat-text"></i> Preview:</strong>
+          <div id="messagePreview" class="mt-1 small"></div>
+        </div>
+        
+        <div class="class-selector">
+          <label class="form-label fw-bold small">📚 Filter by Class</label>
+          <select id="classSelectStudents" class="form-select form-select-sm" onchange="loadStudentsForSelection()">
+            <option value="">-- All Classes --</option>
+          </select>
+        </div>
+        
+        <div class="mb-2">
+          <label class="form-label fw-bold small">🔍 Search</label>
+          <input type="text" id="studentSearchInput" class="search-input-fast mb-2" placeholder="Search by name, admission, father...">
+          <div class="selection-bar" style="margin-bottom: 6px; padding: 8px;">
+            <div class="select-all-wrapper" onclick="toggleSelectAllStudents()" style="cursor: pointer;">
+              <div id="selectAllCheckbox" class="student-checkbox-custom"></div>
+              <span class="ms-2 small">Select All</span>
+            </div>
+            <div class="student-badge" id="selectedCount">0 selected</div>
+          </div>
+          <div id="studentList" class="student-list-modal-container" style="max-height: 280px; overflow-y: auto; border: 1px solid #eef2f8; border-radius: 12px;"></div>
+        </div>
+        
+        <div class="notification-stats" id="notificationStats" style="display: none;">
+          <div class="d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-whatsapp text-success"></i> Will send to:</span>
+            <span class="student-badge" id="notifyCount">0</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer py-2">
+        <button class="btn btn-secondary btn-sm" onclick="goBackToMessage()"><i class="bi bi-arrow-left"></i> Back</button>
+        <button class="btn btn-primary btn-sm" id="sendNotificationBtn" onclick="sendNotification()" style="background: linear-gradient(135deg, #25D366, #128C7E); border: none;" disabled>
+          <i class="bi bi-whatsapp"></i> Send
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let allStudents = [];
+let allClasses = [];
+let selectedStudentIds = new Set();
+let currentFilteredStudents = [];
+let currentClassId = null;
+let pendingMessage = "";
+
+// ==================== ANNOUNCEMENTS ====================
+let announcements = [
+  { icon: "bi-calendar-event", text: "📢 Annual Examination 2025 will start from 1st June 2025" },
+  { icon: "bi-trophy", text: "🎉 Summer Vacation from 15th June to 31st July 2025" },
+  { icon: "bi-cash-stack", text: "💰 Fee submission deadline: 10th of every month" },
+  { icon: "bi-person-plus", text: "🏫 New Admissions open for Session 2025-2026" },
+  { icon: "bi-journal-bookmark-fill", text: "📚 Syllabus for Mid-Term Exam has been uploaded" },
+  { icon: "bi-calendar-check", text: "📅 Parent-Teacher Meeting on 25th May 2025" }
+];
+
+function loadAnnouncements() {
+  const saved = localStorage.getItem('schoolAnnouncements');
+  if(saved) { try { announcements = JSON.parse(saved); } catch(e) {} }
+  renderTicker();
+}
+
+function renderTicker() {
+  const tickerContainer = document.getElementById('tickerText');
+  if(!tickerContainer) return;
+  let html = '';
+  const allAnnouncements = [...announcements, ...announcements];
+  for(const ann of allAnnouncements) {
+    html += `<span><i class="bi ${ann.icon}"></i> ${ann.text}</span>`;
+  }
+  tickerContainer.innerHTML = html;
+}
+
+function openEditAnnouncementModal() {
+  const container = document.getElementById('announcementList');
+  if(!container) return;
+  let html = '';
+  for(let i = 0; i < announcements.length; i++) {
+    html += `<div class="announcement-item">
+        <select class="form-select form-select-sm" style="width: 45px;" id="ann_icon_${i}">
+          <option value="bi-calendar-event" ${announcements[i].icon === 'bi-calendar-event' ? 'selected' : ''}>📅</option>
+          <option value="bi-trophy" ${announcements[i].icon === 'bi-trophy' ? 'selected' : ''}>🏆</option>
+          <option value="bi-cash-stack" ${announcements[i].icon === 'bi-cash-stack' ? 'selected' : ''}>💰</option>
+          <option value="bi-person-plus" ${announcements[i].icon === 'bi-person-plus' ? 'selected' : ''}>👤</option>
+          <option value="bi-journal-bookmark-fill" ${announcements[i].icon === 'bi-journal-bookmark-fill' ? 'selected' : ''}>📚</option>
+          <option value="bi-calendar-check" ${announcements[i].icon === 'bi-calendar-check' ? 'selected' : ''}>📅</option>
+          <option value="bi-emoji-smile" ${announcements[i].icon === 'bi-emoji-smile' ? 'selected' : ''}>😊</option>
+          <option value="bi-megaphone-fill" ${announcements[i].icon === 'bi-megaphone-fill' ? 'selected' : ''}>📢</option>
+        </select>
+        <input type="text" class="announcement-text" id="ann_text_${i}" value="${escapeHtml(announcements[i].text)}">
+        <button class="btn btn-danger btn-sm" onclick="removeAnnouncement(${i})" style="border-radius: 30px;"><i class="bi bi-trash3"></i></button>
+      </div>`;
+  }
+  container.innerHTML = html;
+  new bootstrap.Modal(document.getElementById('editAnnouncementModal')).show();
+}
+
+function addNewAnnouncement() {
+  announcements.push({ icon: "bi-megaphone-fill", text: "📢 New announcement here" });
+  openEditAnnouncementModal();
+}
+
+function removeAnnouncement(index) {
+  announcements.splice(index, 1);
+  openEditAnnouncementModal();
+}
+
+function saveAnnouncements() {
+  for(let i = 0; i < announcements.length; i++) {
+    const iconSelect = document.getElementById(`ann_icon_${i}`);
+    const textInput = document.getElementById(`ann_text_${i}`);
+    if(iconSelect && textInput) {
+      announcements[i].icon = iconSelect.value;
+      announcements[i].text = textInput.value;
+    }
+  }
+  localStorage.setItem('schoolAnnouncements', JSON.stringify(announcements));
+  renderTicker();
+  bootstrap.Modal.getInstance(document.getElementById('editAnnouncementModal')).hide();
+}
+
+// ==================== DASHBOARD FUNCTIONS ====================
+function formatDate(d) {
+  let y = d.getFullYear();
+  let m = String(d.getMonth() + 1).padStart(2, '0');
+  let day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function isValidWhatsAppNumber(mobile) {
+  if(!mobile || mobile === 'No mobile' || mobile === '') return false;
+  let clean = mobile.replace(/[\s\-]/g, '');
+  if(clean.length >= 10 && clean.length <= 13) {
+    if(clean.match(/^(03|3|92)\d{9,10}$/)) return true;
+  }
+  return false;
+}
+
+function escapeHtml(str) {
+  if(!str) return '';
+  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;'));
+}
+
+async function loadDashboardStats() {
+  try {
+    const { count: studentsCount } = await supabase1.from("students").select("*", { count: "exact", head: true });
+    document.getElementById('totalStudents').innerText = studentsCount || 0;
+    
+    const { data: classes } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
+    if(classes) {
+      allClasses = classes;
+      const classSelect = document.getElementById('classSelectStudents');
+      classSelect.innerHTML = '<option value="">-- All Classes --</option>';
+      for(const c of allClasses) {
+        classSelect.innerHTML += `<option value="${c.class_room_id}">${c.class_room_no}</option>`;
+      }
+    }
+    document.getElementById('totalClasses').innerText = allClasses.length || 0;
+    
+    const todayStr = formatDate(new Date());
+    const { data: todayAttendance } = await supabase1.from("students_attendence").select("*").eq("stu_attendence_date", todayStr);
+    let present = 0, absent = 0, leave = 0;
+    const leaveStatusIds = [3, 4, 5, 6, 7, 8];
+    if (todayAttendance) {
+      for (const record of todayAttendance) {
+        const statusId = record.stu_attendence_att_status_id;
+        if (statusId === 1) present++;
+        else if (statusId === 2) absent++;
+        else if (leaveStatusIds.includes(statusId)) leave++;
+      }
+    }
+    document.getElementById('totalPresent').innerText = present;
+    document.getElementById('totalAbsent').innerText = absent;
+    document.getElementById('totalLeave').innerText = leave;
+    const totalMarked = present + absent + leave;
+    const attendanceRate = totalMarked > 0 ? Math.round((present / totalMarked) * 100) : 0;
+    document.getElementById('attendanceRate').innerText = attendanceRate + '%';
+    
+    const { data: fees } = await supabase1.from("student_pay_scale").select("*");
+    let totalCollected = 0, totalPending = 0, todayCollectionAmount = 0;
+    const todayDateStr = formatDate(new Date());
+    if (fees) {
+      for (const f of fees) {
+        totalCollected += Number(f.stu_paid) || 0;
+        totalPending += Number(f.stu_due) || 0;
+        if (f.stu_pay_date === todayDateStr) {
+          todayCollectionAmount += Number(f.stu_paid) || 0;
+        }
+      }
+    }
+    document.getElementById('totalFees').innerText = (totalCollected / 1000).toFixed(1) + 'K';
+    document.getElementById('pendingFees').innerText = (totalPending / 1000).toFixed(1) + 'K';
+    document.getElementById('todayCollection').innerText = (todayCollectionAmount / 1000).toFixed(1) + 'K';
+  } catch(e) { console.log("Error:", e); }
+}
+
+async function loadAllStudentsForSelection() {
+  let query = supabase1.from("students").select("stu_id, stu_name, stu_admission_no, stu_father, stu_mobile1, stu_mobile2").order("stu_name");
+  if(currentClassId) { query = query.eq("stu_class_room_id", currentClassId); }
+  const { data } = await query;
+  if(data) { allStudents = data; }
+  return allStudents;
+}
+
+async function loadStudentsForSelection() {
+  currentClassId = document.getElementById('classSelectStudents').value;
+  if(currentClassId === "") currentClassId = null;
+  await loadAllStudentsForSelection();
+  selectedStudentIds.clear();
+  document.getElementById('selectedCount').innerHTML = '0 selected';
+  renderStudentListInModal();
+  updateSendButton();
+}
+
+function renderStudentListInModal() {
+  const container = document.getElementById('studentList');
+  if(!container) return;
+  const searchTerm = document.getElementById('studentSearchInput')?.value.toLowerCase() || '';
+  let filtered = allStudents;
+  if(searchTerm) {
+    filtered = allStudents.filter(s => s.stu_name?.toLowerCase().includes(searchTerm) || s.stu_admission_no?.toLowerCase().includes(searchTerm) || s.stu_father?.toLowerCase().includes(searchTerm));
+  }
+  currentFilteredStudents = filtered;
+  if(filtered.length === 0) { container.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-inbox"></i><br>No students found</div>'; updateSelectAllCheckbox(); updateSendButton(); return; }
+  let html = '';
+  for(const s of filtered) {
+    const mobile = s.stu_mobile1 || s.stu_mobile2;
+    const isValid = isValidWhatsAppNumber(mobile);
+    const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
+    const isSelected = selectedStudentIds.has(s.stu_id);
+    html += `<div class="student-item ${isSelected ? 'selected' : ''}" onclick="toggleStudentSelection(${s.stu_id})">
+      <div class="student-checkbox-wrapper" onclick="event.stopPropagation(); toggleStudentSelection(${s.stu_id})">
+        <div class="student-checkbox-custom ${isSelected ? 'checked' : ''}">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>
+      </div>
+      <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; flex-shrink: 0;">${initial}</div>
+      <div style="flex:1;">
+        <div style="font-weight:600; font-size:0.85rem;">${escapeHtml(s.stu_name)}</div>
+        <div style="font-size:0.6rem; color:#64748b;">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
+        <div style="font-size:0.55rem; ${isValid ? 'color:#059669' : 'color:#ef4444'}"><i class="bi ${isValid ? 'bi-whatsapp' : 'bi-exclamation-triangle'}"></i> ${mobile || 'No mobile'}</div>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+  updateSelectAllCheckbox();
+  updateSendButton();
+}
+
+function toggleStudentSelection(studentId) {
+  if(selectedStudentIds.has(studentId)) { selectedStudentIds.delete(studentId); } 
+  else { selectedStudentIds.add(studentId); }
+  updateSelectAllCheckbox();
+  renderStudentListInModal();
+  updateSendButton();
+}
+
+function toggleSelectAllStudents() {
+  const isAllSelected = currentFilteredStudents.length > 0 && currentFilteredStudents.every(s => selectedStudentIds.has(s.stu_id));
+  if(isAllSelected) { currentFilteredStudents.forEach(s => selectedStudentIds.delete(s.stu_id)); } 
+  else { currentFilteredStudents.forEach(s => selectedStudentIds.add(s.stu_id)); }
+  updateSelectAllCheckbox();
+  renderStudentListInModal();
+  updateSendButton();
+}
+
+function updateSelectAllCheckbox() {
+  const checkbox = document.getElementById('selectAllCheckbox');
+  if(!checkbox) return;
+  const isAllSelected = currentFilteredStudents.length > 0 && currentFilteredStudents.every(s => selectedStudentIds.has(s.stu_id));
+  if(isAllSelected && currentFilteredStudents.length > 0) {
+    checkbox.classList.add('checked');
+    checkbox.innerHTML = '<i class="bi bi-check-lg"></i>';
+  } else {
+    checkbox.classList.remove('checked');
+    checkbox.innerHTML = '';
+  }
+}
+
+function updateSendButton() {
+  let validCount = 0;
+  for(const id of selectedStudentIds) {
+    const student = allStudents.find(s => s.stu_id === id);
+    if(student && isValidWhatsAppNumber(student.stu_mobile1 || student.stu_mobile2)) validCount++;
+  }
+  if(validCount > 0 && pendingMessage.trim() !== "") {
+    document.getElementById('notificationStats').style.display = 'block';
+    document.getElementById('notifyCount').innerText = validCount;
+    document.getElementById('sendNotificationBtn').disabled = false;
+  } else {
+    document.getElementById('notificationStats').style.display = 'none';
+    document.getElementById('sendNotificationBtn').disabled = true;
+  }
+  document.getElementById('selectedCount').innerHTML = `${selectedStudentIds.size} selected`;
+}
+
+function setTemplate(type) {
+  const schoolName = 'The Leads High School (Dinga)';
+  let template = '';
+  switch(type) {
+    case 'absent': template = `❌ *ABSENT NOTICE*\n\nDear Parent,\n\nYour child was marked absent today. Please ensure regular attendance.\n\nRegards,\n${schoolName}`; break;
+    case 'bag': template = `🎒 *NOTICE*\n\nDear Student,\n\nPlease purchase a new school bag.\n\nRegards,\n${schoolName}`; break;
+    case 'hair': template = `✂️ *NOTICE*\n\nDear Student,\n\nPlease get a proper haircut as per school dress code.\n\nRegards,\n${schoolName}`; break;
+    case 'shoe': template = `👞 *NOTICE*\n\nDear Student,\n\nPlease polish your shoes properly.\n\nRegards,\n${schoolName}`; break;
+    case 'uniform': template = `👔 *NOTICE*\n\nDear Student,\n\nPlease purchase new uniform.\n\nRegards,\n${schoolName}`; break;
+    case 'books': template = `📚 *NOTICE*\n\nDear Student,\n\nYou are missing some books. Please bring all required books.\n\nRegards,\n${schoolName}`; break;
+    case 'fee': template = `💰 *FEE REMINDER*\n\nDear Parent,\n\nThe monthly fee is due by 10th.\n\nRegards,\n${schoolName}`; break;
+    case 'exam': template = `📝 *EXAM ALERT*\n\nDear Student,\n\nAnnual examinations will start from 1st of next month.\n\nRegards,\n${schoolName}`; break;
+  }
+  document.getElementById('notificationMessage').value = template;
+}
+
+function goToStudentSelection() {
+  const message = document.getElementById('notificationMessage').value.trim();
+  if(!message) { alert("Please write a message first"); return; }
+  pendingMessage = message;
+  document.getElementById('messagePreview').innerHTML = pendingMessage.replace(/\n/g, '<br>');
+  bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
+  loadStudentsForSelection().then(() => { new bootstrap.Modal(document.getElementById('studentListModal')).show(); });
+}
+
+function goBackToMessage() {
+  bootstrap.Modal.getInstance(document.getElementById('studentListModal')).hide();
+  new bootstrap.Modal(document.getElementById('notificationModal')).show();
+}
+
+async function sendNotification() {
+  if(pendingMessage.trim() === "") { alert("No message"); return; }
+  const targetStudents = allStudents.filter(s => selectedStudentIds.has(s.stu_id));
+  const validStudents = targetStudents.filter(s => isValidWhatsAppNumber(s.stu_mobile1 || s.stu_mobile2));
+  if(validStudents.length === 0) { alert("No students with valid WhatsApp numbers selected"); return; }
+  const schoolName = 'The Leads High School (Dinga)';
+  const fullMessage = `${pendingMessage}\n\n📱 ${schoolName}`;
+  let studentListHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+  for(const s of validStudents) {
+    let mobile = s.stu_mobile1 || s.stu_mobile2;
+    let cleanMobile = mobile.replace(/[\s\-]/g, '');
+    if(cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
+    if(!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
+    const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
+    const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(fullMessage)}`;
+    studentListHtml += `<div style="padding: 8px 10px; border-bottom: 1px solid #eef2f8; display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; flex-shrink: 0;">${initial}</div>
+      <div style="flex:1;"><div style="font-weight:600; font-size:0.8rem;">${escapeHtml(s.stu_name)}</div><div style="font-size:0.6rem; color:#64748b;">${escapeHtml(s.stu_admission_no)}</div></div>
+      <a href="${whatsappUrl}" target="_blank" class="btn btn-success btn-sm rounded-pill" style="background:#25D366; border:none; padding:4px 12px;"><i class="bi bi-whatsapp"></i> Send</a>
+    </div>`;
+  }
+  studentListHtml += '</div>';
+  const shareModalHtml = `<div class="modal fade" id="shareModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header" style="background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 10px;"><h5 class="modal-title"><i class="bi bi-whatsapp me-2"></i>Send via WhatsApp</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="p-2 bg-light border-bottom small">Click "Send" next to each student</div>${studentListHtml}</div><div class="modal-footer py-2"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>`;
+  const existing = document.getElementById('shareModal');
+  if(existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend', shareModalHtml);
+  new bootstrap.Modal(document.getElementById('shareModal')).show();
+  bootstrap.Modal.getInstance(document.getElementById('studentListModal')).hide();
+  selectedStudentIds.clear();
+  pendingMessage = "";
+  document.getElementById('notificationMessage').value = '';
+  document.getElementById('studentSearchInput').value = '';
+}
+
+function openModule(moduleName, title, icon) {
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  const iframeTitle = document.getElementById('iframeTitle');
+  iframeTitle.innerHTML = '<i class="' + icon + '"></i> ' + title;
+  iframe.src = moduleName + '.html';
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+}
+
+function closeIframe() {
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  iframe.src = 'about:blank';
+  iframeContainer.style.display = 'none';
+  document.getElementById('dashboardView').style.display = 'block';
+  loadDashboardStats();
+}
+
+function openNotificationModal() {
+  pendingMessage = "";
+  document.getElementById('notificationMessage').value = '';
+  new bootstrap.Modal(document.getElementById('notificationModal')).show();
+}
+
+function updateDateTime() {
+  const now = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('dateTimeDisplay').innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + now.toLocaleDateString('en-PK', options) + ' | <i class="bi bi-clock"></i> ' + now.toLocaleTimeString();
+}
+
+// Event Listeners
+document.getElementById('studentsModule')?.addEventListener('click', () => openModule('students', 'Student Management', 'bi bi-people-fill'));
+document.getElementById('attendanceModule')?.addEventListener('click', () => openModule('attendance', 'Attendance Management', 'bi bi-calendar-check-fill'));
+document.getElementById('feeModule')?.addEventListener('click', () => openModule('fee', 'Fee Management', 'bi bi-cash-stack'));
+document.getElementById('syllabusModule')?.addEventListener('click', () => openModule('syllabus', 'Syllabus Management', 'bi bi-journal-bookmark-fill'));
+document.getElementById('examModule')?.addEventListener('click', () => openModule('examination', 'Examination Result', 'bi bi-trophy-fill'));
+document.getElementById('notificationModule')?.addEventListener('click', openNotificationModal);
+document.getElementById('studentSearchInput')?.addEventListener('input', () => renderStudentListInModal());
+document.getElementById('statStudents')?.addEventListener('click', () => openModule('students', 'Student Management', 'bi bi-people-fill'));
+document.getElementById('statAttendance')?.addEventListener('click', () => openModule('attendance', 'Attendance Management', 'bi bi-calendar-check-fill'));
+document.getElementById('statTotalFee')?.addEventListener('click', () => openModule('fee', 'Fee Management', 'bi bi-cash-stack'));
+
+// Make functions global
+window.openEditAnnouncementModal = openEditAnnouncementModal;
+window.addNewAnnouncement = addNewAnnouncement;
+window.removeAnnouncement = removeAnnouncement;
+window.saveAnnouncements = saveAnnouncements;
+window.setTemplate = setTemplate;
+window.goToStudentSelection = goToStudentSelection;
+window.goBackToMessage = goBackToMessage;
+window.sendNotification = sendNotification;
+window.toggleStudentSelection = toggleStudentSelection;
+window.toggleSelectAllStudents = toggleSelectAllStudents;
+window.openModule = openModule;
+window.closeIframe = closeIframe;
+window.openNotificationModal = openNotificationModal;
+
+// Initialize
+setInterval(updateDateTime, 1000);
+updateDateTime();
+loadAnnouncements();
+loadDashboardStats();
+</script>
+</body>
+</html>

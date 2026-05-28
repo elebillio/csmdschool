@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Student Management | Group Toggle + Images</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #f1f5f9; padding: 0; margin: 0; }
+  .app-container { max-width: 100%; padding: 12px; padding-bottom: 80px; }
+  
+  .header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    color: white; 
+    padding: 20px 16px; 
+    border-radius: 0 0 28px 28px; 
+    margin-bottom: 16px; 
+    margin-left: -12px;
+    margin-right: -12px;
+    width: calc(100% + 24px);
+  }
+  .header h2 { margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
+  .header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.7rem; }
+  
+  .list-card { background: white; border-radius: 24px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; }
+  .search-box { background: #f8fafc; border-radius: 40px; padding: 8px 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+  .search-box input { border: none; background: transparent; flex: 1; outline: none; font-size: 0.85rem; }
+  
+  /* Filter Switch */
+  .filter-switch-right { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+  .form-switch .form-check-input { width: 2.5em; height: 1.2em; cursor: pointer; }
+  .form-switch .form-check-label { cursor: pointer; }
+  
+  /* Group Header */
+  .group-header {
+    background: #eef2ff;
+    padding: 12px 16px;
+    border-radius: 14px;
+    margin: 12px 0 8px;
+    font-weight: 700;
+    color: #1e3c72;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .group-header:active { background: #e0e7ff; }
+  .group-header .toggle-icon { transition: transform 0.2s; }
+  .group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .group-content { overflow: hidden; transition: max-height 0.3s ease; }
+  .group-content.collapsed { max-height: 0 !important; padding: 0; margin: 0; }
+  
+  /* Student List Item */
+  .student-list-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    padding: 12px 8px; 
+    border-bottom: 1px solid #ecf3fa; 
+    cursor: pointer; 
+    transition: background 0.15s; 
+  }
+  .student-list-item:active { background: #f8fafc; }
+  .student-list-item:last-child { border-bottom: none; }
+  
+  .student-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; background: #f1f5f9; }
+  .student-avatar-placeholder { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1rem; }
+  .student-name { font-weight: 700; font-size: 0.9rem; color: #0f172a; }
+  .student-meta { font-size: 0.65rem; color: #475569; }
+  
+  /* Detail Card */
+  .detail-card { background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+  .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px 16px; color: white; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .detail-avatar-lg { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid white; background: #e2e8f0; }
+  .info-grid { padding: 16px; background: #ffffff; }
+  .info-row { display: flex; padding: 10px 0; border-bottom: 1px solid #eef2f8; align-items: flex-start; gap: 12px; }
+  .info-icon { width: 28px; color: #1e3c72; font-size: 1rem; text-align: center; }
+  .info-label { flex: 1; font-weight: 600; font-size: 0.7rem; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; }
+  .info-value { flex: 2; font-size: 0.85rem; font-weight: 500; color: #0f172a; word-break: break-word; }
+  
+  .action-bar { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid #ecf3f8; }
+  .btn-action { flex: 1; border-radius: 40px; padding: 10px 0; font-weight: 600; font-size: 0.8rem; }
+  
+  .empty-state { text-align: center; padding: 40px 20px; color: #94a3b8; }
+  .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  /* Modal */
+  .modal-dialog { margin: 10px; }
+  .modal-content { border-radius: 24px; overflow: hidden; }
+  .modal-body { max-height: 70vh; overflow-y: auto; padding: 16px; }
+  .form-section-title { background: #eef2ff; padding: 8px 12px; border-radius: 12px; margin: 12px 0 10px; font-size: 0.7rem; font-weight: 700; color: #1e3c72; }
+  .form-control-sm, .form-select-sm { font-size: 0.8rem; padding: 8px 12px; border-radius: 12px; }
+  
+  /* FAB */
+  .fab-add {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 100;
+  }
+  .fab-add:active { transform: scale(0.92); }
+  .desktop-add-btn { display: none; }
+  
+  @media (min-width: 640px) {
+    .fab-add { display: none; }
+    .desktop-add-btn { display: block; }
+    .app-container { max-width: 550px; margin: 0 auto; padding: 16px; }
+    .header { margin-left: 0; margin-right: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+ 
+  
+  <div class="list-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0" style="font-size: 1rem;"><i class="bi bi-people-fill me-2 text-primary"></i>Student Directory</h5>
+      <button class="btn btn-primary rounded-pill btn-sm desktop-add-btn" id="addStudentBtnDesktop"><i class="bi bi-plus-lg"></i> Add</button>
+    </div>
+    
+    <div class="search-box mb-3">
+      <i class="bi bi-search"></i>
+      <input type="text" id="studentSearch" placeholder="Search by name, admission, father...">
+    </div>
+    
+    <!-- Group by Classroom Toggle Switch -->
+    <div class="filter-switch-right">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="toggleGroupView" checked>
+        <label class="form-check-label small fw-bold" for="toggleGroupView">📚 Group by Classroom</label>
+      </div>
+    </div>
+    
+    <div id="studentListContainer"><div class="text-center py-4"><span class="loading-spinner"></span> Loading students...</div></div>
+  </div>
+</div>
+
+<button class="fab-add" id="addStudentBtnFab"><i class="bi bi-plus-lg"></i></button>
+
+<!-- STUDENT DETAIL VIEW -->
+<div id="studentDetailView" style="display: none;" class="app-container">
+  <div class="detail-card">
+    <div class="detail-header">
+      <img id="detailAvatar" class="detail-avatar-lg" src="" style="display: none;">
+      <div id="detailAvatarFallback" class="detail-avatar-lg" style="display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: bold; font-size: 1.5rem;">?</div>
+      <div class="flex-grow-1">
+        <h4 id="detailName" class="fw-bold mb-1" style="font-size: 1.1rem;">-</h4>
+        <p id="detailAdmissionNo" class="mb-0 opacity-75" style="font-size: 0.7rem;">Admission: --</p>
+      </div>
+      <button class="btn btn-sm btn-light rounded-pill" onclick="backToStudentList()" style="font-size: 0.7rem;"><i class="bi bi-arrow-left"></i> Back</button>
+    </div>
+    <div class="info-grid" id="detailInfoGrid"></div>
+    <div class="action-bar">
+      <button class="btn btn-outline-primary btn-action" id="editStudentBtn"><i class="bi bi-pencil-square"></i> Edit</button>
+      <button class="btn btn-outline-danger btn-action" id="deleteStudentBtn"><i class="bi bi-trash3"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT MODAL -->
+<div class="modal fade" id="studentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" style="font-size: 1rem;"><i class="bi bi-person-badge me-2"></i>Student Registration</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <input type="hidden" id="modal_stu_id">
+        <div class="form-section-title"><i class="bi bi-info-circle"></i> Basic Information</div>
+        <div class="row g-2">
+          <div class="col-12"><input id="modal_stu_name" class="form-control form-control-sm" placeholder="Student Name *"></div>
+          <div class="col-12"><input id="modal_stu_admission_no" class="form-control form-control-sm" placeholder="Admission No *"></div>
+          <div class="col-6"><input id="modal_stu_family_group" class="form-control form-control-sm" placeholder="Family Group"></div>
+          <div class="col-6"><input id="modal_stu_bform_no" class="form-control form-control-sm" placeholder="B-Form Number"></div>
+          <div class="col-6"><input id="modal_stu_father" class="form-control form-control-sm" placeholder="Father Name"></div>
+          <div class="col-6"><input id="modal_stu_mother" class="form-control form-control-sm" placeholder="Mother Name"></div>
+          <div class="col-6"><input id="modal_stu_mobile1" class="form-control form-control-sm" placeholder="Mobile No 1"></div>
+          <div class="col-6"><input id="modal_stu_mobile2" class="form-control form-control-sm" placeholder="Mobile No 2"></div>
+          <div class="col-12"><input id="modal_stu_image" class="form-control form-control-sm" placeholder="Image URL (https://... or data:image...)"></div>
+        </div>
+        <div class="form-section-title"><i class="bi bi-book"></i> Academic</div>
+        <div class="row g-2">
+          <div class="col-6"><select id="modal_session_id" class="form-select form-select-sm"><option value="">Session</option></select></div>
+          <div class="col-6"><select id="modal_stu_class_room_id" class="form-select form-select-sm"><option value="">Class</option></select></div>
+          <div class="col-6"><select id="modal_stu_gender_id" class="form-select form-select-sm"><option value="">Gender</option><option value="1">Male</option><option value="2">Female</option></select></div>
+          <div class="col-6"><select id="modal_stu_status_id" class="form-select form-select-sm"><option value="">Status</option></select></div>
+          <div class="col-6"><input id="modal_stu_roll_no" class="form-control form-control-sm" placeholder="Roll Number"></div>
+          <div class="col-6"><input id="modal_stu_birth_date" class="form-control form-control-sm" type="date" placeholder="Birth Date"></div>
+          <div class="col-6"><input id="modal_stu_admission_date" class="form-control form-control-sm" type="date" placeholder="Admission Date"></div>
+          <div class="col-6"><select id="modal_stu_blood_group_id" class="form-select form-select-sm"><option value="">Blood Group</option><option value="1">A+</option><option value="2">A-</option><option value="3">B+</option><option value="4">B-</option><option value="5">O+</option><option value="6">O-</option></select></div>
+        </div>
+        <div class="form-section-title"><i class="bi bi-geo-alt"></i> Address</div>
+        <div class="row g-2">
+          <div class="col-12"><input id="modal_stu_address" class="form-control form-control-sm" placeholder="Address"></div>
+          <div class="col-6"><input id="modal_stu_city" class="form-control form-control-sm" placeholder="City"></div>
+          <div class="col-6"><input id="modal_stu_state" class="form-control form-control-sm" placeholder="State"></div>
+          <div class="col-6"><input id="modal_stu_pincode" class="form-control form-control-sm" placeholder="Pincode"></div>
+          <div class="col-6"><input id="modal_stu_country" class="form-control form-control-sm" placeholder="Country"></div>
+        </div>
+        <div class="form-section-title"><i class="bi bi-cash-stack"></i> Fee Information</div>
+        <div class="row g-2">
+          <div class="col-6"><input id="modal_stu_fee_scale" class="form-control form-control-sm" type="number" step="0.01" placeholder="Fee Scale"></div>
+          <div class="col-6"><input id="modal_stu_fee_scale_con" class="form-control form-control-sm" type="number" step="0.01" placeholder="Concession"></div>
+          <div class="col-6"><input id="modal_stu_rent_scale" class="form-control form-control-sm" type="number" step="0.01" placeholder="Rent Scale"></div>
+          <div class="col-6"><input id="modal_stu_beginning_balance" class="form-control form-control-sm" type="number" step="0.01" placeholder="Beginning Balance"></div>
+        </div>
+        <div class="form-section-title"><i class="bi bi-people"></i> Guardian Details</div>
+        <div class="row g-2">
+          <div class="col-6"><input id="modal_stu_guardian_name" class="form-control form-control-sm" placeholder="Guardian Name"></div>
+          <div class="col-6"><input id="modal_stu_guardian_mobile" class="form-control form-control-sm" placeholder="Guardian Mobile"></div>
+          <div class="col-12"><input id="modal_stu_guardian_relation" class="form-control form-control-sm" placeholder="Guardian Relation"></div>
+        </div>
+        <div class="form-section-title"><i class="bi bi-building"></i> Previous School</div>
+        <div class="row g-2">
+          <div class="col-12"><input id="modal_stu_previous_school_name" class="form-control form-control-sm" placeholder="Previous School Name"></div>
+          <div class="col-12"><textarea id="modal_stu_remarks" class="form-control form-control-sm" rows="2" placeholder="Remarks"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="saveStudentBtn">Save Student</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let allStudents = [], allClassrooms = [], allSessions = [], allStatuses = [];
+let currentStudent = null;
+let groupStates = {};
+let groupViewEnabled = true;
+
+function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+
+function getStudentImageUrl(student) {
+    if (!student) return null;
+    if (student.stu_image && typeof student.stu_image === 'string' && student.stu_image.length > 10) {
+        if (student.stu_image.startsWith('http') || student.stu_image.startsWith('https')) {
+            return student.stu_image;
+        }
+        if (student.stu_image.startsWith('data:image')) {
+            return student.stu_image;
+        }
+        // It might be base64 without prefix
+        return `data:image/jpeg;base64,${student.stu_image}`;
+    }
+    return null;
+}
+
+function getClassroomName(id) { 
+    let c = allClassrooms.find(c => c.class_room_id == id); 
+    return c ? c.class_room_no : `Class ${id}`; 
+}
+
+function getSessionName(id) { 
+    let s = allSessions.find(s => s.session_id == id); 
+    return s ? s.session_name : `Session ${id}`; 
+}
+
+function getStatusName(id) { 
+    let st = allStatuses.find(s => s.stu_status_id == id); 
+    return st ? st.stu_status_type : `Status ${id}`; 
+}
+
+const colors = ['#1e3c72', '#2a5298', '#4f46e5', '#7c3aed', '#2563eb', '#0891b2', '#059669', '#dc2626', '#ea580c', '#65a30d'];
+function getColorFromName(name) {
+    if (!name) return colors[0];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = ((hash << 5) - hash) + name.charCodeAt(i);
+    return colors[Math.abs(hash) % colors.length];
+}
+
+async function loadClassrooms() {
+    const { data } = await supabase1.from("class_rooms").select("*").order("class_room_serial", { ascending: true });
+    if(data) allClassrooms = data;
+    const select = document.getElementById('modal_stu_class_room_id');
+    if(select) { 
+        select.innerHTML = '<option value="">Select Class</option>'; 
+        for(const c of allClassrooms) select.innerHTML += `<option value="${c.class_room_id}">${c.class_room_no}</option>`; 
+    }
+}
+
+async function loadSessions() {
+    const { data } = await supabase1.from("sessions").select("*").order("session_id", { ascending: false });
+    if(data) allSessions = data;
+    else allSessions = [{ session_id: 1, session_name: "2024-2025" }, { session_id: 2, session_name: "2025-2026" }];
+    const select = document.getElementById('modal_session_id');
+    if(select) { 
+        select.innerHTML = '<option value="">Select Session</option>'; 
+        for(const s of allSessions) select.innerHTML += `<option value="${s.session_id}">${s.session_name}</option>`; 
+    }
+}
+
+async function loadStatuses() {
+    const { data } = await supabase1.from("stu_status").select("*");
+    if(data) allStatuses = data;
+    else allStatuses = [{ stu_status_id: 1, stu_status_type: "Active" }, { stu_status_id: 2, stu_status_type: "Inactive" }];
+    const select = document.getElementById('modal_stu_status_id');
+    if(select) { 
+        select.innerHTML = '<option value="">Select Status</option>'; 
+        for(const st of allStatuses) select.innerHTML += `<option value="${st.stu_status_id}">${st.stu_status_type}</option>`; 
+    }
+}
+
+async function loadStudents() {
+    const { data } = await supabase1.from("students").select("*").order("stu_name");
+    if(data) { 
+        allStudents = data; 
+        renderStudentList(); 
+    }
+}
+
+function toggleGroup(groupKey) {
+    const content = document.getElementById(`group-content-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    const header = document.getElementById(`group-header-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
+    if (content) {
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            header?.classList.remove('collapsed');
+            groupStates[groupKey] = true;
+        } else {
+            content.classList.add('collapsed');
+            header?.classList.add('collapsed');
+            groupStates[groupKey] = false;
+        }
+    }
+}
+
+function renderStudentList(filter = "") {
+    let filtered = allStudents;
+    if (filter.trim()) {
+        const term = filter.toLowerCase();
+        filtered = allStudents.filter(s => (s.stu_name && s.stu_name.toLowerCase().includes(term)) || 
+                                           (s.stu_admission_no && s.stu_admission_no.toLowerCase().includes(term)) ||
+                                           (s.stu_father && s.stu_father.toLowerCase().includes(term)));
+    }
+    
+    if (groupViewEnabled) {
+        renderGroupedView(filtered);
+    } else {
+        renderFlatView(filtered);
+    }
+}
+
+function renderFlatView(filtered) {
+    const container = document.getElementById('studentListContainer');
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p>No students found</p></div>`;
+        return;
+    }
+    
+    let html = "";
+    for (const s of filtered) {
+        const imgUrl = getStudentImageUrl(s);
+        const bgColor = getColorFromName(s.stu_name);
+        const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
+        if (imgUrl) {
+            html += `<div class="student-list-item" data-id="${s.stu_id}">
+                        <img src="${imgUrl}" class="student-avatar" onerror="this.onerror=null; this.src=''; this.outerHTML='<div class=\\'student-avatar-placeholder\\' style=\\'background:${bgColor}\\'>${initial}</div>';">
+                        <div class="flex-grow-1">
+                            <div class="student-name">${escapeHtml(s.stu_name)}</div>
+                            <div class="student-meta">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)} | ${getClassroomName(s.stu_class_room_id)}</div>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>`;
+        } else {
+            html += `<div class="student-list-item" data-id="${s.stu_id}">
+                        <div class="student-avatar-placeholder" style="background:${bgColor}">${initial}</div>
+                        <div class="flex-grow-1">
+                            <div class="student-name">${escapeHtml(s.stu_name)}</div>
+                            <div class="student-meta">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)} | ${getClassroomName(s.stu_class_room_id)}</div>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>`;
+        }
+    }
+    container.innerHTML = html;
+    
+    document.querySelectorAll("#studentListContainer .student-list-item").forEach(el => {
+        el.addEventListener("click", () => showStudentDetail(parseInt(el.dataset.id)));
+    });
+}
+
+function renderGroupedView(filtered) {
+    const container = document.getElementById('studentListContainer');
+    if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p>No students found</p></div>`;
+        return;
+    }
+    
+    // Group by classroom
+    let grouped = {};
+    for (const s of filtered) {
+        const className = getClassroomName(s.stu_class_room_id);
+        if (!grouped[className]) grouped[className] = [];
+        grouped[className].push(s);
+    }
+    
+    // Sort groups by class_room_serial
+    let sortedGroups = Object.keys(grouped).sort((a, b) => {
+        let aId = allClassrooms.find(c => c.class_room_no === a)?.class_room_serial || 999;
+        let bId = allClassrooms.find(c => c.class_room_no === b)?.class_room_serial || 999;
+        return aId - bId;
+    });
+    
+    let html = "";
+    for (const className of sortedGroups) {
+        const students = grouped[className];
+        const safeKey = className.replace(/[^a-zA-Z0-9]/g, '_');
+        const isExpanded = groupStates[className] === true;
+        
+        html += `<div class="group-header ${isExpanded ? '' : 'collapsed'}" id="group-header-${safeKey}" onclick="toggleGroup('${className.replace(/'/g, "\\'")}')">
+                    <span><i class="bi bi-building me-2"></i> ${className}</span>
+                    <div><span class="badge bg-primary rounded-pill me-2">${students.length} students</span><i class="bi bi-chevron-down toggle-icon"></i></div>
+                </div>
+                <div class="group-content ${isExpanded ? '' : 'collapsed'}" id="group-content-${safeKey}">`;
+        
+        for (const s of students) {
+            const imgUrl = getStudentImageUrl(s);
+            const bgColor = getColorFromName(s.stu_name);
+            const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
+            if (imgUrl) {
+                html += `<div class="student-list-item" data-id="${s.stu_id}">
+                            <img src="${imgUrl}" class="student-avatar" onerror="this.onerror=null; this.src=''; this.outerHTML='<div class=\\'student-avatar-placeholder\\' style=\\'background:${bgColor}\\'>${initial}</div>';">
+                            <div class="flex-grow-1">
+                                <div class="student-name">${escapeHtml(s.stu_name)}</div>
+                                <div class="student-meta">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>`;
+            } else {
+                html += `<div class="student-list-item" data-id="${s.stu_id}">
+                            <div class="student-avatar-placeholder" style="background:${bgColor}">${initial}</div>
+                            <div class="flex-grow-1">
+                                <div class="student-name">${escapeHtml(s.stu_name)}</div>
+                                <div class="student-meta">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>`;
+            }
+        }
+        html += `</div>`;
+    }
+    container.innerHTML = html;
+    
+    document.querySelectorAll("#studentListContainer .student-list-item").forEach(el => {
+        el.addEventListener("click", () => showStudentDetail(parseInt(el.dataset.id)));
+    });
+}
+
+function toggleGroupView() {
+    groupViewEnabled = document.getElementById('toggleGroupView').checked;
+    renderStudentList(document.getElementById('studentSearch').value);
+}
+
+function showStudentDetail(id) {
+    currentStudent = allStudents.find(s => s.stu_id === id);
+    if (!currentStudent) return;
+    
+    document.getElementById("detailName").innerText = currentStudent.stu_name || '-';
+    document.getElementById("detailAdmissionNo").innerHTML = `Admission: ${currentStudent.stu_admission_no || '—'} | Roll: ${currentStudent.stu_roll_no || '—'}`;
+    
+    const imgUrl = getStudentImageUrl(currentStudent);
+    const bgColor = getColorFromName(currentStudent.stu_name);
+    const initial = currentStudent.stu_name ? currentStudent.stu_name.charAt(0).toUpperCase() : '?';
+    
+    if (imgUrl) {
+        document.getElementById("detailAvatar").src = imgUrl;
+        document.getElementById("detailAvatar").style.display = "block";
+        document.getElementById("detailAvatarFallback").style.display = "none";
+    } else {
+        document.getElementById("detailAvatar").style.display = "none";
+        document.getElementById("detailAvatarFallback").style.display = "flex";
+        document.getElementById("detailAvatarFallback").style.background = bgColor;
+        document.getElementById("detailAvatarFallback").innerHTML = initial;
+    }
+    
+    const fields = [
+        { icon: "bi-person-badge", label: "Admission No", value: currentStudent.stu_admission_no },
+        { icon: "bi-people", label: "Family Group", value: currentStudent.stu_family_group },
+        { icon: "bi-file-text", label: "B-Form No", value: currentStudent.stu_bform_no },
+        { icon: "bi-person", label: "Father Name", value: currentStudent.stu_father },
+        { icon: "bi-person", label: "Mother Name", value: currentStudent.stu_mother },
+        { icon: "bi-phone", label: "Mobile 1", value: currentStudent.stu_mobile1 },
+        { icon: "bi-phone", label: "Mobile 2", value: currentStudent.stu_mobile2 },
+        { icon: "bi-calendar", label: "Session", value: getSessionName(currentStudent.session_id) },
+        { icon: "bi-building", label: "Class", value: getClassroomName(currentStudent.stu_class_room_id) },
+        { icon: "bi-gender-ambiguous", label: "Gender", value: currentStudent.stu_gender_id == 1 ? "Male" : (currentStudent.stu_gender_id == 2 ? "Female" : "") },
+        { icon: "bi-flag", label: "Status", value: getStatusName(currentStudent.stu_status_id) },
+        { icon: "bi-hash", label: "Roll Number", value: currentStudent.stu_roll_no },
+        { icon: "bi-calendar-date", label: "Birth Date", value: currentStudent.stu_birth_date },
+        { icon: "bi-calendar-check", label: "Admission Date", value: currentStudent.stu_admission_date },
+        { icon: "bi-droplet", label: "Blood Group", value: currentStudent.stu_blood_group_id ? (currentStudent.stu_blood_group_id == 1 ? "A+" : currentStudent.stu_blood_group_id == 2 ? "A-" : currentStudent.stu_blood_group_id == 3 ? "B+" : currentStudent.stu_blood_group_id == 4 ? "B-" : currentStudent.stu_blood_group_id == 5 ? "O+" : "O-") : "" },
+        { icon: "bi-geo-alt", label: "Address", value: currentStudent.stu_address },
+        { icon: "bi-building", label: "City", value: currentStudent.stu_city },
+        { icon: "bi-building", label: "State", value: currentStudent.stu_state },
+        { icon: "bi-mailbox", label: "Pincode", value: currentStudent.stu_pincode },
+        { icon: "bi-globe", label: "Country", value: currentStudent.stu_country },
+        { icon: "bi-cash-stack", label: "Fee Scale", value: currentStudent.stu_fee_scale ? `PKR ${currentStudent.stu_fee_scale.toLocaleString()}` : '' },
+        { icon: "bi-percent", label: "Concession", value: currentStudent.stu_fee_scale_con },
+        { icon: "bi-house", label: "Rent Scale", value: currentStudent.stu_rent_scale },
+        { icon: "bi-piggy-bank", label: "Beginning Balance", value: currentStudent.stu_beginning_balance },
+        { icon: "bi-person-badge", label: "Guardian Name", value: currentStudent.stu_guardian_name },
+        { icon: "bi-phone", label: "Guardian Mobile", value: currentStudent.stu_guardian_mobile },
+        { icon: "bi-people", label: "Guardian Relation", value: currentStudent.stu_guardian_relation },
+        { icon: "bi-building", label: "Previous School", value: currentStudent.stu_previous_school_name },
+        { icon: "bi-chat", label: "Remarks", value: currentStudent.stu_remarks }
+    ];
+    
+    let html = '';
+    for(const f of fields) {
+        if(f.value && f.value !== 'null' && f.value !== '') {
+            html += `<div class="info-row">
+                        <div class="info-icon"><i class="${f.icon}"></i></div>
+                        <div class="info-label">${f.label}</div>
+                        <div class="info-value">${escapeHtml(String(f.value))}</div>
+                    </div>`;
+        }
+    }
+    document.getElementById("detailInfoGrid").innerHTML = html;
+    
+    document.querySelector('.list-card').style.display = 'none';
+    document.getElementById('studentDetailView').style.display = 'block';
+}
+
+function backToStudentList() {
+    document.getElementById('studentDetailView').style.display = 'none';
+    document.querySelector('.list-card').style.display = 'block';
+    renderStudentList(document.getElementById('studentSearch').value);
+}
+
+async function saveStudent() {
+    const stu_id = document.getElementById("modal_stu_id").value;
+    const data = {};
+    const fields = ['stu_name', 'stu_admission_no', 'stu_family_group', 'stu_bform_no', 'stu_father', 'stu_mother', 'stu_mobile1', 'stu_mobile2', 'session_id', 'stu_class_room_id', 'stu_gender_id', 'stu_status_id', 'stu_roll_no', 'stu_birth_date', 'stu_admission_date', 'stu_blood_group_id', 'stu_address', 'stu_city', 'stu_state', 'stu_pincode', 'stu_country', 'stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance', 'stu_guardian_name', 'stu_guardian_mobile', 'stu_guardian_relation', 'stu_previous_school_name', 'stu_image', 'stu_remarks'];
+    
+    for(const f of fields) { 
+        const val = document.getElementById(`modal_${f}`)?.value; 
+        if(val && val !== '') { 
+            if(f.includes('_id') || f === 'stu_gender_id' || f === 'stu_blood_group_id') data[f] = parseInt(val); 
+            else if(['stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance'].includes(f)) data[f] = parseFloat(val); 
+            else data[f] = val; 
+        } 
+    }
+    
+    if (!data.stu_name || !data.stu_admission_no) { alert("Name and Admission No required!"); return; }
+    
+    let result; 
+    if (stu_id) {
+        result = await supabase1.from("students").update(data).eq("stu_id", parseInt(stu_id)); 
+    } else { 
+        result = await supabase1.from("students").insert([data]);
+    }
+    
+    if (result.error) { alert("Error: " + result.error.message); return; }
+    alert(stu_id ? "Student Updated!" : "Student Added!");
+    bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
+    await loadStudents();
+    backToStudentList();
+}
+
+function editCurrentStudent() {
+    if (!currentStudent) return;
+    document.getElementById("modal_stu_id").value = currentStudent.stu_id || "";
+    const fieldMap = ['stu_name', 'stu_admission_no', 'stu_family_group', 'stu_bform_no', 'stu_father', 'stu_mother', 'stu_mobile1', 'stu_mobile2', 'session_id', 'stu_class_room_id', 'stu_gender_id', 'stu_status_id', 'stu_roll_no', 'stu_birth_date', 'stu_admission_date', 'stu_blood_group_id', 'stu_address', 'stu_city', 'stu_state', 'stu_pincode', 'stu_country', 'stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance', 'stu_guardian_name', 'stu_guardian_mobile', 'stu_guardian_relation', 'stu_previous_school_name', 'stu_image', 'stu_remarks'];
+    
+    for(const f of fieldMap) { 
+        const elem = document.getElementById(`modal_${f}`); 
+        if(elem && currentStudent[f] !== undefined && currentStudent[f] !== null) elem.value = currentStudent[f]; 
+    }
+    new bootstrap.Modal(document.getElementById("studentModal")).show();
+}
+
+async function deleteCurrentStudent() {
+    if (!currentStudent) return;
+    if (!confirm(`Delete ${currentStudent.stu_name}?`)) return;
+    const { error } = await supabase1.from("students").delete().eq("stu_id", currentStudent.stu_id);
+    if (error) { alert(error.message); return; }
+    alert("Student Deleted!");
+    await loadStudents();
+    backToStudentList();
+}
+
+function resetModal() { 
+    document.getElementById("modal_stu_id").value = ""; 
+    document.querySelectorAll("#studentModal input, #studentModal select, #studentModal textarea").forEach(inp => { 
+        if(inp.id !== 'modal_stu_id') inp.value = ""; 
+    }); 
+}
+
+async function init() {
+    await loadClassrooms();
+    await loadSessions();
+    await loadStatuses();
+    await loadStudents();
+}
+
+// Event Listeners
+document.getElementById('studentSearch')?.addEventListener('input', e => renderStudentList(e.target.value));
+document.getElementById('toggleGroupView')?.addEventListener('change', toggleGroupView);
+document.getElementById('addStudentBtnDesktop')?.addEventListener('click', () => { resetModal(); new bootstrap.Modal(document.getElementById('studentModal')).show(); });
+document.getElementById('addStudentBtnFab')?.addEventListener('click', () => { resetModal(); new bootstrap.Modal(document.getElementById('studentModal')).show(); });
+document.getElementById('saveStudentBtn')?.addEventListener('click', saveStudent);
+document.getElementById('editStudentBtn')?.addEventListener('click', editCurrentStudent);
+document.getElementById('deleteStudentBtn')?.addEventListener('click', deleteCurrentStudent);
+
+window.toggleGroup = toggleGroup;
+
+init();
+</script>
+</body>
+</html>
