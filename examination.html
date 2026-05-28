@@ -12,6 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <style>
+    /* All existing styles remain same */
     * { font-family: system-ui, sans-serif; }
     body { background: #f1f5f9; padding: 12px; margin: 0; }
     .app-container { max-width: 650px; margin: 0 auto; }
@@ -372,6 +373,8 @@
     .absent-badge { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 
     .save-all-btn { background: #10b981; color: white; border: none; border-radius: 40px; padding: 12px; font-weight: 600; width: 100%; margin-top: 12px; cursor: pointer; }
+    .save-all-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    
     .sort-bar {
       display: flex;
       justify-content: flex-start;
@@ -473,6 +476,18 @@
       pointer-events: none;
     }
     .toast-custom.show { opacity: 1; }
+    
+    .loading-spinner-small {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -687,7 +702,86 @@
       });
   }
 
-  // ==================== REST OF ORIGINAL FUNCTIONS (KEPT SAME) ====================
+  // ==================== SAVE ALL MARKS FUNCTION (FIXED) ====================
+  async function saveAllStudentMarks() {
+    if(!selectedSubject || !selectedSubject.date_sheet_id) {
+      alert("No subject selected");
+      return;
+    }
+    
+    const dateSheetId = selectedSubject.date_sheet_id;
+    const maxMarks = selectedSubject.max_marks;
+    let saveCount = 0;
+    let errorCount = 0;
+    
+    // Show saving indicator
+    const saveBtn = document.getElementById('saveAllBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<span class="loading-spinner-small"></span> Saving...';
+    saveBtn.disabled = true;
+    
+    for (const [studentId, marks] of Object.entries(currentStudentMarks)) {
+      if (marks !== undefined && marks !== '') {
+        const marksValue = parseFloat(marks);
+        const percentage = (marksValue / maxMarks) * 100;
+        const conditionId = getConditionIdFromPercentage(percentage);
+        
+        // Check if record exists
+        const { data: existing } = await supabase1
+          .from("examinations")
+          .select("exam_id")
+          .eq("stu_id", parseInt(studentId))
+          .eq("exam_exam_date_sheet_id", dateSheetId);
+        
+        if (existing && existing.length > 0) {
+          // Update existing record
+          const { error } = await supabase1
+            .from("examinations")
+            .update({
+              exam_sub_marks_obtain: marksValue,
+              exam_absentees: marksValue === 0 ? 1 : 0,
+              exam_exam_result_condition_id: conditionId
+            })
+            .eq("stu_id", parseInt(studentId))
+            .eq("exam_exam_date_sheet_id", dateSheetId);
+          
+          if (error) errorCount++;
+          else saveCount++;
+        } else {
+          // Insert new record
+          const { error } = await supabase1
+            .from("examinations")
+            .insert([{
+              stu_id: parseInt(studentId),
+              exam_exam_date_sheet_id: dateSheetId,
+              exam_sub_marks_obtain: marksValue,
+              exam_absentees: marksValue === 0 ? 1 : 0,
+              exam_exam_result_condition_id: conditionId
+            }]);
+          
+          if (error) errorCount++;
+          else saveCount++;
+        }
+      }
+    }
+    
+    saveBtn.innerHTML = originalText;
+    saveBtn.disabled = false;
+    
+    if (errorCount === 0) {
+      showToast(`✅ Saved ${saveCount} records!`);
+      // Refresh the subject list to show updated status
+      await renderSubjectsList();
+      // Reload the current subject view to show updated marks
+      if (selectedSubject) {
+        await selectSubject(selectedSubject.classroom_id, selectedSubject.name, selectedSubject.max_marks, selectedSubject.date_sheet_id);
+      }
+    } else {
+      alert(`⚠️ Saved ${saveCount} records. ${errorCount} errors occurred.`);
+    }
+  }
+
+  // ==================== REST OF ORIGINAL FUNCTIONS ====================
   async function loadExamTypes() { const { data } = await supabase1.from("exam_type").select("*").order("exam_type_id"); if(data) { allExamTypes = data; const select = document.getElementById('examTypeSelect'); select.innerHTML = '<option value="">-- Select Exam Type --</option>'; for(const et of allExamTypes) select.innerHTML += `<option value="${et.exam_type_id}">${et.exam_type1}</option>`; } }
   async function loadAllClassrooms() { const { data } = await supabase1.from("class_rooms").select("*").order("class_room_serial"); if(data) { allClassrooms = data; } }
   async function loadClassroomsForResults(keepSelected = true) {
@@ -722,9 +816,10 @@
   function getStudentsByClass(classroomId) { return allStudents.filter(s => s.stu_class_room_id === parseInt(classroomId)); }
   function getConditionIdFromPercentage(p) { if(p>=90) return 7; if(p>=80) return 6; if(p>=70) return 5; if(p>=60) return 4; if(p>=50) return 3; if(p>=40) return 2; return 1; }
   function getGradeText(cid) { if(cid===7) return { text: 'A+', class: 'grade-a-plus', order:7 }; if(cid===6) return { text: 'A', class: 'grade-a', order:6 }; if(cid===5) return { text: 'B+', class: 'grade-b-plus', order:5 }; if(cid===4) return { text: 'B', class: 'grade-b', order:4 }; if(cid===3) return { text: 'C', class: 'grade-c', order:3 }; if(cid===2) return { text: 'E', class: 'grade-e', order:2 }; return { text: 'F', class: 'grade-f', order:1 }; }
-  function getStudentAvatarHTML(student) { const initial = student.stu_name?.charAt(0).toUpperCase() || '?'; if (student.stu_image && student.stu_image !== '' && student.stu_image !== null) { let imageSrc = student.stu_image; if (!imageSrc.startsWith('data:image')) { imageSrc = 'data:image/jpeg;base64,' + imageSrc; } return `<img src="${imageSrc}" class="student-result-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-avatar-result').style.display='flex';">`; } return `<div class="student-result-avatar">${initial}</div>`; }
+  function getStudentAvatarHTML(student) { const initial = student.stu_name?.charAt(0).toUpperCase() || '?'; if (student.stu_image && student.stu_image !== '' && student.stu_image !== null) { let imageSrc = student.stu_image; if (!imageSrc.startsWith('data:image')) { imageSrc = 'data:image/jpeg;base64,' + imageSrc; } return `<img src="${imageSrc}" class="student-img" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-avatar').style.display='flex';">`; } return `<div class="student-avatar">${initial}</div>`; }
   function getTopStudentForSubject(dateSheetId, subjectMaxMarks, classroomId) { const studentsInClass = getStudentsByClass(classroomId); let bestStudent = null; let bestMarks = -1; for(const student of studentsInClass) { const result = allExamResults.find(r => r.stu_id === student.stu_id && r.exam_exam_date_sheet_id === dateSheetId); if(result && result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '' && result.exam_absentees !== 1) { let marks = parseFloat(result.exam_sub_marks_obtain); if(!isNaN(marks) && marks > bestMarks) { bestMarks = marks; bestStudent = { ...student, obtainedMarks: Math.round(marks), maxMarks: subjectMaxMarks }; } } } return bestStudent; }
   function setGroupBy(type) { currentGroupBy = type; document.getElementById('groupByClassBtn').classList.toggle('active', type === 'class'); document.getElementById('groupByDateBtn').classList.toggle('active', type === 'date'); renderSubjectsList(); }
+  
   async function renderSubjectsList() {
     const subjectContainer = document.getElementById('subjectList');
     if(!selectedExamTypeId) { subjectContainer.innerHTML = `<div class="empty-state">First select an exam type</div>`; return; }
@@ -797,15 +892,47 @@
     }
     subjectContainer.innerHTML = html;
   }
+  
   function toggleClassGroup(groupKey) { const safeKey = groupKey.replace(/[^a-zA-Z0-9]/g, '_'); const content = document.getElementById(`group-content-${safeKey}`); const header = document.getElementById(`group-header-${safeKey}`); if(content) { if(content.classList.contains('collapsed')) { content.classList.remove('collapsed'); if(header) header.classList.remove('collapsed'); savedClassGroupStates[groupKey] = true; } else { content.classList.add('collapsed'); if(header) header.classList.add('collapsed'); savedClassGroupStates[groupKey] = false; } } }
   function toggleDateGroup(dateKey, safeKey) { const content = document.getElementById(`date-group-content-${safeKey}`); const header = document.getElementById(`date-group-header-${safeKey}`); if(content) { if(content.classList.contains('collapsed')) { content.classList.remove('collapsed'); if(header) header.classList.remove('collapsed'); savedDateGroupStates[dateKey] = true; } else { content.classList.add('collapsed'); if(header) header.classList.add('collapsed'); savedDateGroupStates[dateKey] = false; } } }
   function expandAllGroups() { if(currentGroupBy === 'class') { document.querySelectorAll('#subjectList .group-content').forEach(g => g.classList.remove('collapsed')); document.querySelectorAll('#subjectList .group-header').forEach(h => h.classList.remove('collapsed')); } else { document.querySelectorAll('#subjectList .date-group-content').forEach(g => g.classList.remove('collapsed')); document.querySelectorAll('#subjectList .date-group-header').forEach(h => h.classList.remove('collapsed')); } }
   function collapseAllGroups() { if(currentGroupBy === 'class') { document.querySelectorAll('#subjectList .group-content').forEach(g => g.classList.add('collapsed')); document.querySelectorAll('#subjectList .group-header').forEach(h => h.classList.add('collapsed')); } else { document.querySelectorAll('#subjectList .date-group-content').forEach(g => g.classList.add('collapsed')); document.querySelectorAll('#subjectList .date-group-header').forEach(h => h.classList.add('collapsed')); } }
   function getSubjectsGroupedByClass(examTypeId) { const dateSheets = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === examTypeId); const grouped = {}; for(const ds of dateSheets) { const subject = allSubjects.find(s => s.sub_id == ds.exam_date_sheet_sub_id); if(subject) { const className = getClassroomName(subject.sub_classroom_id); if(!grouped[className]) grouped[className] = []; grouped[className].push({ date_sheet_id: ds.exam_date_sheet_id, date: ds.exam_date_sheet_day, sub_id: subject.sub_id, sub_name: subject.subject_books?.subject_books_name || 'Unknown', max_marks: subject.sub_remarks || 100, classroom_id: subject.sub_classroom_id }); } } return grouped; }
-  async function selectSubject(classroomId, subjectName, maxMarks, dateSheetId) { selectedClassroomId = parseInt(classroomId); selectedSubject = { classroom_id: selectedClassroomId, name: subjectName, max_marks: maxMarks, date_sheet_id: dateSheetId }; const { data: freshResults } = await supabase1.from("examinations").select("*").eq("exam_exam_date_sheet_id", dateSheetId); const students = getStudentsByClass(selectedClassroomId); if(students.length === 0) { alert(`No students found`); return; } currentStudentMarks = {}; for(const student of students) { const existing = freshResults?.find(r => r.stu_id === student.stu_id); let marksValue = ''; if(existing && existing.exam_sub_marks_obtain !== null && existing.exam_sub_marks_obtain !== '') { const marksNum = parseFloat(existing.exam_sub_marks_obtain); marksValue = isNaN(marksNum) ? '' : Math.round(marksNum).toString(); } currentStudentMarks[student.stu_id] = marksValue; } let studentsHtml = ''; for(const student of students) { const initial = student.stu_name?.charAt(0).toUpperCase() || '?'; const currentMark = currentStudentMarks[student.stu_id] || ''; let avatarHtml = getStudentAvatarHTML(student); if (student.stu_image && student.stu_image !== '') { avatarHtml = `<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">${avatarHtml}<div class="fallback-avatar" style="display: none; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); align-items: center; justify-content: center; color: white; font-weight: bold; position: absolute; top: 0; left: 0;">${initial}</div></div>`; } studentsHtml += `<div class="student-card"><div class="student-info">${avatarHtml}<div><div class="fw-bold">${escapeHtml(student.stu_name)}</div><div class="small text-muted">${escapeHtml(student.stu_admission_no)} | ${escapeHtml(student.stu_father)}</div></div></div><div><input type="number" id="mark_${student.stu_id}" class="marks-input" value="${currentMark}" step="1" min="0" max="${maxMarks}" placeholder="Marks" onchange="updateStudentMark(${student.stu_id}, this.value)"><span class="text-muted small">/${maxMarks}</span></div></div>`; } document.getElementById('studentsContainer').innerHTML = studentsHtml; document.getElementById('dateSheetMainView').style.display = 'none'; document.getElementById('dateSheetStudentsView').style.display = 'block'; }
+  
+  async function selectSubject(classroomId, subjectName, maxMarks, dateSheetId) { 
+    selectedClassroomId = parseInt(classroomId); 
+    selectedSubject = { classroom_id: selectedClassroomId, name: subjectName, max_marks: maxMarks, date_sheet_id: dateSheetId }; 
+    const { data: freshResults } = await supabase1.from("examinations").select("*").eq("exam_exam_date_sheet_id", dateSheetId); 
+    const students = getStudentsByClass(selectedClassroomId); 
+    if(students.length === 0) { alert(`No students found`); return; } 
+    currentStudentMarks = {}; 
+    for(const student of students) { 
+      const existing = freshResults?.find(r => r.stu_id === student.stu_id); 
+      let marksValue = ''; 
+      if(existing && existing.exam_sub_marks_obtain !== null && existing.exam_sub_marks_obtain !== '') { 
+        const marksNum = parseFloat(existing.exam_sub_marks_obtain); 
+        marksValue = isNaN(marksNum) ? '' : Math.round(marksNum).toString(); 
+      } 
+      currentStudentMarks[student.stu_id] = marksValue; 
+    } 
+    let studentsHtml = ''; 
+    for(const student of students) { 
+      const initial = student.stu_name?.charAt(0).toUpperCase() || '?'; 
+      const currentMark = currentStudentMarks[student.stu_id] || ''; 
+      let avatarHtml = getStudentAvatarHTML(student); 
+      if (student.stu_image && student.stu_image !== '') { 
+        avatarHtml = `<div style="position: relative; width: 40px; height: 40px; flex-shrink: 0;">${avatarHtml}<div class="fallback-avatar" style="display: none; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); align-items: center; justify-content: center; color: white; font-weight: bold; position: absolute; top: 0; left: 0;">${initial}</div></div>`; 
+      } 
+      studentsHtml += `<div class="student-card"><div class="student-info">${avatarHtml}<div><div class="fw-bold">${escapeHtml(student.stu_name)}</div><div class="small text-muted">${escapeHtml(student.stu_admission_no)} | ${escapeHtml(student.stu_father)}</div></div></div><div><input type="number" id="mark_${student.stu_id}" class="marks-input" value="${currentMark}" step="1" min="0" max="${maxMarks}" placeholder="Marks" onchange="updateStudentMark(${student.stu_id}, this.value)"><span class="text-muted small">/${maxMarks}</span></div></div>`; 
+    } 
+    document.getElementById('studentsContainer').innerHTML = studentsHtml; 
+    document.getElementById('dateSheetMainView').style.display = 'none'; 
+    document.getElementById('dateSheetStudentsView').style.display = 'block'; 
+  }
+  
   function updateStudentMark(studentId, marks) { currentStudentMarks[studentId] = Math.round(parseFloat(marks) || 0).toString(); }
   function backToSubjects() { document.getElementById('dateSheetMainView').style.display = 'block'; document.getElementById('dateSheetStudentsView').style.display = 'none'; renderSubjectsList(); }
-  async function saveAllStudentMarks() { alert("Save function ready."); }
+  
   function showTopStudentDetail(name, id, subName, obt, maxM) { const s = allStudents.find(st => st.stu_id === id); if(!s) return; const cls = getClassroomName(s.stu_class_room_id); const perc = (obt / maxM) * 100; const grade = getGradeText(getConditionIdFromPercentage(perc)); const modalHtml = `<div class="detail-card"><div><strong>👤 ${escapeHtml(s.stu_name)}</strong></div><div class="small text-muted">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div><div class="small text-muted">Class: ${cls}</div><hr><div><strong>📘 Subject:</strong> ${escapeHtml(subName)}</div><div><strong>🏆 Marks:</strong> ${obt} / ${maxM}</div><div><strong>📊 Percentage:</strong> ${perc.toFixed(2)}%</div><div><strong>⭐ Grade:</strong> <span class="grade-badge ${grade.class}">${grade.text}</span></div></div>`; document.getElementById('modalStudentDetailContent').innerHTML = modalHtml; document.getElementById('topStudentModal').classList.add('show'); }
   function closeTopStudentModal(e) { if(!e || e.target.classList.contains('modal-custom') || e.target.classList.contains('btn-close')) document.getElementById('topStudentModal').classList.remove('show'); }
   function setSortBy(t) { currentSortBy = t; renderStudentsResultList(); }
