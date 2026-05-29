@@ -17,14 +17,28 @@
   
   .detail-card { background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
   .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
-  .back-btn { background: transparent; border: none; color: white; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
   
   .tabs-container { display: flex; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 50px; }
   .tab-btn { flex: 1; padding: 10px 0; border: none; border-radius: 40px; font-weight: 600; font-size: 0.75rem; background: transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
   .tab-btn.active { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
   
   .expand-collapse-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
-  .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; }
+  .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.2s; }
+  .expand-collapse-btn:hover { background: #e2e8f0; }
   
   .exam-group { margin-bottom: 12px; border-radius: 16px; background: white; border: 1px solid #eef2f8; overflow: hidden; }
   .exam-group-header {
@@ -35,9 +49,11 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 2px solid #d1dbe8;
+    transition: background 0.2s;
   }
+  .exam-group-header:hover { background: linear-gradient(135deg, #e8edff, #dfe4f0); }
   .exam-group-header .title { font-weight: 800; font-size: 1rem; color: #1e3c72; }
-  .exam-group-header .badge-count { 
+  .badge-count { 
     font-size: 0.65rem; 
     background: #e2e8f0; 
     padding: 3px 10px; 
@@ -46,7 +62,7 @@
     font-weight: 600; 
     display: inline-block; 
   }
-  .exam-group-header .badge-syllabus-count {
+  .badge-syllabus-count {
     font-size: 0.6rem;
     background: #d1fae5;
     color: #065f46;
@@ -55,7 +71,7 @@
     display: inline-block;
     margin-right: 6px;
   }
-  .exam-group-header .badge-datesheet-count {
+  .badge-datesheet-count {
     font-size: 0.6rem;
     background: #dbeafe;
     color: #1e40af;
@@ -63,7 +79,7 @@
     border-radius: 30px;
     display: inline-block;
   }
-  .exam-group-header .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
+  .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
   .exam-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
   .exam-group-content { overflow: hidden; transition: max-height 0.3s ease; }
   .exam-group-content.collapsed { max-height: 0 !important; padding: 0; }
@@ -124,24 +140,77 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+function escapeHtml(str) { 
+  if(!str) return ''; 
+  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); 
+}
 
 function getClassroomName(classroomId) {
   const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
   return classroom ? classroom.class_room_no : `Class ${classroomId}`;
 }
 
+// FIXED: Back button function that works in both iframe and standalone mode
+function goBack() {
+  // Check if we are inside an iframe (student portal iframe)
+  if (window.parent && window.parent !== window) {
+    // We are in iframe - call parent's closeIframe function
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      // Fallback: try to navigate parent back to index
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    // Standalone mode - go to index
+    window.location.href = 'index.html';
+  }
+}
+
 async function loadData() {
+  // Try to get student from multiple sources
   const saved = localStorage.getItem('currentStudent');
   if(saved) {
-    currentStudent = JSON.parse(saved);
-  } else {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) currentStudent = JSON.parse(savedLogin);
+    try {
+      currentStudent = JSON.parse(saved);
+    } catch(e) {}
   }
   
   if(!currentStudent) {
-    window.location.href = 'index.html';
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if(savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        currentStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Also check URL parameters (if passed from parent)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlStudentId = urlParams.get('stu_id');
+  if (!currentStudent && urlStudentId) {
+    const { data, error } = await supabase1
+      .from("students")
+      .select("*")
+      .eq("stu_id", urlStudentId)
+      .single();
+    if (!error && data) {
+      currentStudent = data;
+      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    }
+  }
+  
+  if(!currentStudent) {
+    showToast("Session expired. Please login again.");
+    setTimeout(() => {
+      if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+        window.parent.location.href = 'index.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }, 1500);
     return;
   }
   
@@ -167,25 +236,39 @@ async function loadData() {
   renderSyllabusPage();
 }
 
-function goBack() {
-  window.location.href = 'index.html';
-}
-
 function renderSyllabusPage() {
   const container = document.getElementById('appContainer');
+  
+  let tabTitle = '';
+  if(currentTab === 1) tabTitle = '🏠 Home Work';
+  else if(currentTab === 2) tabTitle = '✈️ Vocation Work';
+  else tabTitle = '📅 Annual Work';
   
   const html = `
     <div class="detail-card">
       <div class="detail-header">
         <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
-        <h5 class="mb-0">📚 My Syllabus</h5>
-        <div></div>
+        <h5 class="mb-0">📚 ${tabTitle}</h5>
+        <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
+        <!-- Student Info Summary -->
+        <div class="mb-3 pb-2 border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>${escapeHtml(currentStudent.stu_name)}</strong><br>
+              <small class="text-muted">${escapeHtml(currentStudent.stu_admission_no)}</small>
+            </div>
+            <div class="text-end">
+              <small class="text-muted">Class</small><br>
+              <strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong>
+            </div>
+          </div>
+        </div>
         <div class="tabs-container">
-          <button class="tab-btn ${currentTab === 1 ? 'active' : ''}" data-tab="1" onclick="switchTab(1)">🏠 Home Work</button>
-          <button class="tab-btn ${currentTab === 2 ? 'active' : ''}" data-tab="2" onclick="switchTab(2)">✈️ Vocation Work</button>
-          <button class="tab-btn ${currentTab === 3 ? 'active' : ''}" data-tab="3" onclick="switchTab(3)">📅 Annual Work</button>
+          <button class="tab-btn ${currentTab === 1 ? 'active' : ''}" onclick="switchTab(1)">🏠 Home Work</button>
+          <button class="tab-btn ${currentTab === 2 ? 'active' : ''}" onclick="switchTab(2)">✈️ Vocation Work</button>
+          <button class="tab-btn ${currentTab === 3 ? 'active' : ''}" onclick="switchTab(3)">📅 Annual Work</button>
         </div>
         <div class="expand-collapse-bar" id="expandCollapseBar"></div>
         <div id="examGroupsContainer"></div>
@@ -202,7 +285,11 @@ async function renderExamGroups() {
   
   let filtered = allExamTypes.filter(et => et.term_conditions_id === currentTab);
   if(filtered.length === 0) {
-    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p>No ${currentTab === 1 ? 'Home Work' : (currentTab === 2 ? 'Vocation Work' : 'Annual Work')} found</p></div>`;
+    let emptyMessage = '';
+    if(currentTab === 1) emptyMessage = 'No Home Work syllabus found';
+    else if(currentTab === 2) emptyMessage = 'No Vocation Work syllabus found';
+    else emptyMessage = 'No Annual Work syllabus found';
+    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">${emptyMessage}</p><small class="text-muted">Syllabus will appear here once uploaded</small></div>`;
     document.getElementById('expandCollapseBar').style.display = 'none';
     return;
   }
@@ -239,7 +326,7 @@ async function renderExamGroups() {
       <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${et.exam_type_id}')">
         <div>
           <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(et.exam_type1)}</div>
-          <div class="small text-muted mt-1">${et.exam_type_start_date || ''} to ${et.exam_type_end_date || ''}</div>
+          <div class="small text-muted mt-1">${et.exam_type_start_date || ''} ${et.exam_type_end_date ? 'to ' + et.exam_type_end_date : ''}</div>
         </div>
         <div class="text-end">
           <div>
@@ -267,7 +354,7 @@ async function renderSubjectsForExam(examTypeId) {
   const container = document.getElementById(`subjectsContainer-${examTypeId}`);
   if(!container) return;
   
-  const cacheKey = `${examTypeId}_${currentStudent.stu_class_room_id}`;
+  const cacheKey = `${examTypeId}_${currentStudent.stu_class_room_id}_${currentTab}`;
   if (cachedSubjects[cacheKey]) {
     container.innerHTML = cachedSubjects[cacheKey];
     return;
@@ -298,13 +385,17 @@ async function renderSubjectsForExam(examTypeId) {
     const syllabusText = syllabus ? syllabus.syllabus_text : null;
     
     // Get book name
-    let bookName = "Book not found";
-    const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", sub.sub_subject_book_id).single();
-    if(bookData) bookName = bookData.subject_books_name;
+    let bookName = "Subject";
+    if (sub.sub_subject_book_id) {
+      const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", sub.sub_subject_book_id).single();
+      if(bookData) bookName = bookData.subject_books_name;
+    } else if (sub.sub_name) {
+      bookName = sub.sub_name;
+    }
     
     const marks = sub.sub_remarks || 0;
     const marksDisplay = marks > 0 ? `⭐ ${marks} Marks` : '';
-    const syllabusPreview = hasSyllabus ? syllabusText?.substring(0, 100) : '';
+    const syllabusPreview = hasSyllabus && syllabusText ? syllabusText.substring(0, 100) : '';
     
     subjectsHtml += `<div class="subject-item" onclick='showSubjectDetail("${escapeHtml(bookName)}", ${hasSyllabus ? JSON.stringify(escapeHtml(syllabusText || '')) : '""'}, "${dateSheetDate || ''}", ${marks})'>
       <div class="subject-name">
@@ -321,8 +412,8 @@ async function renderSubjectsForExam(examTypeId) {
           '<span class="badge-no-datesheet"><i class="bi bi-calendar-plus"></i> No Date Sheet</span>'
         }
       </div>
-      ${hasSyllabus ? 
-        `<div class="syllabus-preview">📝 ${escapeHtml(syllabusPreview)}${syllabusText?.length > 100 ? '...' : ''}</div>` : 
+      ${hasSyllabus && syllabusText ? 
+        `<div class="syllabus-preview">📝 ${escapeHtml(syllabusPreview)}${syllabusText.length > 100 ? '...' : ''}</div>` : 
         '<div class="syllabus-preview text-muted">📝 No syllabus uploaded yet</div>'
       }
     </div>`;
@@ -364,7 +455,7 @@ function showSubjectDetail(subjectName, syllabusText, dateSheetDate, marks) {
             </div>
             <div class="info-row">
               <div class="info-label"><i class="bi bi-journal-bookmark-fill me-1"></i> Syllabus</div>
-              <div class="info-value">${cleanSyllabus ? cleanSyllabus.replace(/\n/g, '<br>') : '<span class="text-muted">No syllabus uploaded yet</span>'}</div>
+              <div class="info-value" style="white-space: pre-wrap;">${cleanSyllabus ? cleanSyllabus.replace(/\n/g, '<br>') : '<span class="text-muted">No syllabus uploaded yet</span>'}</div>
             </div>
           </div>
           <div class="modal-footer">
@@ -433,7 +524,22 @@ function switchTab(tabId) {
   renderSyllabusPage();
 }
 
+// Listen for messages from parent (optional)
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'logout') {
+    currentStudent = null;
+    localStorage.removeItem('currentStudent');
+    localStorage.removeItem('studentLoggedIn');
+    if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    }
+    window.location.href = 'index.html';
+  }
+});
+
 loadData();
+
+// Make functions global for button onclick
 window.goBack = goBack;
 window.switchTab = switchTab;
 window.toggleExamGroup = toggleExamGroup;
