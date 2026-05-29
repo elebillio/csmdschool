@@ -437,7 +437,14 @@
     </div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
-  
+  <div class="module-card" id="chatRoomsModule">
+  <div class="module-icon" style="background: linear-gradient(135deg, #00b4d8, #0077b6);"><i class="bi bi-chat-dots-fill"></i></div>
+  <div class="module-info">
+    <h3>Chat Rooms</h3>
+    <p>Class-wise chat rooms | Real-time messaging</p>
+  </div>
+  <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+</div>
   <!-- Date Time -->
   <div class="datetime" id="dateTimeDisplay"></div>
 </div>
@@ -955,6 +962,7 @@ document.getElementById('feeModule')?.addEventListener('click', () => openModule
 document.getElementById('syllabusModule')?.addEventListener('click', () => openModule('syllabus', 'Syllabus Management', 'bi bi-journal-bookmark-fill'));
 document.getElementById('examModule')?.addEventListener('click', () => openModule('examination', 'Examination Result', 'bi bi-trophy-fill'));
 document.getElementById('notificationModule')?.addEventListener('click', openNotificationModal);
+document.getElementById('chatRoomsModule')?.addEventListener('click', () => openModule('chat_rooms', 'Chat Rooms', 'bi bi-chat-dots-fill'));
 document.getElementById('studentSearchInput')?.addEventListener('input', () => renderStudentListInModal());
 document.getElementById('statStudents')?.addEventListener('click', () => openModule('students', 'Student Management', 'bi bi-people-fill'));
 document.getElementById('statAttendance')?.addEventListener('click', () => openModule('attendance', 'Attendance Management', 'bi bi-calendar-check-fill'));
