@@ -692,7 +692,7 @@ function renderChatWindow(student) {
   let infoText = `<i class="bi bi-info-circle-fill me-1"></i> Connected to your class chat room`;
   
   if (isSiblingView && siblingName) {
-    headerTitle = `Chat with ${escapeHtml(siblingName)} (${escapeHtml(className)})`;
+    headerTitle = `(${escapeHtml(className)})`;
     infoText = `<i class="bi bi-people-fill me-1"></i> You are viewing ${escapeHtml(siblingName)}'s class chat`;
   }
   
