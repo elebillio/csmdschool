@@ -213,6 +213,23 @@
     border-radius: 30px;
     font-size: 0.6rem;
   }
+  
+  /* Toast for microphone */
+  .mic-toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ef4444;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    z-index: 9999;
+    text-align: center;
+    max-width: 90%;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -253,7 +270,7 @@ let isRecording = false;
 let recordingTimer = null;
 let recordingSeconds = 0;
 
-function showToast(message) {
+function showToast(message, isError = false) {
   let toast = document.getElementById('customToast');
   if (!toast) {
     toast = document.createElement('div');
@@ -272,12 +289,19 @@ function showToast(message) {
       opacity: 0;
       transition: opacity 0.3s;
       pointer-events: none;
+      text-align: center;
+      max-width: 90%;
     `;
     document.body.appendChild(toast);
   }
+  if (isError) {
+    toast.style.background = '#ef4444';
+  } else {
+    toast.style.background = '#333';
+  }
   toast.textContent = message;
   toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 function escapeHtml(str) {
@@ -304,7 +328,6 @@ function getClassroomName(classroomId) {
 
 // ==================== AUTO CREATE CHAT ROOM ====================
 async function ensureChatRoomExists(classId, className) {
-  // Check if chat room already exists
   const { data: existingRooms } = await supabaseClient
     .from("chat_rooms")
     .select("*")
@@ -315,7 +338,6 @@ async function ensureChatRoomExists(classId, className) {
     return existingRooms[0];
   }
   
-  // Create new chat room
   const roomName = `${className} Chat Room`;
   const { data: newRoom, error } = await supabaseClient
     .from("chat_rooms")
@@ -333,7 +355,6 @@ async function ensureChatRoomExists(classId, className) {
     return null;
   }
   
-  console.log("Created new chat room:", roomName);
   return newRoom[0];
 }
 
@@ -397,11 +418,9 @@ async function loadStudentData() {
     return false;
   }
   
-  // Load classrooms
   const { data: classrooms } = await supabaseClient.from("class_rooms").select("*");
   if (classrooms) allClassrooms = classrooms;
   
-  // Ensure chat room exists for the target student's class
   await loadChatRoom(targetStudent);
   return true;
 }
@@ -412,9 +431,6 @@ async function loadChatRoom(student) {
   const classId = student.stu_class_room_id;
   const className = getClassroomName(classId);
   
-  console.log("Loading/creating chat room for class:", className, "ID:", classId);
-  
-  // Auto-create chat room if not exists
   const chatRoom = await ensureChatRoomExists(classId, className);
   
   if (!chatRoom) {
@@ -423,7 +439,6 @@ async function loadChatRoom(student) {
   }
   
   currentClass = chatRoom;
-  console.log("Chat room ready:", currentClass.room_name);
   
   if (messageSubscription) {
     await supabaseClient.removeChannel(messageSubscription);
@@ -524,10 +539,42 @@ async function sendMessage() {
   input.value = '';
 }
 
-// ==================== VOICE RECORDING ====================
+// ==================== VOICE RECORDING WITH BETTER ERROR HANDLING ====================
+
+async function checkMicrophonePermission() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast("❌ Your browser doesn't support voice recording", true);
+    return false;
+  }
+  
+  // Check if permission already granted
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(track => track.stop());
+    return true;
+  } catch (err) {
+    if (err.name === 'NotAllowedError') {
+      showToast("🎤 Microphone access denied. Please allow microphone permission in your browser settings.", true);
+    } else if (err.name === 'NotFoundError') {
+      showToast("🎤 No microphone found on your device.", true);
+    } else {
+      showToast("🎤 Microphone error: " + err.message, true);
+    }
+    return false;
+  }
+}
 
 async function startRecording() {
-  if (!currentClass) return;
+  if (!currentClass) {
+    showToast("Please wait, chat room is loading...", true);
+    return;
+  }
+  
+  // Check permission first
+  const hasPermission = await checkMicrophonePermission();
+  if (!hasPermission) {
+    return;
+  }
   
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -542,12 +589,15 @@ async function startRecording() {
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
       const fileName = `voice_student_${currentStudent.stu_id}_${Date.now()}.webm`;
       
+      showToast("Uploading voice message...");
+      
       const { error } = await supabaseClient.storage
         .from('chat-media')
         .upload(fileName, audioBlob);
       
       if (error) {
-        alert("Voice upload failed: " + error.message);
+        showToast("Voice upload failed: " + error.message, true);
+        stream.getTracks().forEach(track => track.stop());
         return;
       }
       
@@ -606,15 +656,18 @@ async function startRecording() {
       recordBtn.classList.add('recording-active');
     }
     
+    showToast("Recording... Click again to stop (max 60s)");
+    
     setTimeout(() => {
       if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
         stopRecording();
+        showToast("Auto-stopped after 60 seconds");
       }
     }, 60000);
     
   } catch (err) {
-    alert("Microphone access denied. Please allow microphone permission.");
-    console.error(err);
+    console.error("Recording error:", err);
+    showToast("Could not access microphone: " + err.message, true);
   }
 }
 
@@ -651,7 +704,10 @@ window.uploadImage = async function() {
     showToast("Uploading image...");
     const fileName = `student_${currentStudent.stu_id}_${Date.now()}.${file.name.split('.').pop()}`;
     const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, file);
-    if (error) { alert("Upload failed: " + error.message); return; }
+    if (error) { 
+      showToast("Upload failed: " + error.message, true);
+      return; 
+    }
     const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
     
     let senderName = currentStudent.stu_name;
@@ -752,7 +808,6 @@ function renderChatWindow(student) {
 }
 
 function renderNoChatRoom(student) {
-  // This should not happen now because we auto-create rooms
   const container = document.getElementById('appContainer');
   const className = getClassroomName(student.stu_class_room_id);
   
