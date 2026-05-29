@@ -166,6 +166,7 @@
   .module-icon.attendance { background: linear-gradient(135deg, #11998e, #38ef7d); }
   .module-icon.profile { background: linear-gradient(135deg, #667eea, #764ba2); }
   .module-icon.family { background: linear-gradient(135deg, #ec489a, #be185d); }
+  .module-icon.chat { background: linear-gradient(135deg, #00b4d8, #0077b6); }
   .module-info { flex: 1; }
   .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; }
   .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
@@ -231,6 +232,7 @@
   .sibling-class { background: #f1f5f9; padding: 2px 8px; border-radius: 30px; font-size: 0.6rem; display: inline-block; }
   .sibling-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
   }
   .sibling-action-btn {
@@ -425,6 +427,7 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
+
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
@@ -566,7 +569,8 @@ function doLogout() {
   document.getElementById('loginAdmission').value = '';
   document.getElementById('loginPassword').value = '';
   
-  document.getElementById('floatingBackBtn').style.display = 'none';
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'none';
   
   showToast("Logged out successfully");
 }
@@ -593,11 +597,36 @@ function openModuleForStudent(pageName, studentId) {
   const iframeContainer = document.getElementById('iframeContainer');
   const iframe = document.getElementById('moduleIframe');
   
+  if (!iframeContainer || !iframe) return;
+  
   iframe.src = `${pageName}.html?stu_id=${studentId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true`;
   iframeContainer.style.display = 'flex';
   document.getElementById('dashboardView').style.display = 'none';
   
-  document.getElementById('floatingBackBtn').style.display = 'flex';
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'flex';
+}
+
+// Open sibling chat
+function openSiblingChat(siblingId, siblingName) {
+  if (!currentStudent) return;
+  
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  
+  if (!iframeContainer || !iframe) return;
+  
+  // Properly encode the sibling name
+  const encodedName = encodeURIComponent(siblingName);
+  
+  iframe.src = `student_chat.html?stu_id=${siblingId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true&sibling=true&sibling_name=${encodedName}`;
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+  
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'flex';
 }
 
 // Function to show profile for any student
@@ -615,7 +644,6 @@ function showStudentProfile(student) {
     avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
   }
   
-  // Check if this is the current student
   const isCurrent = (student.stu_id === currentStudent.stu_id);
   
   const profileHtml = `
@@ -683,7 +711,7 @@ function showDashboard() {
   const dueFee = totalFee - paidFee;
   const examResultsCount = allExamResults.length;
   
-  // Build siblings/family HTML with images
+  // Build siblings/family HTML with images and chat button
   let familyHtml = '';
   if (siblingStudents && siblingStudents.length > 0) {
     let siblingsHtml = '';
@@ -706,6 +734,9 @@ function showDashboard() {
             <div class="sibling-details">${escapeHtml(sibling.stu_admission_no)} | ${getClassroomName(sibling.stu_class_room_id)}</div>
           </div>
           <div class="sibling-actions">
+            <button class="sibling-action-btn" onclick="event.stopPropagation(); openSiblingChat(${sibling.stu_id}, '${escapeHtml(sibling.stu_name)}')" title="Chat with Sibling">
+              <i class="bi bi-chat-dots-fill"></i> Chat
+            </button>
             <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stuattendance', ${sibling.stu_id})" title="View Attendance">
               <i class="bi bi-calendar-check-fill"></i> Attendance
             </button>
@@ -723,6 +754,7 @@ function showDashboard() {
       <div class="family-card">
         <div class="family-header">
           <i class="bi bi-people-fill me-2"></i> Family Members (Siblings)
+          <small class="ms-2 opacity-75">Click to chat</small>
         </div>
         ${siblingsHtml}
       </div>
@@ -762,6 +794,7 @@ function showDashboard() {
         <p>Results Published</p>
       </div>
     </div>
+    
     <div class="module-card" onclick="openModuleForStudent('stuattendance', ${currentStudent.stu_id})">
       <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
       <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
@@ -773,6 +806,7 @@ function showDashboard() {
       <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
+    
     <div class="module-card" onclick="openModuleForStudent('stusyllabus', ${currentStudent.stu_id})">
       <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
       <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
@@ -785,6 +819,11 @@ function showDashboard() {
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
+    <div class="module-card" onclick="openModule('student_chat')">
+      <div class="module-icon chat"><i class="bi bi-chat-dots-fill"></i></div>
+      <div class="module-info"><h3>Class Chat</h3><p>Chat with teachers and classmates</p></div>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+    </div>
   `;
   
   container.innerHTML = html;
@@ -792,14 +831,36 @@ function showDashboard() {
   document.getElementById('dashboardView').style.display = 'block';
 }
 
+function openModule(pageName) {
+  if (!currentStudent) {
+    doLogout();
+    return;
+  }
+  
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  
+  if (!iframeContainer || !iframe) return;
+  
+  iframe.src = `${pageName}.html?stu_id=${currentStudent.stu_id}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true`;
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+  
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'flex';
+}
+
 function closeIframe() {
   const iframeContainer = document.getElementById('iframeContainer');
   const iframe = document.getElementById('moduleIframe');
-  iframe.src = 'about:blank';
-  iframeContainer.style.display = 'none';
+  if (iframe) iframe.src = 'about:blank';
+  if (iframeContainer) iframeContainer.style.display = 'none';
   document.getElementById('dashboardView').style.display = 'block';
   
-  document.getElementById('floatingBackBtn').style.display = 'none';
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'none';
   
   if (currentStudent) {
     loadMasterData();
@@ -887,35 +948,43 @@ async function restoreSession() {
   
   document.getElementById('dashboardView').style.display = 'none';
   document.getElementById('loginView').style.display = 'flex';
-  document.getElementById('floatingBackBtn').style.display = 'none';
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'none';
   return false;
 }
 
 window.addEventListener('pageshow', async function(event) {
   const iframeContainer = document.getElementById('iframeContainer');
   if (iframeContainer && iframeContainer.style.display === 'flex') {
-    document.getElementById('floatingBackBtn').style.display = 'flex';
+    const floatingBtn = document.getElementById('floatingBackBtn');
+    if (floatingBtn) floatingBtn.style.display = 'flex';
   } else if (currentStudent) {
     document.getElementById('loginView').style.display = 'none';
     document.getElementById('dashboardView').style.display = 'block';
-    document.getElementById('floatingBackBtn').style.display = 'none';
+    const floatingBtn = document.getElementById('floatingBackBtn');
+    if (floatingBtn) floatingBtn.style.display = 'none';
     showDashboard();
   } else {
     await restoreSession();
   }
 });
 
-window.onload = async function() {
+window.onload = function() {
   loadAnnouncements();
-  await restoreSession();
-  
-  document.getElementById('loginBtn').onclick = studentLogin;
-  document.getElementById('floatingBackBtn').onclick = closeIframe;
+  restoreSession().then(() => {
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn) loginBtn.onclick = studentLogin;
+    
+    const floatingBtn = document.getElementById('floatingBackBtn');
+    if (floatingBtn) floatingBtn.onclick = closeIframe;
+  });
 };
 
 // Make functions global
 window.doLogout = doLogout;
 window.openModuleForStudent = openModuleForStudent;
+window.openSiblingChat = openSiblingChat;
+window.openModule = openModule;
 window.showProfile = showProfile;
 window.showStudentProfileById = showStudentProfileById;
 window.closeIframe = closeIframe;
