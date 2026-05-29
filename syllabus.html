@@ -844,6 +844,7 @@
     }
   }
 
+  // FIXED: Using data attributes instead of inline onclick to prevent PSU error
   async function loadSubjectsForClassGroup(examTypeId, classId) {
     const subjectsContainer = document.getElementById(`subjectsList-${examTypeId}-${classId}`);
     if(!subjectsContainer) return;
@@ -851,6 +852,7 @@
     const cacheKey = `${examTypeId}_${classId}`;
     if (cachedSubjects[cacheKey]) {
       subjectsContainer.innerHTML = cachedSubjects[cacheKey];
+      attachSubjectClickHandlers(subjectsContainer);
       return;
     }
 
@@ -876,7 +878,14 @@
       let dateDisplay = hasDateSheet ? sub.dateSheetDate : '';
       let marksDisplay = sub.marks && sub.marks > 0 ? `⭐ ${sub.marks} Marks` : '';
 
-      html += `<div class="subject-item" onclick="openSyllabusModal('${examTypeId}', ${sub.sub_id}, '${escapeHtml(bookName)}', '${escapeHtml(className)}', ${classId}, ${sub.marks || 0})">
+      // Use data attributes instead of inline onclick to avoid parsing issues with hyphens in IDs
+      html += `<div class="subject-item" 
+        data-exam-type-id="${examTypeId}" 
+        data-subject-id="${sub.sub_id}" 
+        data-subject-name="${escapeHtml(bookName).replace(/"/g, '&quot;')}" 
+        data-class-name="${escapeHtml(className).replace(/"/g, '&quot;')}" 
+        data-class-id="${classId}" 
+        data-marks="${sub.marks || 0}">
         <div style="flex:1;">
           <div class="subject-name">
             <span>📖 ${escapeHtml(bookName)}</span>
@@ -900,6 +909,37 @@
 
     cachedSubjects[cacheKey] = html;
     subjectsContainer.innerHTML = html;
+    
+    // Attach click handlers to all subject items
+    attachSubjectClickHandlers(subjectsContainer);
+  }
+
+  // Attach event listeners to subject items
+  function attachSubjectClickHandlers(container) {
+    const subjectItems = container.querySelectorAll('.subject-item');
+    subjectItems.forEach(item => {
+      // Remove any existing listener to avoid duplicates
+      item.removeEventListener('click', subjectClickHandler);
+      item.addEventListener('click', subjectClickHandler);
+    });
+  }
+
+  // Event handler for subject clicks
+  function subjectClickHandler(event) {
+    // Don't trigger if clicking on buttons inside the subject item
+    if(event.target.closest('.edit-exam-btn') || event.target.closest('.delete-exam-btn')) {
+      return;
+    }
+    
+    const item = event.currentTarget;
+    const examTypeId = item.dataset.examTypeId;
+    const subjectId = item.dataset.subjectId;
+    const subjectName = item.dataset.subjectName;
+    const className = item.dataset.className;
+    const classId = parseInt(item.dataset.classId);
+    const marks = parseFloat(item.dataset.marks) || 0;
+    
+    openSyllabusModal(examTypeId, subjectId, subjectName, className, classId, marks);
   }
 
   // ==================== TOGGLE FUNCTIONS ====================
