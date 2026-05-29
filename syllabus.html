@@ -1124,6 +1124,9 @@
     }
 
     clearCache();
+    // Clear the specific subject cache for this exam type and class
+    delete cachedSubjects[`${examTypeId}_${classId}`];
+    
     alert("Syllabus, Date Sheet & Marks Saved Successfully!");
     bootstrap.Modal.getInstance(document.getElementById('syllabusModal')).hide();
     await loadSubjectsForClassGroup(examTypeId, parseInt(classId));
