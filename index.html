@@ -854,13 +854,41 @@ function goBackToMessage() {
   new bootstrap.Modal(document.getElementById('notificationModal')).show();
 }
 
+// FIXED: sendNotification with direct WhatsApp using window.location.href
 async function sendNotification() {
   if(pendingMessage.trim() === "") { alert("No message"); return; }
   const targetStudents = allStudents.filter(s => selectedStudentIds.has(s.stu_id));
   const validStudents = targetStudents.filter(s => isValidWhatsAppNumber(s.stu_mobile1 || s.stu_mobile2));
   if(validStudents.length === 0) { alert("No students with valid WhatsApp numbers selected"); return; }
+  
   const schoolName = 'The Leads High School (Dinga)';
   const fullMessage = `${pendingMessage}\n\n📱 ${schoolName}`;
+  
+  // For single student - direct WhatsApp
+  if(validStudents.length === 1) {
+    const student = validStudents[0];
+    let mobile = student.stu_mobile1 || student.stu_mobile2;
+    let cleanMobile = mobile.replace(/[\s\-]/g, '');
+    if(cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
+    if(!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
+    const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(fullMessage)}`;
+    
+    // Use Android interface if available
+    if (window.Android && window.Android.shareToWhatsApp) {
+      window.Android.shareToWhatsApp(cleanMobile, fullMessage);
+    } else {
+      window.location.href = whatsappUrl;
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById('studentListModal')).hide();
+    selectedStudentIds.clear();
+    pendingMessage = "";
+    document.getElementById('notificationMessage').value = '';
+    document.getElementById('studentSearchInput').value = '';
+    return;
+  }
+  
+  // For multiple students - show list
   let studentListHtml = '<div style="max-height: 400px; overflow-y: auto;">';
   for(const s of validStudents) {
     let mobile = s.stu_mobile1 || s.stu_mobile2;
@@ -876,6 +904,7 @@ async function sendNotification() {
     </div>`;
   }
   studentListHtml += '</div>';
+  
   const shareModalHtml = `<div class="modal fade" id="shareModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header" style="background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 10px;"><h5 class="modal-title"><i class="bi bi-whatsapp me-2"></i>Send via WhatsApp</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="p-2 bg-light border-bottom small">Click "Send" next to each student</div>${studentListHtml}</div><div class="modal-footer py-2"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>`;
   const existing = document.getElementById('shareModal');
   if(existing) existing.remove();
