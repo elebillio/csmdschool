@@ -157,6 +157,7 @@
   .module-icon.syllabus { background: linear-gradient(135deg, #06b6d4, #0891b2); }
   .module-icon.attendance { background: linear-gradient(135deg, #11998e, #38ef7d); }
   .module-icon.profile { background: linear-gradient(135deg, #667eea, #764ba2); }
+  .module-icon.family { background: linear-gradient(135deg, #ec489a, #be185d); }
   .module-info { flex: 1; }
   .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; }
   .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
@@ -174,6 +175,63 @@
     border: 1px solid #fcd34d;
   }
   .welcome-banner i { font-size: 1.5rem; color: #d97706; }
+  
+  .family-card {
+    background: white;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid #eef2f8;
+  }
+  .family-header {
+    background: linear-gradient(135deg, #ec489a, #be185d);
+    padding: 12px 16px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .sibling-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef2f8;
+    transition: background 0.2s;
+  }
+  .sibling-item:last-child { border-bottom: none; }
+  .sibling-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+  }
+  .sibling-info { flex: 1; }
+  .sibling-name { font-weight: 600; font-size: 0.85rem; color: #1e293b; }
+  .sibling-details { font-size: 0.65rem; color: #64748b; }
+  .sibling-class { background: #f1f5f9; padding: 2px 8px; border-radius: 30px; font-size: 0.6rem; display: inline-block; }
+  .sibling-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .sibling-action-btn {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 30px;
+    padding: 5px 10px;
+    font-size: 0.6rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #475569;
+  }
+  .sibling-action-btn:hover { background: #e2e8f0; transform: scale(1.05); }
+  .sibling-action-btn i { font-size: 0.65rem; margin-right: 3px; }
   
   .iframe-container {
     position: fixed;
@@ -259,19 +317,6 @@
     opacity: 0.7;
   }
   
-  .school-logo {
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    color: white;
-    font-size: 2rem;
-  }
-  
   .toast-custom {
     position: fixed;
     bottom: 20px;
@@ -315,6 +360,8 @@
     .ticker-label-full { padding: 3px 10px; font-size: 0.55rem; }
     .ticker-wrapper-full { margin-left: 75px; }
     .floating-back { bottom: 15px; right: 15px; padding: 8px 16px; font-size: 0.7rem; }
+    .sibling-actions { flex-direction: column; gap: 4px; }
+    .sibling-action-btn { padding: 3px 8px; font-size: 0.55rem; }
   }
 </style>
 </head>
@@ -364,10 +411,6 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
-<button class="floating-back" id="floatingBackBtn">
-  <i class="bi bi-arrow-left"></i> Back to Dashboard
-</button>
-
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
@@ -379,6 +422,7 @@ let currentStudent = null;
 let allClassrooms = [];
 let allFees = [];
 let allExamResults = [];
+let siblingStudents = [];
 let announcements = [];
 
 function showToast(message) {
@@ -424,6 +468,29 @@ function renderTicker() {
   tickerContainer.innerHTML = html;
 }
 
+// Fetch sibling students
+async function loadSiblingStudents() {
+  if (!currentStudent) return [];
+  
+  let query = supabase1.from("students").select("*").neq("stu_id", currentStudent.stu_id);
+  
+  if (currentStudent.stu_family_group && currentStudent.stu_family_group !== '') {
+    query = query.eq("stu_family_group", currentStudent.stu_family_group);
+  } 
+  else if (currentStudent.stu_father && currentStudent.stu_father !== '') {
+    query = query.ilike("stu_father", currentStudent.stu_father);
+  } else {
+    return [];
+  }
+  
+  const { data, error } = await query;
+  if (!error && data && data.length > 0) {
+    siblingStudents = data;
+    return siblingStudents;
+  }
+  return [];
+}
+
 async function studentLogin() {
   const admissionNo = document.getElementById('loginAdmission').value.trim();
   const password = document.getElementById('loginPassword').value.trim();
@@ -456,11 +523,13 @@ async function studentLogin() {
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
   
   await loadMasterData();
+  await loadSiblingStudents();
   showDashboard();
 }
 
 function doLogout() {
   currentStudent = null;
+  siblingStudents = [];
   localStorage.removeItem('studentLoggedIn');
   localStorage.removeItem('currentStudent');
   
@@ -492,6 +561,21 @@ async function loadMasterData() {
   if (examResults.data) allExamResults = examResults.data;
 }
 
+function openModuleForStudent(pageName, studentId) {
+  if (!studentId) return;
+  
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  
+  iframe.src = `${pageName}.html?stu_id=${studentId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true`;
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+  
+  document.getElementById('floatingBackBtn').style.display = 'flex';
+}
+
 function showDashboard() {
   if (!currentStudent) {
     doLogout();
@@ -515,6 +599,43 @@ function showDashboard() {
   const dueFee = totalFee - paidFee;
   const examResultsCount = allExamResults.length;
   
+  // Build siblings/family HTML
+  let familyHtml = '';
+  if (siblingStudents && siblingStudents.length > 0) {
+    let siblingsHtml = '';
+    for (const sibling of siblingStudents) {
+      const siblingInitial = sibling.stu_name?.charAt(0).toUpperCase() || '?';
+      siblingsHtml += `
+        <div class="sibling-item">
+          <div class="sibling-avatar">${siblingInitial}</div>
+          <div class="sibling-info">
+            <div class="sibling-name">${escapeHtml(sibling.stu_name)}</div>
+            <div class="sibling-details">${escapeHtml(sibling.stu_admission_no)} | ${getClassroomName(sibling.stu_class_room_id)}</div>
+          </div>
+          <div class="sibling-actions">
+            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('sturesult', ${sibling.stu_id})" title="View Results">
+              <i class="bi bi-trophy-fill"></i> Result
+            </button>
+            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stusyllabus', ${sibling.stu_id})" title="View Syllabus">
+              <i class="bi bi-journal-bookmark-fill"></i> Syllabus
+            </button>
+            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stuattendance', ${sibling.stu_id})" title="View Attendance">
+              <i class="bi bi-calendar-check-fill"></i> Attendance
+            </button>
+          </div>
+        </div>
+      `;
+    }
+    familyHtml = `
+      <div class="family-card">
+        <div class="family-header">
+          <i class="bi bi-people-fill me-2"></i> Family Members (Siblings)
+        </div>
+        ${siblingsHtml}
+      </div>
+    `;
+  }
+  
   const html = `
     <div class="header">
       <div class="d-flex justify-content-between align-items-start">
@@ -533,6 +654,8 @@ function showDashboard() {
         <div class="col-6"><small>📞 Mobile</small><br><strong>${currentStudent.stu_mobile1 || 'N/A'}</strong></div>
       </div>
     </div>
+    
+    ${familyHtml}
     
     <div class="welcome-banner">
       <i class="bi bi-emoji-smile"></i>
@@ -555,25 +678,25 @@ function showDashboard() {
       </div>
     </div>
     
-    <div class="module-card" onclick="openModule('sturesult')">
+    <div class="module-card" onclick="openModuleForStudent('sturesult', ${currentStudent.stu_id})">
       <div class="module-icon result"><i class="bi bi-trophy-fill"></i></div>
       <div class="module-info"><h3>My Results</h3><p>View exam results & grades</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModule('stufee')">
+    <div class="module-card" onclick="openModuleForStudent('stufee', ${currentStudent.stu_id})">
       <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
       <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModule('stusyllabus')">
+    <div class="module-card" onclick="openModuleForStudent('stusyllabus', ${currentStudent.stu_id})">
       <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
       <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModule('stuattendance')">
+    <div class="module-card" onclick="openModuleForStudent('stuattendance', ${currentStudent.stu_id})">
       <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
       <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
@@ -620,6 +743,7 @@ function showProfile() {
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Full Name</div><div>${escapeHtml(currentStudent.stu_name)}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Admission No</div><div>${escapeHtml(currentStudent.stu_admission_no)}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Father Name</div><div>${escapeHtml(currentStudent.stu_father)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Family Group</div><div>${escapeHtml(currentStudent.stu_family_group) || 'Not assigned'}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Class</div><div>${getClassroomName(currentStudent.stu_class_room_id)}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Mobile No</div><div>${currentStudent.stu_mobile1 || 'N/A'}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Alternate Mobile</div><div>${currentStudent.stu_mobile2 || 'N/A'}</div></div>
@@ -629,24 +753,6 @@ function showProfile() {
     </div>
   `;
   container.innerHTML = profileHtml;
-}
-
-function openModule(pageName) {
-  if (!currentStudent) {
-    doLogout();
-    return;
-  }
-  
-  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
-  
-  const iframeContainer = document.getElementById('iframeContainer');
-  const iframe = document.getElementById('moduleIframe');
-  
-  iframe.src = `${pageName}.html?stu_id=${currentStudent.stu_id}&fromStudentPortal=true`;
-  iframeContainer.style.display = 'flex';
-  document.getElementById('dashboardView').style.display = 'none';
-  
-  document.getElementById('floatingBackBtn').style.display = 'flex';
 }
 
 function closeIframe() {
@@ -681,6 +787,7 @@ async function restoreSession() {
       currentStudent = data;
       localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
       await loadMasterData();
+      await loadSiblingStudents();
       document.getElementById('loginView').style.display = 'none';
       document.getElementById('dashboardView').style.display = 'block';
       showDashboard();
@@ -703,6 +810,7 @@ async function restoreSession() {
         if (!error && data) {
           currentStudent = data;
           await loadMasterData();
+          await loadSiblingStudents();
           document.getElementById('loginView').style.display = 'none';
           document.getElementById('dashboardView').style.display = 'block';
           showDashboard();
@@ -730,6 +838,7 @@ async function restoreSession() {
         if (!error && data) {
           currentStudent = data;
           await loadMasterData();
+          await loadSiblingStudents();
           document.getElementById('loginView').style.display = 'none';
           document.getElementById('dashboardView').style.display = 'block';
           showDashboard();
@@ -767,8 +876,9 @@ window.onload = async function() {
   document.getElementById('floatingBackBtn').onclick = closeIframe;
 };
 
+// Make functions global
 window.doLogout = doLogout;
-window.openModule = openModule;
+window.openModuleForStudent = openModuleForStudent;
 window.showProfile = showProfile;
 window.closeIframe = closeIframe;
 window.showDashboard = showDashboard;
