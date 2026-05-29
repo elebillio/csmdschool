@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
-<title>My Fee | Student Portal</title>
+<title>Fee Details | Student Portal</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -14,7 +14,8 @@
   * { font-family: system-ui, sans-serif; }
   body { background: #f0f4f8; padding: 16px; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; }
-  .detail-card { background: white; border-radius: 24px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
+  
+  .detail-card { background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
   .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
   .back-btn { 
     background: rgba(255,255,255,0.2); 
@@ -30,17 +31,158 @@
     transition: background 0.2s;
   }
   .back-btn:hover { background: rgba(255,255,255,0.3); }
-  .info-row { display: flex; padding: 12px 20px; border-bottom: 1px solid #eef2f8; }
-  .info-label { width: 40%; font-weight: 700; font-size: 0.75rem; color: #475569; }
-  .info-value { width: 60%; font-size: 0.85rem; color: #0f172a; }
-  .fee-row { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #eef2f8; }
+  
+  .student-info-card {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #eef2f8;
+    transition: all 0.2s;
+  }
+  .student-info-card.highlight {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 2px solid #f59e0b;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+  }
+  .student-avatar-large {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: #e2e8f0;
+  }
+  .avatar-large {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.5rem;
+  }
+  
+  .student-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 4px;
+  }
+  .student-details {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+  
+  .fee-row-table {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e2e8f0;
+  }
+  .fee-col {
+    flex: 1;
+    text-align: center;
+    background: white;
+    border-radius: 12px;
+    padding: 8px 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .fee-col-label {
+    font-size: 0.6rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .fee-col-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .class-fee-value { color: #1e3c72; }
+  .concession-value { color: #f59e0b; }
+  .fee-scale-value { color: #10b981; }
+  
+  .family-header {
+    background: linear-gradient(135deg, #ec489a, #be185d);
+    padding: 10px 16px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.8rem;
+    border-radius: 20px 20px 0 0;
+    margin-top: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .summary-cards {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .summary-card-item {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid #eef2f8;
+  }
+  .summary-label {
+    font-size: 0.6rem;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+  .summary-value {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .total-fee { color: #1e3c72; }
+  .paid-fee { color: #10b981; }
+  .due-fee { color: #ef4444; }
+  
+  .progress-custom {
+    height: 6px;
+    border-radius: 10px;
+    background: #e2e8f0;
+    margin: 15px 0;
+  }
+  .progress-bar-custom {
+    height: 6px;
+    border-radius: 10px;
+    background: #10b981;
+    width: 0%;
+  }
+  
+  .fee-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef2f8;
+  }
   .fee-row:hover { background: #f8fafc; }
   .status-paid { color: #10b981; font-weight: 600; }
   .status-due { color: #ef4444; font-weight: 600; }
   .status-partial { color: #f59e0b; font-weight: 600; }
+  
   .toast-custom { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .toast-custom.show { opacity: 1; }
-  .summary-card { background: linear-gradient(135deg, #667eea10, #764ba210); border-radius: 16px; padding: 16px; margin-bottom: 20px; }
+  
+  .current-student-badge {
+    display: inline-block;
+    background: #10b981;
+    color: white;
+    font-size: 0.55rem;
+    padding: 2px 8px;
+    border-radius: 30px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
 </style>
 </head>
 <body>
@@ -54,8 +196,10 @@ const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentStudent = null;
+let viewerStudent = null;
 let allFees = [];
 let allClassrooms = [];
+let siblingStudents = [];
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -74,55 +218,103 @@ function getClassroomName(classroomId) {
   return classroom ? classroom.class_room_no : `Class ${classroomId}`;
 }
 
-// FIXED: Back button function that works in both iframe and standalone mode
+function getStudentImageUrl(student) {
+  if (student.stu_image && typeof student.stu_image === 'string' && student.stu_image.length > 10) {
+    if (student.stu_image.startsWith('data:image') || student.stu_image.startsWith('http')) {
+      return student.stu_image;
+    }
+    return `data:image/jpeg;base64,${student.stu_image}`;
+  }
+  return null;
+}
+
 function goBack() {
-  // Check if we are inside an iframe (student portal iframe)
   if (window.parent && window.parent !== window) {
-    // We are in iframe - call parent's closeIframe function
     if (typeof window.parent.closeIframe === 'function') {
       window.parent.closeIframe();
     } else {
-      // Fallback: try to navigate parent back to index
       window.parent.location.href = 'index.html';
     }
   } else {
-    // Standalone mode - go to index
     window.location.href = 'index.html';
   }
 }
 
-async function loadData() {
-  // Try to get student from multiple sources
-  const saved = localStorage.getItem('currentStudent');
-  if(saved) {
-    try {
-      currentStudent = JSON.parse(saved);
-    } catch(e) {}
+async function loadSiblingStudents() {
+  if (!currentStudent) return [];
+  
+  let query = supabase1.from("students").select("*").neq("stu_id", currentStudent.stu_id);
+  
+  if (currentStudent.stu_family_group && currentStudent.stu_family_group !== '') {
+    query = query.eq("stu_family_group", currentStudent.stu_family_group);
+  } 
+  else if (currentStudent.stu_father && currentStudent.stu_father !== '') {
+    query = query.ilike("stu_father", currentStudent.stu_father);
+  } else {
+    return [];
   }
   
-  if(!currentStudent) {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) {
+  const { data, error } = await query;
+  if (!error && data && data.length > 0) {
+    siblingStudents = data;
+    return siblingStudents;
+  }
+  return [];
+}
+
+async function loadStudentFeeDetails(studentId) {
+  const { data, error } = await supabase1
+    .from("student_pay_scale")
+    .select("*")
+    .eq("stu_id", studentId)
+    .order("stu_issu_date", { ascending: false });
+  
+  if (!error && data) {
+    return data;
+  }
+  return [];
+}
+
+async function loadData() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetStudentId = urlParams.get('stu_id');
+  const viewerId = urlParams.get('viewer_id');
+  
+  if (viewerId && viewerId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", viewerId).single();
+    if (!error && data) {
+      viewerStudent = data;
+    }
+  }
+  
+  if (!viewerStudent) {
+    const saved = localStorage.getItem('currentStudent');
+    if (saved) {
       try {
-        const sessionData = JSON.parse(savedLogin);
-        currentStudent = sessionData.student || sessionData;
+        viewerStudent = JSON.parse(saved);
       } catch(e) {}
     }
   }
   
-  // Also check URL parameters (if passed from parent)
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlStudentId = urlParams.get('stu_id');
-  if (!currentStudent && urlStudentId) {
-    const { data, error } = await supabase1
-      .from("students")
-      .select("*")
-      .eq("stu_id", urlStudentId)
-      .single();
+  if (!viewerStudent) {
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if (savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        viewerStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  if (targetStudentId && targetStudentId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", targetStudentId).single();
     if (!error && data) {
       currentStudent = data;
-      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    } else {
+      currentStudent = viewerStudent;
     }
+  } else {
+    currentStudent = viewerStudent;
   }
   
   if(!currentStudent) {
@@ -138,15 +330,20 @@ async function loadData() {
     return;
   }
   
-  const [classrooms, fees] = await Promise.all([
-    supabase1.from("class_rooms").select("*"),
-    supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id).order("stu_issu_date", { ascending: false })
-  ]);
+  const classroomsResult = await supabase1.from("class_rooms").select("*");
+  if(classroomsResult.data) allClassrooms = classroomsResult.data;
   
-  if(classrooms.data) allClassrooms = classrooms.data;
-  if(fees.data) allFees = fees.data;
+  await loadSiblingStudents();
   
-  renderFeePage();
+  allFees = await loadStudentFeeDetails(currentStudent.stu_id);
+  
+  const siblingFeePromises = siblingStudents.map(async (sibling) => {
+    const fees = await loadStudentFeeDetails(sibling.stu_id);
+    return { sibling, fees };
+  });
+  const siblingFeesData = await Promise.all(siblingFeePromises);
+  
+  renderFeePage(siblingFeesData);
 }
 
 function formatDate(dateStr) {
@@ -157,15 +354,84 @@ function formatDate(dateStr) {
   } catch(e) { return dateStr; }
 }
 
-function renderFeePage() {
+function getTotalFee(fees) {
+  return fees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
+}
+
+function getPaidFee(fees) {
+  return fees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
+}
+
+function getDueFee(fees) {
+  return getTotalFee(fees) - getPaidFee(fees);
+}
+
+function renderStudentInfoCard(student, isCurrent = false, fees = null) {
+  const imgUrl = getStudentImageUrl(student);
+  const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
+  const totalFee = fees ? getTotalFee(fees) : 0;
+  const paidFee = fees ? getPaidFee(fees) : 0;
+  const dueFee = fees ? getDueFee(fees) : 0;
+  
+  let avatarHtml = '';
+  if (imgUrl) {
+    avatarHtml = `<img src="${imgUrl}" class="student-avatar-large" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.avatar-large').style.display='flex';">`;
+    avatarHtml += `<div class="avatar-large" style="display:none;">${initial}</div>`;
+  } else {
+    avatarHtml = `<div class="avatar-large">${initial}</div>`;
+  }
+  
+  const highlightClass = isCurrent ? 'highlight' : '';
+  const currentBadge = isCurrent ? '<span class="current-student-badge"><i class="bi bi-star-fill me-1"></i>You</span>' : '';
+  
+  return `
+    <div class="student-info-card ${highlightClass}">
+      <div class="d-flex gap-3 align-items-center">
+        <div style="position:relative;">${avatarHtml}</div>
+        <div>
+          <div class="student-name">${escapeHtml(student.stu_name)} ${currentBadge}</div>
+          <div class="student-details">${escapeHtml(student.stu_admission_no)} | ${getClassroomName(student.stu_class_room_id)}</div>
+        </div>
+      </div>
+      ${fees ? `
+        <div class="fee-row-table">
+          <div class="fee-col">
+            <div class="fee-col-label">Class Fee</div>
+            <div class="fee-col-value class-fee-value">PKR ${totalFee.toLocaleString()}</div>
+          </div>
+          <div class="fee-col">
+            <div class="fee-col-label">Concession</div>
+            <div class="fee-col-value concession-value">PKR ${dueFee.toLocaleString()}</div>
+          </div>
+          <div class="fee-col">
+            <div class="fee-col-label">Fee Scale</div>
+            <div class="fee-col-value fee-scale-value">PKR ${paidFee.toLocaleString()}</div>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderFeePage(siblingFeesData) {
   const container = document.getElementById('appContainer');
   
-  const totalFee = allFees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
-  const paidFee = allFees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
-  const dueFee = totalFee - paidFee;
+  const totalFee = getTotalFee(allFees);
+  const paidFee = getPaidFee(allFees);
+  const dueFee = getDueFee(allFees);
   const paidPercentage = totalFee > 0 ? Math.round((paidFee / totalFee) * 100) : 0;
   
-  let feeHtml = `
+  // Build siblings HTML
+  let siblingsHtml = '';
+  if (siblingStudents && siblingStudents.length > 0) {
+    for (let i = 0; i < siblingStudents.length; i++) {
+      const sibling = siblingStudents[i];
+      const siblingFees = siblingFeesData[i]?.fees || [];
+      siblingsHtml += renderStudentInfoCard(sibling, false, siblingFees);
+    }
+  }
+  
+  let outputHtml = `
     <div class="detail-card">
       <div class="detail-header">
         <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
@@ -173,62 +439,25 @@ function renderFeePage() {
         <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
-        <!-- Student Info -->
-        <div class="mb-3 pb-2 border-bottom">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <strong>${escapeHtml(currentStudent.stu_name)}</strong><br>
-              <small class="text-muted">${escapeHtml(currentStudent.stu_admission_no)}</small>
-            </div>
-            <div class="text-end">
-              <small class="text-muted">Class</small><br>
-              <strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong>
-            </div>
-          </div>
-        </div>
+        <!-- Current Student Info -->
+        ${renderStudentInfoCard(currentStudent, true, allFees)}
         
-        <!-- Summary Cards -->
-        <div class="row g-3 mb-4">
-          <div class="col-4">
-            <div class="text-center p-2 bg-light rounded-3">
-              <small class="text-muted">Total Fee</small>
-              <h5 class="mb-0 text-primary">PKR ${totalFee.toLocaleString()}</h5>
-            </div>
+        ${siblingsHtml ? `
+          <div class="family-header">
+            <i class="bi bi-people-fill me-2"></i> Family Members (Siblings)
           </div>
-          <div class="col-4">
-            <div class="text-center p-2 bg-light rounded-3">
-              <small class="text-muted">Paid</small>
-              <h5 class="mb-0 text-success">PKR ${paidFee.toLocaleString()}</h5>
-            </div>
-          </div>
-          <div class="col-4">
-            <div class="text-center p-2 bg-light rounded-3">
-              <small class="text-muted">Due</small>
-              <h5 class="mb-0 text-danger">PKR ${dueFee.toLocaleString()}</h5>
-            </div>
-          </div>
-        </div>
+          ${siblingsHtml}
+        ` : ''}
         
-        <!-- Progress Bar -->
-        <div class="mb-4">
-          <div class="d-flex justify-content-between small mb-1">
-            <span>Payment Progress</span>
-            <span>${paidPercentage}%</span>
-          </div>
-          <div class="progress" style="height: 8px; border-radius: 10px;">
-            <div class="progress-bar bg-success" style="width: ${paidPercentage}%; border-radius: 10px;"></div>
-          </div>
-        </div>
+        <!-- Payment History -->
+        <div class="mt-3">
+          <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Payment History</h6>
+          <div style="max-height: 300px; overflow-y: auto;">
   `;
   
   if(allFees.length === 0) {
-    feeHtml += '<div class="text-center py-5 text-muted"><i class="bi bi-receipt" style="font-size: 2rem;"></i><br>No fee records found</div>';
+    outputHtml += '<div class="text-center py-4 text-muted"><i class="bi bi-receipt" style="font-size: 1.5rem;"></i><br>No fee records found</div>';
   } else {
-    feeHtml += `
-      <div class="mt-2">
-        <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Payment History</h6>
-        <div style="max-height: 400px; overflow-y: auto;">
-    `;
     for(const f of allFees) {
       let status = '';
       let statusClass = '';
@@ -244,7 +473,7 @@ function renderFeePage() {
         statusClass = 'status-due';
       }
       
-      feeHtml += `
+      outputHtml += `
         <div class="fee-row">
           <div>
             <div class="fw-bold">${f.stu_invoice || 'Invoice'}</div>
@@ -259,11 +488,12 @@ function renderFeePage() {
         </div>
       `;
     }
-    feeHtml += `</div></div>`;
   }
   
-  // Add note section
-  feeHtml += `
+  outputHtml += `
+          </div>
+        </div>
+        
         <div class="mt-4 p-3 bg-light rounded-3">
           <small class="text-muted d-flex align-items-center gap-2">
             <i class="bi bi-info-circle-fill text-primary"></i>
@@ -274,10 +504,9 @@ function renderFeePage() {
     </div>
   `;
   
-  container.innerHTML = feeHtml;
+  container.innerHTML = outputHtml;
 }
 
-// Listen for messages from parent (optional)
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'logout') {
     currentStudent = null;
@@ -292,7 +521,6 @@ window.addEventListener('message', function(event) {
 
 loadData();
 
-// Make functions global for button onclick
 window.goBack = goBack;
 </script>
 </body>
