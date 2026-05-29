@@ -17,10 +17,24 @@
   
   .detail-card { background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
   .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
-  .back-btn { background: transparent; border: none; color: white; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
   
   .expand-collapse-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
-  .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; }
+  .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.2s; }
+  .expand-collapse-btn:hover { background: #e2e8f0; }
   
   .exam-group { margin-bottom: 12px; border-radius: 16px; background: white; border: 1px solid #eef2f8; overflow: hidden; }
   .exam-group-header {
@@ -31,9 +45,11 @@
     justify-content: space-between;
     align-items: center;
     border-bottom: 2px solid #d1dbe8;
+    transition: background 0.2s;
   }
+  .exam-group-header:hover { background: linear-gradient(135deg, #e8edff, #dfe4f0); }
   .exam-group-header .title { font-weight: 800; font-size: 1rem; color: #1e3c72; }
-  .exam-group-header .badge-count { 
+  .badge-count { 
     font-size: 0.65rem; 
     background: #e2e8f0; 
     padding: 3px 10px; 
@@ -42,7 +58,7 @@
     font-weight: 600; 
     display: inline-block; 
   }
-  .exam-group-header .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
+  .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
   .exam-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
   .exam-group-content { overflow: hidden; transition: max-height 0.3s ease; }
   .exam-group-content.collapsed { max-height: 0 !important; padding: 0; }
@@ -70,8 +86,6 @@
     color: #1e3c72;
   }
   .grade-badge {
-    background: #d1fae5;
-    color: #065f46;
     padding: 4px 12px;
     border-radius: 30px;
     font-size: 0.7rem;
@@ -92,25 +106,10 @@
     padding: 10px 0;
     border-bottom: 1px solid #f1f5f9;
   }
-  .subject-row:last-child {
-    border-bottom: none;
-  }
-  .subject-name {
-    font-weight: 500;
-    font-size: 0.8rem;
-    color: #1e293b;
-  }
-  .subject-marks {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #1e3c72;
-  }
-  .subject-grade {
-    font-size: 0.65rem;
-    padding: 2px 8px;
-    border-radius: 20px;
-    margin-left: 8px;
-  }
+  .subject-row:last-child { border-bottom: none; }
+  .subject-name { font-weight: 500; font-size: 0.8rem; color: #1e293b; }
+  .subject-marks { font-size: 0.8rem; font-weight: 600; color: #1e3c72; }
+  .subject-grade { font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
   .result-footer {
     margin-top: 10px;
     padding-top: 8px;
@@ -154,7 +153,10 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+function escapeHtml(str) { 
+  if(!str) return ''; 
+  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); 
+}
 
 function getClassroomName(classroomId) {
   const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
@@ -181,17 +183,67 @@ function getConditionIdFromPercentage(p) {
   return 1;
 }
 
+// FIXED: Back button function that works in both iframe and standalone mode
+function goBack() {
+  // Check if we are inside an iframe (student portal iframe)
+  if (window.parent && window.parent !== window) {
+    // We are in iframe - call parent's closeIframe function
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      // Fallback: try to navigate parent back to index
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    // Standalone mode - go to index
+    window.location.href = 'index.html';
+  }
+}
+
 async function loadData() {
+  // Try to get student from multiple sources
   const saved = localStorage.getItem('currentStudent');
   if(saved) {
-    currentStudent = JSON.parse(saved);
-  } else {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) currentStudent = JSON.parse(savedLogin);
+    try {
+      currentStudent = JSON.parse(saved);
+    } catch(e) {}
   }
   
   if(!currentStudent) {
-    window.location.href = 'index.html';
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if(savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        currentStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Also check URL parameters (if passed from parent)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlStudentId = urlParams.get('stu_id');
+  if (!currentStudent && urlStudentId) {
+    const { data, error } = await supabase1
+      .from("students")
+      .select("*")
+      .eq("stu_id", urlStudentId)
+      .single();
+    if (!error && data) {
+      currentStudent = data;
+      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    }
+  }
+  
+  if(!currentStudent) {
+    showToast("Session expired. Please login again.");
+    setTimeout(() => {
+      if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+        window.parent.location.href = 'index.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }, 1500);
     return;
   }
   
@@ -217,10 +269,6 @@ async function loadData() {
   renderResultPage();
 }
 
-function goBack() {
-  window.location.href = 'index.html';
-}
-
 function renderResultPage() {
   const container = document.getElementById('appContainer');
   
@@ -229,9 +277,22 @@ function renderResultPage() {
       <div class="detail-header">
         <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
         <h5 class="mb-0">📊 My Results</h5>
-        <div></div>
+        <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
+        <!-- Student Info Summary -->
+        <div class="mb-3 pb-2 border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>${escapeHtml(currentStudent.stu_name)}</strong><br>
+              <small class="text-muted">${escapeHtml(currentStudent.stu_admission_no)}</small>
+            </div>
+            <div class="text-end">
+              <small class="text-muted">Class</small><br>
+              <strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong>
+            </div>
+          </div>
+        </div>
         <div class="expand-collapse-bar" id="expandCollapseBar"></div>
         <div id="examGroupsContainer"></div>
       </div>
@@ -258,11 +319,6 @@ async function renderExamGroups() {
         hasResult = true;
         break;
       }
-    }
-    
-    // Also check for absent records
-    for(const ds of dateSheetsForExam) {
-      const result = allExamResults.find(r => r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
       if(result && result.exam_absentees === 1) {
         hasResult = true;
         break;
@@ -275,7 +331,7 @@ async function renderExamGroups() {
   }
   
   if(examTypesWithResults.length === 0) {
-    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox"></i><p>No results found yet</p></div>`;
+    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">No results found yet</p><small class="text-muted">Results will appear here once published</small></div>`;
     document.getElementById('expandCollapseBar').style.display = 'none';
     return;
   }
@@ -304,7 +360,7 @@ async function renderExamGroups() {
           totalObtained += Math.round(parseFloat(result.exam_sub_marks_obtain) || 0);
           resultsCount++;
         } else if(result && result.exam_absentees === 1) {
-          resultsCount++; // Count absent as marked
+          resultsCount++;
         }
       }
     }
@@ -317,11 +373,11 @@ async function renderExamGroups() {
       <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${et.exam_type_id}')">
         <div>
           <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(et.exam_type1)}</div>
-          <div class="small text-muted mt-1">${et.exam_type_start_date || ''} to ${et.exam_type_end_date || ''}</div>
+          <div class="small text-muted mt-1">${et.exam_type_start_date || ''} ${et.exam_type_end_date ? 'to ' + et.exam_type_end_date : ''}</div>
         </div>
         <div class="text-end">
           <div>
-            <span class="badge-count"><i class="bi bi-journal-bookmark-fill"></i> ${resultsCount}/${totalSubjects} subjects</span>
+            <span class="badge-count"><i class="bi bi-journal-bookmark-fill"></i> ${resultsCount}/${totalSubjects}</span>
             <span class="badge-count ms-2" style="background:${overallGrade.class === 'grade-a-plus' ? '#e0e7ff' : (overallGrade.class === 'grade-a' ? '#d1fae5' : '#e2e8f0')}">🏆 ${overallGrade.text}</span>
           </div>
           <i class="bi bi-chevron-down toggle-icon mt-1"></i>
@@ -372,9 +428,13 @@ async function renderResultsForExam(examTypeId) {
       const hasMarks = result && result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '';
       
       // Get book name
-      let bookName = "Book not found";
-      const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", subject.sub_subject_book_id).single();
-      if(bookData) bookName = bookData.subject_books_name;
+      let bookName = "Subject";
+      if (subject.sub_subject_book_id) {
+        const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", subject.sub_subject_book_id).single();
+        if(bookData) bookName = bookData.subject_books_name;
+      } else if (subject.sub_name) {
+        bookName = subject.sub_name;
+      }
       
       let marksDisplay = '';
       let gradeDisplay = '';
@@ -501,7 +561,22 @@ function collapseAllGroups() {
   }
 }
 
+// Listen for messages from parent (optional)
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'logout') {
+    currentStudent = null;
+    localStorage.removeItem('currentStudent');
+    localStorage.removeItem('studentLoggedIn');
+    if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    }
+    window.location.href = 'index.html';
+  }
+});
+
 loadData();
+
+// Make functions global for button onclick
 window.goBack = goBack;
 window.toggleExamGroup = toggleExamGroup;
 window.expandAllGroups = expandAllGroups;
