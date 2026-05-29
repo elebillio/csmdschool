@@ -17,7 +17,20 @@
   
   .detail-card { background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
   .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
-  .back-btn { background: transparent; border: none; color: white; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
   
   /* Status Styles */
   .status-present { background: #d1fae5; color: #065f46; }
@@ -44,7 +57,8 @@
   .legend-dot { width: 12px; height: 12px; border-radius: 20px; display: inline-block; margin-right: 4px; }
   
   .month-nav { display: flex; justify-content: space-between; align-items: center; margin: 15px 0 10px; }
-  .month-nav-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.7rem; font-weight: 600; color: #1e3c72; }
+  .month-nav-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 6px 14px; font-size: 0.7rem; font-weight: 600; color: #1e3c72; cursor: pointer; transition: background 0.2s; }
+  .month-nav-btn:hover { background: #e2e8f0; }
   
   .status-summary { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; padding: 10px; background: #f8fafc; border-radius: 30px; }
   .summary-badge { padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
@@ -123,6 +137,23 @@ function getStudentImageUrl(student) {
   return null;
 }
 
+// FIXED: Back button function that works in both iframe and standalone mode
+function goBack() {
+  // Check if we are inside an iframe (student portal iframe)
+  if (window.parent && window.parent !== window) {
+    // We are in iframe - call parent's closeIframe function
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      // Fallback: try to navigate parent back to index
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    // Standalone mode - go to index
+    window.location.href = 'index.html';
+  }
+}
+
 async function loadStatuses() { 
   const { data } = await supabase1.from("att_status").select("*"); 
   if(data && data.length) attendanceStatuses = data; 
@@ -130,16 +161,49 @@ async function loadStatuses() {
 }
 
 async function loadData() {
+  // Try to get student from multiple sources
   const saved = localStorage.getItem('currentStudent');
   if(saved) {
-    currentStudent = JSON.parse(saved);
-  } else {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) currentStudent = JSON.parse(savedLogin);
+    try {
+      currentStudent = JSON.parse(saved);
+    } catch(e) {}
   }
   
   if(!currentStudent) {
-    window.location.href = 'index.html';
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if(savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        currentStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Also check URL parameters (if passed from parent)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlStudentId = urlParams.get('stu_id');
+  if (!currentStudent && urlStudentId) {
+    const { data, error } = await supabase1
+      .from("students")
+      .select("*")
+      .eq("stu_id", urlStudentId)
+      .single();
+    if (!error && data) {
+      currentStudent = data;
+      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    }
+  }
+  
+  if(!currentStudent) {
+    showToast("Session expired. Please login again.");
+    setTimeout(() => {
+      if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+        window.parent.location.href = 'index.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }, 1500);
     return;
   }
   
@@ -155,10 +219,6 @@ async function loadData() {
   else await loadStatuses();
   
   renderAttendancePage();
-}
-
-function goBack() {
-  window.location.href = 'index.html';
 }
 
 function renderAttendancePage() {
@@ -190,7 +250,7 @@ function renderAttendancePage() {
       <div class="detail-header">
         <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
         <h5 class="mb-0">📅 My Attendance</h5>
-        <div></div>
+        <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
         <div class="report-header d-flex align-items-center gap-3">
@@ -401,6 +461,19 @@ function changeMonth(delta) {
   currentReportMonth.setMonth(currentReportMonth.getMonth() + delta);
   renderMonthCalendar();
 }
+
+// Listen for messages from parent (optional)
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'logout') {
+    currentStudent = null;
+    localStorage.removeItem('currentStudent');
+    localStorage.removeItem('studentLoggedIn');
+    if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    }
+    window.location.href = 'index.html';
+  }
+});
 
 // Make functions global
 window.goBack = goBack;
