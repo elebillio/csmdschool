@@ -14,17 +14,33 @@
   * { font-family: system-ui, sans-serif; }
   body { background: #f0f4f8; padding: 16px; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; }
-  .detail-card { background: white; border-radius: 24px; overflow: hidden; margin-bottom: 16px; }
+  .detail-card { background: white; border-radius: 24px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.04); }
   .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
-  .back-btn { background: transparent; border: none; color: white; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
   .info-row { display: flex; padding: 12px 20px; border-bottom: 1px solid #eef2f8; }
   .info-label { width: 40%; font-weight: 700; font-size: 0.75rem; color: #475569; }
   .info-value { width: 60%; font-size: 0.85rem; color: #0f172a; }
   .fee-row { display: flex; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid #eef2f8; }
+  .fee-row:hover { background: #f8fafc; }
   .status-paid { color: #10b981; font-weight: 600; }
   .status-due { color: #ef4444; font-weight: 600; }
+  .status-partial { color: #f59e0b; font-weight: 600; }
   .toast-custom { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .toast-custom.show { opacity: 1; }
+  .summary-card { background: linear-gradient(135deg, #667eea10, #764ba210); border-radius: 16px; padding: 16px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -48,30 +64,83 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+function escapeHtml(str) { 
+  if(!str) return ''; 
+  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); 
+}
 
 function getClassroomName(classroomId) {
   const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
   return classroom ? classroom.class_room_no : `Class ${classroomId}`;
 }
 
+// FIXED: Back button function that works in both iframe and standalone mode
+function goBack() {
+  // Check if we are inside an iframe (student portal iframe)
+  if (window.parent && window.parent !== window) {
+    // We are in iframe - call parent's closeIframe function
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      // Fallback: try to navigate parent back to index
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    // Standalone mode - go to index
+    window.location.href = 'index.html';
+  }
+}
+
 async function loadData() {
+  // Try to get student from multiple sources
   const saved = localStorage.getItem('currentStudent');
   if(saved) {
-    currentStudent = JSON.parse(saved);
-  } else {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) currentStudent = JSON.parse(savedLogin);
+    try {
+      currentStudent = JSON.parse(saved);
+    } catch(e) {}
   }
   
   if(!currentStudent) {
-    window.location.href = 'index.html';
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if(savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        currentStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Also check URL parameters (if passed from parent)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlStudentId = urlParams.get('stu_id');
+  if (!currentStudent && urlStudentId) {
+    const { data, error } = await supabase1
+      .from("students")
+      .select("*")
+      .eq("stu_id", urlStudentId)
+      .single();
+    if (!error && data) {
+      currentStudent = data;
+      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    }
+  }
+  
+  if(!currentStudent) {
+    showToast("Session expired. Please login again.");
+    setTimeout(() => {
+      if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+        window.parent.location.href = 'index.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }, 1500);
     return;
   }
   
   const [classrooms, fees] = await Promise.all([
     supabase1.from("class_rooms").select("*"),
-    supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id)
+    supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id).order("stu_issu_date", { ascending: false })
   ]);
   
   if(classrooms.data) allClassrooms = classrooms.data;
@@ -80,8 +149,12 @@ async function loadData() {
   renderFeePage();
 }
 
-function goBack() {
-  window.location.href = 'index.html';
+function formatDate(dateStr) {
+  if(!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-PK');
+  } catch(e) { return dateStr; }
 }
 
 function renderFeePage() {
@@ -90,45 +163,136 @@ function renderFeePage() {
   const totalFee = allFees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
   const paidFee = allFees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
   const dueFee = totalFee - paidFee;
+  const paidPercentage = totalFee > 0 ? Math.round((paidFee / totalFee) * 100) : 0;
   
   let feeHtml = `
     <div class="detail-card">
       <div class="detail-header">
         <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
         <h5 class="mb-0">💰 Fee Details</h5>
-        <div></div>
+        <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
-        <div class="bg-light p-3 rounded-3 mb-3 text-center">
-          <h3 class="text-danger mb-0">PKR ${dueFee.toLocaleString()}</h3>
-          <small>Total Due</small>
+        <!-- Student Info -->
+        <div class="mb-3 pb-2 border-bottom">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>${escapeHtml(currentStudent.stu_name)}</strong><br>
+              <small class="text-muted">${escapeHtml(currentStudent.stu_admission_no)}</small>
+            </div>
+            <div class="text-end">
+              <small class="text-muted">Class</small><br>
+              <strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong>
+            </div>
+          </div>
         </div>
-        <div class="row mb-3">
-          <div class="col-6 text-center"><h5>PKR ${totalFee.toLocaleString()}</h5><small>Total Fee</small></div>
-          <div class="col-6 text-center"><h5 class="text-success">PKR ${paidFee.toLocaleString()}</h5><small>Paid</small></div>
+        
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-4">
+            <div class="text-center p-2 bg-light rounded-3">
+              <small class="text-muted">Total Fee</small>
+              <h5 class="mb-0 text-primary">PKR ${totalFee.toLocaleString()}</h5>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center p-2 bg-light rounded-3">
+              <small class="text-muted">Paid</small>
+              <h5 class="mb-0 text-success">PKR ${paidFee.toLocaleString()}</h5>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="text-center p-2 bg-light rounded-3">
+              <small class="text-muted">Due</small>
+              <h5 class="mb-0 text-danger">PKR ${dueFee.toLocaleString()}</h5>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between small mb-1">
+            <span>Payment Progress</span>
+            <span>${paidPercentage}%</span>
+          </div>
+          <div class="progress" style="height: 8px; border-radius: 10px;">
+            <div class="progress-bar bg-success" style="width: ${paidPercentage}%; border-radius: 10px;"></div>
+          </div>
         </div>
   `;
   
   if(allFees.length === 0) {
-    feeHtml += '<div class="text-center py-4 text-muted">No fee records found</div>';
+    feeHtml += '<div class="text-center py-5 text-muted"><i class="bi bi-receipt" style="font-size: 2rem;"></i><br>No fee records found</div>';
   } else {
-    feeHtml += `<div class="mt-3"><h6 class="fw-bold">📋 Payment History</h6>`;
+    feeHtml += `
+      <div class="mt-2">
+        <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Payment History</h6>
+        <div style="max-height: 400px; overflow-y: auto;">
+    `;
     for(const f of allFees) {
-      const status = f.stu_due === 0 ? 'Paid' : (f.stu_paid > 0 ? 'Partial' : 'Unpaid');
-      const statusClass = f.stu_due === 0 ? 'status-paid' : 'status-due';
-      feeHtml += `<div class="fee-row">
-        <div><small>${f.stu_invoice || 'N/A'}</small><br><small class="text-muted">${f.stu_issu_date || '—'}</small></div>
-        <div class="text-end"><strong>PKR ${(f.stu_paid || 0).toLocaleString()}</strong><br><small class="${statusClass}">${status}</small></div>
-      </div>`;
+      let status = '';
+      let statusClass = '';
+      const dueAmount = (Number(f.stu_total) || 0) - (Number(f.stu_paid) || 0);
+      if (dueAmount <= 0) {
+        status = 'Paid';
+        statusClass = 'status-paid';
+      } else if ((Number(f.stu_paid) || 0) > 0) {
+        status = 'Partial';
+        statusClass = 'status-partial';
+      } else {
+        status = 'Unpaid';
+        statusClass = 'status-due';
+      }
+      
+      feeHtml += `
+        <div class="fee-row">
+          <div>
+            <div class="fw-bold">${f.stu_invoice || 'Invoice'}</div>
+            <small class="text-muted">Issued: ${formatDate(f.stu_issu_date)}</small>
+            ${f.stu_pay_date ? `<br><small class="text-success">Paid: ${formatDate(f.stu_pay_date)}</small>` : ''}
+          </div>
+          <div class="text-end">
+            <div><strong>PKR ${(Number(f.stu_total) || 0).toLocaleString()}</strong></div>
+            <small class="${statusClass}">${status}</small>
+            ${dueAmount > 0 && dueAmount < (Number(f.stu_total) || 0) ? `<div><small class="text-warning">Due: PKR ${dueAmount.toLocaleString()}</small></div>` : ''}
+          </div>
+        </div>
+      `;
     }
-    feeHtml += `</div>`;
+    feeHtml += `</div></div>`;
   }
   
-  feeHtml += `</div></div>`;
+  // Add note section
+  feeHtml += `
+        <div class="mt-4 p-3 bg-light rounded-3">
+          <small class="text-muted d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill text-primary"></i>
+            <span>Fee submission deadline is 10th of every month. Late fee charges may apply.</span>
+          </small>
+        </div>
+      </div>
+    </div>
+  `;
+  
   container.innerHTML = feeHtml;
 }
 
+// Listen for messages from parent (optional)
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'logout') {
+    currentStudent = null;
+    localStorage.removeItem('currentStudent');
+    localStorage.removeItem('studentLoggedIn');
+    if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    }
+    window.location.href = 'index.html';
+  }
+});
+
 loadData();
+
+// Make functions global for button onclick
 window.goBack = goBack;
 </script>
 </body>
