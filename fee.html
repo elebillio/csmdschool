@@ -38,8 +38,32 @@
   .info-row { display: flex; padding: 12px 0; border-bottom: 1px solid #eef2f8; }
   .info-label { width: 35%; font-weight: 700; font-size: 0.75rem; color: #475569; }
   .info-value { width: 65%; font-size: 0.85rem; font-weight: 500; color: #0f172a; }
-  .action-bar { display: flex; gap: 12px; padding: 16px 20px; background: #fefefe; border-top: 1px solid #ecf3f8; }
-  .btn-action { flex: 1; border-radius: 60px; padding: 10px 0; font-weight: 600; }
+  
+  /* FIXED ACTION BAR - SMALL BUTTONS WITH SHORT TEXT */
+  .action-bar {
+    display: flex;
+    gap: 8px;
+    padding: 16px 20px;
+    background: #fefefe;
+    border-top: 1px solid #ecf3f8;
+    flex-wrap: wrap;
+  }
+  .btn-action {
+    border-radius: 60px;
+    padding: 8px 10px;
+    font-weight: 600;
+    font-size: 0.68rem;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .btn-action i {
+    font-size: 0.7rem;
+  }
   
   .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
   .filter-row select, .filter-row input { flex: 1; border-radius: 30px; border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 0.75rem; background: #f8fafc; }
@@ -49,9 +73,22 @@
   .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   
-  .header { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px; border-radius: 0 0 28px 28px; margin-bottom: 16px; }
-  .header h2 { margin: 0; font-size: 1.4rem; }
-  .header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.75rem; }
+  .toast-custom {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast-custom.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -109,8 +146,10 @@
     </div>
     <div class="info-grid" id="feeDetailInfo"></div>
     <div class="action-bar">
-      <button class="btn btn-outline-primary btn-action" id="editFeeBtn"><i class="bi bi-pencil-square"></i> Edit Payment</button>
-      <button class="btn btn-outline-danger btn-action" id="deleteFeeBtn"><i class="bi bi-trash3"></i> Delete Invoice</button>
+      <button class="btn btn-outline-primary btn-action" id="editFeeBtn"><i class="bi bi-pencil-square"></i> Edit</button>
+      <button class="btn btn-outline-success btn-action" id="sendInvoiceBtn"><i class="bi bi-whatsapp"></i> Invoice</button>
+      <button class="btn btn-outline-warning btn-action" id="sendReminderBtn"><i class="bi bi-bell-fill"></i> Remind</button>
+      <button class="btn btn-outline-danger btn-action" id="deleteFeeBtn"><i class="bi bi-trash3"></i> Delete</button>
     </div>
   </div>
 </div>
@@ -163,6 +202,8 @@
   </div>
 </div>
 
+<div id="toastMsg" class="toast-custom"></div>
+
 <script>
 // ======================= SUPABASE INIT =======================
 const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
@@ -175,12 +216,129 @@ let allClassrooms = [];
 let currentFee = null;
 let groupStates = {};
 
+function showToast(message) {
+  const toast = document.getElementById('toastMsg');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
 function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
 
 function getClassroomName(classroomId) {
     if (!classroomId) return 'Unknown Class';
     const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
     return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+// ======================= WHATSAPP SHARE FUNCTIONS =======================
+function isValidWhatsAppNumber(mobile) {
+  if(!mobile || mobile === 'No mobile' || mobile === '') return false;
+  let clean = mobile.replace(/[\s\-]/g, '');
+  if(clean.length >= 10 && clean.length <= 13) {
+    if(clean.match(/^(03|3|92)\d{9,10}$/)) return true;
+  }
+  return false;
+}
+
+function cleanMobileNumber(mobile) {
+  let clean = mobile.replace(/[\s\-]/g, '');
+  if (clean.startsWith('0')) clean = clean.substring(1);
+  if (!clean.startsWith('92')) clean = '92' + clean;
+  return clean;
+}
+
+function shareViaWhatsApp(mobile, message) {
+  const cleanMobile = cleanMobileNumber(mobile);
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodedMessage}`;
+  
+  if (window.Android && window.Android.shareToWhatsApp) {
+    window.Android.shareToWhatsApp(cleanMobile, message);
+    showToast("Opening WhatsApp...");
+  } else {
+    window.location.href = whatsappUrl;
+  }
+}
+
+async function sendInvoice() {
+  if (!currentFee) return;
+  
+  const student = allStudents.find(s => s.stu_id === currentFee.stu_id);
+  if (!student) { alert("Student not found"); return; }
+  
+  let mobile = student.stu_mobile1 || student.stu_mobile2;
+  if (!mobile || !isValidWhatsAppNumber(mobile)) {
+    alert("No valid WhatsApp number found for this student");
+    return;
+  }
+  
+  const schoolName = "The Leads High School (Dinga)";
+  const paid = Number(currentFee.stu_paid) || 0;
+  const due = Number(currentFee.stu_due) || 0;
+  const total = Number(currentFee.stu_total) || 0;
+  const status = due === 0 ? "✅ FULLY PAID" : (paid > 0 ? "⚠️ PARTIALLY PAID" : "❌ UNPAID");
+  const statusEmoji = due === 0 ? "✅" : (paid > 0 ? "⚠️" : "❌");
+  const statusText = due === 0 ? "PAID" : (paid > 0 ? "PARTIAL" : "UNPAID");
+  
+  let message = `🏫 *FEE INVOICE - ${schoolName}*\n\n`;
+  message += `*Student Name:* ${student.stu_name}\n`;
+  message += `*Admission No:* ${student.stu_admission_no}\n`;
+  message += `*Father Name:* ${student.stu_father}\n`;
+  message += `*Class:* ${getClassroomName(student.stu_class_room_id)}\n`;
+  message += `*Invoice No:* ${currentFee.stu_invoice || 'N/A'}\n`;
+  message += `*Receipt No:* ${currentFee.stu_receipt || 'Not issued'}\n`;
+  message += `*Fee ID:* ${currentFee.stu_pay_id}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `💰 *FEE DETAILS*\n`;
+  message += `*Total Amount:* PKR ${total.toLocaleString()}\n`;
+  message += `*Paid Amount:* PKR ${paid.toLocaleString()}\n`;
+  message += `*Due Amount:* PKR ${due.toLocaleString()}\n`;
+  message += `*Status:* ${statusEmoji} ${statusText}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `*📅 Payment Date:* ${currentFee.stu_pay_date || 'Not paid yet'}\n`;
+  message += `*📆 Issue Date:* ${currentFee.stu_issu_date || new Date().toISOString().split('T')[0]}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `📱 *Generated by: ${schoolName}*`;
+  
+  shareViaWhatsApp(mobile, message);
+}
+
+async function sendFeeReminder() {
+  if (!currentFee) return;
+  
+  const student = allStudents.find(s => s.stu_id === currentFee.stu_id);
+  if (!student) { alert("Student not found"); return; }
+  
+  let mobile = student.stu_mobile1 || student.stu_mobile2;
+  if (!mobile || !isValidWhatsAppNumber(mobile)) {
+    alert("No valid WhatsApp number found for this student");
+    return;
+  }
+  
+  const schoolName = "The Leads High School (Dinga)";
+  const due = Number(currentFee.stu_due) || 0;
+  const total = Number(currentFee.stu_total) || 0;
+  const paid = Number(currentFee.stu_paid) || 0;
+  
+  let message = `💰 *FEE REMINDER - ${schoolName}*\n\n`;
+  message += `*Dear Parent,*\n\n`;
+  message += `*Student:* ${student.stu_name}\n`;
+  message += `*Admission No:* ${student.stu_admission_no}\n`;
+  message += `*Class:* ${getClassroomName(student.stu_class_room_id)}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `*📋 PENDING FEE DETAILS*\n`;
+  message += `*Total Amount:* PKR ${total.toLocaleString()}\n`;
+  message += `*Paid Amount:* PKR ${paid.toLocaleString()}\n`;
+  message += `*Due Amount:* PKR ${due.toLocaleString()}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `*Invoice No:* ${currentFee.stu_invoice || 'N/A'}\n`;
+  message += `*Fee ID:* ${currentFee.stu_pay_id}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  message += `⚠️ *Please clear the pending fee at earliest.*\n\n`;
+  message += `📱 *${schoolName}*`;
+  
+  shareViaWhatsApp(mobile, message);
 }
 
 // =====================================================
@@ -216,7 +374,6 @@ async function getNextReceiptId() {
         
         const nextNumber = maxNumber + 1;
         const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
-        console.log("Generated new Receipt ID:", newId);
         return newId;
         
     } catch (err) {
@@ -225,9 +382,6 @@ async function getNextReceiptId() {
     }
 }
 
-// =====================================================
-// AUTO GENERATE FEE ID: AFE-000001, AFE-000002...
-// =====================================================
 async function getNextFeeId() {
     try {
         const { data, error } = await supabase1
@@ -258,7 +412,6 @@ async function getNextFeeId() {
         
         const nextNumber = maxNumber + 1;
         const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
-        console.log("Generated new Fee ID:", newId);
         return newId;
         
     } catch (err) {
@@ -316,7 +469,6 @@ function populateFilters() {
     }
 }
 
-// ======================= FEE UI with Expandable Groups =======================
 function toggleGroup(groupKey) {
     const content = document.getElementById(`group-content-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
     const header = document.getElementById(`group-header-${groupKey.replace(/[^a-zA-Z0-9]/g, '_')}`);
@@ -488,7 +640,6 @@ function backToFeeList() {
     renderFeeList();
 }
 
-// ======================= FEE CRUD OPERATIONS =======================
 async function deleteFeeRecord() {
     if (!currentFee) return;
     if (!confirm(`⚠️ Delete fee record ${currentFee.stu_pay_id} (Invoice: ${currentFee.stu_invoice}) permanently?`)) return;
@@ -515,7 +666,6 @@ function editFeeRecord() {
     document.getElementById("edit_paid").value = currentFee.stu_paid || 0;
     document.getElementById("edit_pay_date").value = currentFee.stu_pay_date || '';
     
-    // Generate new receipt number automatically
     getNextReceiptId().then(newReceipt => {
         document.getElementById("edit_receipt").value = newReceipt;
     });
@@ -565,12 +715,14 @@ document.getElementById('monthFilter')?.addEventListener('change', () => renderF
 document.getElementById('groupBySelect')?.addEventListener('change', () => renderFeeList());
 document.getElementById('editFeeBtn')?.addEventListener('click', editFeeRecord);
 document.getElementById('deleteFeeBtn')?.addEventListener('click', deleteFeeRecord);
+document.getElementById('sendInvoiceBtn')?.addEventListener('click', sendInvoice);
+document.getElementById('sendReminderBtn')?.addEventListener('click', sendFeeReminder);
 
-// Make functions global for onclick events
 window.toggleGroup = toggleGroup;
 window.updateFeePayment = updateFeePayment;
+window.sendInvoice = sendInvoice;
+window.sendFeeReminder = sendFeeReminder;
 
-// Initialize
 loadAllData();
 </script>
 </body>
