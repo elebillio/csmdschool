@@ -32,7 +32,6 @@
   }
   .back-btn:hover { background: rgba(255,255,255,0.3); }
   
-  /* Status Styles */
   .status-present { background: #d1fae5; color: #065f46; }
   .status-absent { background: #fee2e2; color: #991b1b; }
   .status-sick-leave { background: #fed7aa; color: #9a3412; }
@@ -90,13 +89,13 @@ const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentStudent = null;
+let viewerStudent = null;
 let allAttendanceRecords = [];
 let allClassrooms = [];
 let attendanceStatuses = [];
 let currentReportMonth = new Date();
 let reportFilter = 'month';
 
-// Status Configuration
 const statusConfig = { 
     1: { name: 'Present', class: 'status-present', color: '#10b981', bg: '#d1fae5' }, 
     2: { name: 'Absent', class: 'status-absent', color: '#ef4444', bg: '#fee2e2' }, 
@@ -110,7 +109,6 @@ const statusConfig = {
 
 function getStatusName(id) { return statusConfig[id]?.name || 'Not Marked'; }
 function getStatusBgColor(id) { return statusConfig[id]?.bg || '#f1f5f9'; }
-function getStatusClass(id) { return statusConfig[id]?.class || ''; }
 function getStatusColor(id) { return statusConfig[id]?.color || '#475569'; }
 function formatDate(d) { let y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
@@ -137,19 +135,14 @@ function getStudentImageUrl(student) {
   return null;
 }
 
-// FIXED: Back button function that works in both iframe and standalone mode
 function goBack() {
-  // Check if we are inside an iframe (student portal iframe)
   if (window.parent && window.parent !== window) {
-    // We are in iframe - call parent's closeIframe function
     if (typeof window.parent.closeIframe === 'function') {
       window.parent.closeIframe();
     } else {
-      // Fallback: try to navigate parent back to index
       window.parent.location.href = 'index.html';
     }
   } else {
-    // Standalone mode - go to index
     window.location.href = 'index.html';
   }
 }
@@ -161,37 +154,48 @@ async function loadStatuses() {
 }
 
 async function loadData() {
-  // Try to get student from multiple sources
-  const saved = localStorage.getItem('currentStudent');
-  if(saved) {
-    try {
-      currentStudent = JSON.parse(saved);
-    } catch(e) {}
+  // Get URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetStudentId = urlParams.get('stu_id');
+  const viewerId = urlParams.get('viewer_id');
+  
+  // Load viewer student (logged-in user)
+  if (viewerId) {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", viewerId).single();
+    if (!error && data) {
+      viewerStudent = data;
+    }
   }
   
-  if(!currentStudent) {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) {
+  if (!viewerStudent) {
+    const saved = localStorage.getItem('currentStudent');
+    if (saved) {
       try {
-        const sessionData = JSON.parse(savedLogin);
-        currentStudent = sessionData.student || sessionData;
+        viewerStudent = JSON.parse(saved);
       } catch(e) {}
     }
   }
   
-  // Also check URL parameters (if passed from parent)
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlStudentId = urlParams.get('stu_id');
-  if (!currentStudent && urlStudentId) {
-    const { data, error } = await supabase1
-      .from("students")
-      .select("*")
-      .eq("stu_id", urlStudentId)
-      .single();
+  if (!viewerStudent) {
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if (savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        viewerStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Load target student (the one whose data we want to view - could be sibling)
+  if (targetStudentId && targetStudentId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", targetStudentId).single();
     if (!error && data) {
       currentStudent = data;
-      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    } else {
+      currentStudent = viewerStudent;
     }
+  } else {
+    currentStudent = viewerStudent;
   }
   
   if(!currentStudent) {
@@ -234,7 +238,13 @@ function renderAttendancePage() {
     avatarHtml = `<div class="avatar-small">${initial}</div>`;
   }
   
-  // Calculate statistics
+  // Show which student's data is being viewed
+  const viewingNote = (viewerStudent && currentStudent.stu_id !== viewerStudent.stu_id) 
+    ? `<div class="alert alert-info py-1 px-3 mb-2 rounded-pill text-center" style="font-size:0.7rem; background:#dbeafe; color:#1e40af; border:none;">
+        <i class="bi bi-eye-fill me-1"></i> Viewing: ${escapeHtml(currentStudent.stu_name)} (${escapeHtml(currentStudent.stu_admission_no)})
+       </div>`
+    : '';
+  
   let presentCount = 0, absentCount = 0, leaveCount = 0;
   const leaveStatusIds = [3,4,5,6,7,8];
   for(const rec of allAttendanceRecords) {
@@ -253,6 +263,7 @@ function renderAttendancePage() {
         <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
+        ${viewingNote}
         <div class="report-header d-flex align-items-center gap-3">
           <div style="position:relative;">${avatarHtml}</div>
           <div class="text-start">
@@ -312,7 +323,6 @@ async function renderMonthCalendar() {
     dates.push(d);
   }
   
-  // Fetch attendance for all dates in batch
   const dateStrs = dates.map(d => formatDate(d));
   const fetchPromises = dateStrs.map(dateStr => 
     supabase1.from("students_attendence")
@@ -367,8 +377,8 @@ async function renderMonthCalendar() {
 }
 
 async function renderSessionCalendar() {
-  const startDate = new Date(2026, 2, 1); // March 1, 2026
-  const endDate = new Date(2027, 1, 28); // Feb 28, 2027
+  const startDate = new Date(2026, 2, 1);
+  const endDate = new Date(2027, 1, 28);
   
   const allDates = [];
   let current = new Date(startDate);
@@ -377,7 +387,6 @@ async function renderSessionCalendar() {
     current.setDate(current.getDate() + 1);
   }
   
-  // Fetch all attendance records in batch
   const fetchPromises = allDates.map(dateStr => 
     supabase1.from("students_attendence")
       .select("stu_attendence_att_status_id")
@@ -462,7 +471,6 @@ function changeMonth(delta) {
   renderMonthCalendar();
 }
 
-// Listen for messages from parent (optional)
 window.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'logout') {
     currentStudent = null;
@@ -475,7 +483,6 @@ window.addEventListener('message', function(event) {
   }
 });
 
-// Make functions global
 window.goBack = goBack;
 window.setFilter = setFilter;
 window.changeMonth = changeMonth;
