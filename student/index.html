@@ -101,6 +101,14 @@
     object-fit: cover;
     border: 3px solid white;
   }
+  .clickable-name {
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .clickable-name:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
   .logout-btn {
     background: rgba(255,255,255,0.2);
     border: none;
@@ -164,18 +172,6 @@
   .module-arrow { color: #94a3b8; transition: transform 0.2s; }
   .module-card:active .module-arrow { transform: translateX(4px); }
   
-  .welcome-banner {
-    background: linear-gradient(135deg, #fef3c7, #fde68a);
-    border-radius: 20px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border: 1px solid #fcd34d;
-  }
-  .welcome-banner i { font-size: 1.5rem; color: #d97706; }
-  
   .family-card {
     background: white;
     border-radius: 20px;
@@ -210,9 +206,19 @@
     color: white;
     font-weight: bold;
     font-size: 1rem;
+    cursor: pointer;
   }
   .sibling-info { flex: 1; }
-  .sibling-name { font-weight: 600; font-size: 0.85rem; color: #1e293b; }
+  .sibling-name { 
+    font-weight: 600; 
+    font-size: 0.85rem; 
+    color: #1e293b;
+    cursor: pointer;
+  }
+  .sibling-name:hover {
+    text-decoration: underline;
+    color: #ec489a;
+  }
   .sibling-details { font-size: 0.65rem; color: #64748b; }
   .sibling-class { background: #f1f5f9; padding: 2px 8px; border-radius: 30px; font-size: 0.6rem; display: inline-block; }
   .sibling-actions {
@@ -411,6 +417,7 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
+
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
@@ -576,6 +583,69 @@ function openModuleForStudent(pageName, studentId) {
   document.getElementById('floatingBackBtn').style.display = 'flex';
 }
 
+// Function to show profile for any student
+function showStudentProfile(student) {
+  if (!student) return;
+  
+  const container = document.getElementById('dashboardContainer');
+  const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
+  
+  let avatarHtml = '';
+  if (student.stu_image && student.stu_image !== '') {
+    let imageSrc = student.stu_image;
+    if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
+    avatarHtml = `<img src="${imageSrc}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  } else {
+    avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
+  }
+  
+  // Check if this is the current student
+  const isCurrent = (student.stu_id === currentStudent.stu_id);
+  const backAction = isCurrent ? 'showDashboard' : `showStudentProfileById(${student.stu_id})`;
+  
+  const profileHtml = `
+    <div style="background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px;">
+      <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px;">
+        <button class="logout-btn" onclick="showDashboard()" style="background: rgba(255,255,255,0.2); border: none; border-radius: 30px; padding: 5px 12px;"><i class="bi bi-arrow-left"></i> Back</button>
+        <h5 class="mb-0">👤 ${isCurrent ? 'My Profile' : escapeHtml(student.stu_name) + '\'s Profile'}</h5>
+      </div>
+      <div class="text-center pt-4">${avatarHtml}</div>
+      <div class="p-3">
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Full Name</div><div>${escapeHtml(student.stu_name)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Admission No</div><div>${escapeHtml(student.stu_admission_no)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Father Name</div><div>${escapeHtml(student.stu_father)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Family Group</div><div>${escapeHtml(student.stu_family_group) || 'Not assigned'}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Class</div><div>${getClassroomName(student.stu_class_room_id)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Mobile No</div><div>${student.stu_mobile1 || 'N/A'}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Alternate Mobile</div><div>${student.stu_mobile2 || 'N/A'}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Gender</div><div>${student.stu_gender || 'N/A'}</div></div>
+        <div class="d-flex py-2"><div class="fw-bold" style="width: 35%;">Date of Birth</div><div>${student.stu_dob || 'N/A'}</div></div>
+      </div>
+    </div>
+  `;
+  container.innerHTML = profileHtml;
+}
+
+// Show profile by student ID (for siblings)
+window.showStudentProfileById = async function(studentId) {
+  const { data, error } = await supabase1
+    .from("students")
+    .select("*")
+    .eq("stu_id", studentId)
+    .single();
+  if (!error && data) {
+    showStudentProfile(data);
+  }
+};
+
+function showProfile() {
+  if (!currentStudent) {
+    doLogout();
+    return;
+  }
+  showStudentProfile(currentStudent);
+}
+
 function showDashboard() {
   if (!currentStudent) {
     doLogout();
@@ -607,20 +677,20 @@ function showDashboard() {
       const siblingInitial = sibling.stu_name?.charAt(0).toUpperCase() || '?';
       siblingsHtml += `
         <div class="sibling-item">
-          <div class="sibling-avatar">${siblingInitial}</div>
+          <div class="sibling-avatar" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${siblingInitial}</div>
           <div class="sibling-info">
-            <div class="sibling-name">${escapeHtml(sibling.stu_name)}</div>
+            <div class="sibling-name" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${escapeHtml(sibling.stu_name)}</div>
             <div class="sibling-details">${escapeHtml(sibling.stu_admission_no)} | ${getClassroomName(sibling.stu_class_room_id)}</div>
           </div>
           <div class="sibling-actions">
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('sturesult', ${sibling.stu_id})" title="View Results">
-              <i class="bi bi-trophy-fill"></i> Result
+            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stuattendance', ${sibling.stu_id})" title="View Attendance">
+              <i class="bi bi-calendar-check-fill"></i> Attendance
             </button>
             <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stusyllabus', ${sibling.stu_id})" title="View Syllabus">
               <i class="bi bi-journal-bookmark-fill"></i> Syllabus
             </button>
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stuattendance', ${sibling.stu_id})" title="View Attendance">
-              <i class="bi bi-calendar-check-fill"></i> Attendance
+            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('sturesult', ${sibling.stu_id})" title="View Results">
+              <i class="bi bi-trophy-fill"></i> Result
             </button>
           </div>
         </div>
@@ -630,6 +700,7 @@ function showDashboard() {
       <div class="family-card">
         <div class="family-header">
           <i class="bi bi-people-fill me-2"></i> Family Members (Siblings)
+          <small class="ms-2 opacity-75">Click name or avatar to view profile</small>
         </div>
         ${siblingsHtml}
       </div>
@@ -642,7 +713,7 @@ function showDashboard() {
         <div class="d-flex align-items-center gap-3">
           ${avatarHtml}
           <div>
-            <h4 class="fw-bold mb-0">${escapeHtml(currentStudent.stu_name)}</h4>
+            <h4 class="fw-bold mb-0 clickable-name" onclick="showProfile()">${escapeHtml(currentStudent.stu_name)}</h4>
             <p class="mb-0 opacity-75 small">${escapeHtml(currentStudent.stu_admission_no)}</p>
             <p class="mb-0 opacity-75 small">${escapeHtml(currentStudent.stu_father)}</p>
           </div>
@@ -657,14 +728,6 @@ function showDashboard() {
     
     ${familyHtml}
     
-    <div class="welcome-banner">
-      <i class="bi bi-emoji-smile"></i>
-      <div>
-        <h4 class="mb-0" style="font-size:0.85rem;">Welcome, ${escapeHtml(currentStudent.stu_name.split(' ')[0])}!</h4>
-        <p class="mb-0 small">Stay updated with your academic progress</p>
-      </div>
-    </div>
-    
     <div class="stats-row">
       <div class="stat-card">
         <i class="bi bi-cash-stack text-warning"></i>
@@ -677,82 +740,34 @@ function showDashboard() {
         <p>Results Published</p>
       </div>
     </div>
-    
+    <div class="module-card" onclick="openModuleForStudent('stuattendance', ${currentStudent.stu_id})">
+      <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
+      <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+    </div>
+
+    <div class="module-card" onclick="openModuleForStudent('stufee', ${currentStudent.stu_id})">
+      <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
+      <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+    </div>
+    <div class="module-card" onclick="openModuleForStudent('stusyllabus', ${currentStudent.stu_id})">
+      <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
+      <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+    </div>
+
     <div class="module-card" onclick="openModuleForStudent('sturesult', ${currentStudent.stu_id})">
       <div class="module-icon result"><i class="bi bi-trophy-fill"></i></div>
       <div class="module-info"><h3>My Results</h3><p>View exam results & grades</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModuleForStudent('stufee', ${currentStudent.stu_id})">
-      <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
-      <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
-      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
-    </div>
-    
-    <div class="module-card" onclick="openModuleForStudent('stusyllabus', ${currentStudent.stu_id})">
-      <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
-      <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
-      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
-    </div>
-    
-    <div class="module-card" onclick="openModuleForStudent('stuattendance', ${currentStudent.stu_id})">
-      <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
-      <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
-      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
-    </div>
-    
-    <div class="module-card" onclick="showProfile()">
-      <div class="module-icon profile"><i class="bi bi-person-circle"></i></div>
-      <div class="module-info"><h3>My Profile</h3><p>Personal information</p></div>
-      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
-    </div>
   `;
   
   container.innerHTML = html;
   document.getElementById('loginView').style.display = 'none';
   document.getElementById('dashboardView').style.display = 'block';
-}
-
-function showProfile() {
-  if (!currentStudent) {
-    doLogout();
-    return;
-  }
-  
-  const container = document.getElementById('dashboardContainer');
-  const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
-  
-  let avatarHtml = '';
-  if (currentStudent.stu_image && currentStudent.stu_image !== '') {
-    let imageSrc = currentStudent.stu_image;
-    if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
-    avatarHtml = `<img src="${imageSrc}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
-  } else {
-    avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
-  }
-  
-  const profileHtml = `
-    <div style="background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px;">
-      <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px;">
-        <button class="logout-btn" onclick="showDashboard()" style="background: rgba(255,255,255,0.2); border: none; border-radius: 30px; padding: 5px 12px;"><i class="bi bi-arrow-left"></i> Back</button>
-        <h5 class="mb-0">👤 My Profile</h5>
-      </div>
-      <div class="text-center pt-4">${avatarHtml}</div>
-      <div class="p-3">
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Full Name</div><div>${escapeHtml(currentStudent.stu_name)}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Admission No</div><div>${escapeHtml(currentStudent.stu_admission_no)}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Father Name</div><div>${escapeHtml(currentStudent.stu_father)}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Family Group</div><div>${escapeHtml(currentStudent.stu_family_group) || 'Not assigned'}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Class</div><div>${getClassroomName(currentStudent.stu_class_room_id)}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Mobile No</div><div>${currentStudent.stu_mobile1 || 'N/A'}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Alternate Mobile</div><div>${currentStudent.stu_mobile2 || 'N/A'}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Gender</div><div>${currentStudent.stu_gender || 'N/A'}</div></div>
-        <div class="d-flex py-2"><div class="fw-bold" style="width: 35%;">Date of Birth</div><div>${currentStudent.stu_dob || 'N/A'}</div></div>
-      </div>
-    </div>
-  `;
-  container.innerHTML = profileHtml;
 }
 
 function closeIframe() {
@@ -880,6 +895,7 @@ window.onload = async function() {
 window.doLogout = doLogout;
 window.openModuleForStudent = openModuleForStudent;
 window.showProfile = showProfile;
+window.showStudentProfileById = showStudentProfileById;
 window.closeIframe = closeIframe;
 window.showDashboard = showDashboard;
 </script>
