@@ -432,6 +432,8 @@ let selectedMessages = new Set();
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
+let recordingTimer = null;
+let recordingSeconds = 0;
 
 const emojis = {
   "😀": "Grinning", "😃": "Smiley", "😄": "Smile", "😁": "Beaming",
@@ -445,17 +447,22 @@ const emojis = {
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
 function formatTime(date) { return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
-function showToast(message) {
+function showToast(message, isError = false) {
   let toast = document.getElementById('customToast');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'customToast';
-    toast.style.cssText = `position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:8px 16px; border-radius:30px; font-size:0.75rem; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none;`;
+    toast.style.cssText = `position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:8px 16px; border-radius:30px; font-size:0.75rem; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none; text-align:center; max-width:90%;`;
     document.body.appendChild(toast);
+  }
+  if (isError) {
+    toast.style.background = '#ef4444';
+  } else {
+    toast.style.background = '#333';
   }
   toast.textContent = message;
   toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+  setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 function goBack() {
@@ -467,7 +474,7 @@ function goBack() {
 // ==================== CLEAR ALL MESSAGES ====================
 async function clearAllMessages() {
   if (!currentClass) {
-    showToast("❌ No chat room is open. Please select a class first.");
+    showToast("❌ No chat room is open. Please select a class first.", true);
     return;
   }
   
@@ -475,7 +482,7 @@ async function clearAllMessages() {
   const className = currentClass.class_room_no || "this";
   
   if (!classId) {
-    showToast("❌ Invalid chat room. Please try selecting the class again.");
+    showToast("❌ Invalid chat room. Please try selecting the class again.", true);
     return;
   }
   
@@ -490,14 +497,14 @@ async function clearAllMessages() {
       .select();
     
     if (error) {
-      showToast("Failed to clear messages: " + error.message);
+      showToast("Failed to clear messages: " + error.message, true);
     } else {
       currentMessages = [];
       renderMessages();
       showToast(`✅ All ${data?.length || 0} messages cleared from ${className} chat room!`);
     }
   } catch (err) {
-    showToast("Error: " + err.message);
+    showToast("Error: " + err.message, true);
   }
 }
 
@@ -521,18 +528,18 @@ function showClassesList() {
       </div>`;
     }
   }
-  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><h5 class="mb-0"><i class="bi bi-chat-dots-fill me-2"></i>Class Chat Rooms</h5><div style="width:60px;"></div></div><div style="padding:0; flex:1; overflow-y:auto;">${classesHtml}</div></div>`;
+  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><h5 class="mb-0"><i class="bi bi-chat-dots-fill me-2"></i>Class Chat Rooms</h5><div style="width:60px;"></div></div><div style="padding:0; flex:1; overflow-y:auto;">${classesHtml}</div></div>`;
 }
 
 // ==================== SELECTION MODE ====================
 function toggleSelectMode() { selectMode = !selectMode; if (!selectMode) selectedMessages.clear(); renderMessages(); renderChatWindowHeader(); }
 function toggleSelectMessage(messageId) { if (selectedMessages.has(messageId)) selectedMessages.delete(messageId); else selectedMessages.add(messageId); renderMessages(); renderChatWindowHeader(); }
 async function deleteSelectedMessages() {
-  if (selectedMessages.size === 0) { showToast("No messages selected"); return; }
+  if (selectedMessages.size === 0) { showToast("No messages selected", true); return; }
   if (!confirm(`Delete ${selectedMessages.size} selected message(s)?`)) return;
   const messageIds = Array.from(selectedMessages);
   const { error } = await supabaseClient.from("class_chat_messages").update({ is_deleted: true, message: "This message was deleted" }).in("id", messageIds);
-  if (error) showToast("Failed to delete: " + error.message);
+  if (error) showToast("Failed to delete: " + error.message, true);
   else {
     for (const id of messageIds) { const idx = currentMessages.findIndex(m => m.id === id); if (idx !== -1) { currentMessages[idx].is_deleted = true; currentMessages[idx].message = "This message was deleted"; } }
     selectedMessages.clear(); selectMode = false; renderMessages(); renderChatWindowHeader(); showToast(`${messageIds.length} message(s) deleted`);
@@ -542,7 +549,7 @@ async function deleteSelectedMessages() {
 // ==================== CHAT ROOM ====================
 window.openChatRoom = async function(classId) {
   const selectedClass = allClasses.find(c => c.class_room_id === classId);
-  if (!selectedClass) { showToast("Class not found"); return; }
+  if (!selectedClass) { showToast("Class not found", true); return; }
   currentClass = selectedClass;
   selectMode = false; selectedMessages.clear();
   await loadClassStudents(classId);
@@ -581,16 +588,15 @@ function renderMessages() {
   container.scrollTop = container.scrollHeight;
 }
 
-// FIXED: sendMessage - using class_room_id
 window.sendMessage = async function() {
   if (!currentClass) { 
-    showToast("Please open a chat room first"); 
+    showToast("Please open a chat room first", true); 
     return; 
   }
   
   const classId = currentClass.class_room_id;
   if (!classId) {
-    showToast("Invalid chat room. Please try again.");
+    showToast("Invalid chat room. Please try again.", true);
     return;
   }
   
@@ -611,7 +617,7 @@ window.sendMessage = async function() {
     });
   
   if (error) {
-    showToast("Failed to send: " + error.message);
+    showToast("Failed to send: " + error.message, true);
   } else {
     input.value = '';
   }
@@ -619,9 +625,9 @@ window.sendMessage = async function() {
 
 // ==================== IMAGE UPLOAD ====================
 window.uploadImage = async function() {
-  if (!currentClass) { showToast("Please open a chat room first"); return; }
+  if (!currentClass) { showToast("Please open a chat room first", true); return; }
   const classId = currentClass.class_room_id;
-  if (!classId) { showToast("Invalid chat room"); return; }
+  if (!classId) { showToast("Invalid chat room", true); return; }
   
   const input = document.createElement('input');
   input.type = 'file';
@@ -632,7 +638,7 @@ window.uploadImage = async function() {
     showToast("Uploading image...");
     const fileName = `class_${classId}_${Date.now()}.${file.name.split('.').pop()}`;
     const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, file);
-    if (error) { alert("Upload failed: " + error.message); return; }
+    if (error) { showToast("Upload failed: " + error.message, true); return; }
     const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
     await supabaseClient.from("class_chat_messages").insert({ class_id: classId, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'image', media_url: urlData.publicUrl, is_deleted: false });
     showToast("Image sent!");
@@ -642,38 +648,124 @@ window.uploadImage = async function() {
 
 window.showImagePreview = function(url) { document.getElementById('previewImage').src = url; new bootstrap.Modal(document.getElementById('imagePreviewModal')).show(); }
 
-// ==================== VOICE RECORDING ====================
+// ==================== VOICE RECORDING WITH BETTER ERROR HANDLING ====================
+async function checkMicrophonePermission() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast("❌ Your browser doesn't support voice recording", true);
+    return false;
+  }
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(track => track.stop());
+    return true;
+  } catch (err) {
+    if (err.name === 'NotAllowedError') {
+      showToast("🎤 Microphone access denied. Please allow microphone permission in your browser settings.", true);
+    } else if (err.name === 'NotFoundError') {
+      showToast("🎤 No microphone found on your device.", true);
+    } else {
+      showToast("🎤 Microphone error: " + err.message, true);
+    }
+    return false;
+  }
+}
+
 window.startRecording = async function() {
-  if (!currentClass) { showToast("Please open a chat room first"); return; }
+  if (!currentClass) { showToast("Please open a chat room first", true); return; }
   const classId = currentClass.class_room_id;
-  if (!classId) { showToast("Invalid chat room"); return; }
+  if (!classId) { showToast("Invalid chat room", true); return; }
+  
+  const hasPermission = await checkMicrophonePermission();
+  if (!hasPermission) return;
   
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
-    mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+    
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+    
     mediaRecorder.onstop = async () => {
+      showToast("Uploading voice message...");
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
       const fileName = `voice_class_${classId}_${Date.now()}.webm`;
       const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, audioBlob);
-      if (error) { alert("Voice upload failed: " + error.message); return; }
+      if (error) { 
+        showToast("Voice upload failed: " + error.message, true); 
+        stream.getTracks().forEach(track => track.stop());
+        return; 
+      }
       const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
-      await supabaseClient.from("class_chat_messages").insert({ class_id: classId, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'voice', media_url: urlData.publicUrl, is_deleted: false });
+      await supabaseClient.from("class_chat_messages").insert({ 
+        class_id: classId, 
+        sender_id: currentAdmin.emp_id, 
+        sender_type: 'admin', 
+        sender_name: currentAdmin.emp_name, 
+        message_type: 'voice', 
+        media_url: urlData.publicUrl, 
+        is_deleted: false 
+      });
       stream.getTracks().forEach(track => track.stop());
       const recordBtn = document.getElementById('recordBtn');
-      if (recordBtn) { recordBtn.innerHTML = '<i class="bi bi-mic-fill"></i>'; recordBtn.classList.remove('recording-active'); }
+      if (recordBtn) { 
+        recordBtn.innerHTML = '<i class="bi bi-mic-fill"></i>'; 
+        recordBtn.classList.remove('recording-active'); 
+      }
+      if (recordingTimer) {
+        clearInterval(recordingTimer);
+        recordingTimer = null;
+      }
       showToast("Voice message sent!");
     };
+    
     mediaRecorder.start();
     isRecording = true;
+    
+    recordingSeconds = 0;
+    recordingTimer = setInterval(() => {
+      recordingSeconds++;
+      const timerDisplay = document.getElementById('recordingTimer');
+      if (timerDisplay) {
+        timerDisplay.textContent = `${recordingSeconds}s`;
+      }
+    }, 1000);
+    
     const recordBtn = document.getElementById('recordBtn');
-    if (recordBtn) { recordBtn.innerHTML = '<i class="bi bi-stop-fill"></i>'; recordBtn.classList.add('recording-active'); }
-    setTimeout(() => { if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') window.stopRecording(); }, 60000);
-  } catch (err) { alert("Microphone access denied."); }
+    if (recordBtn) { 
+      recordBtn.innerHTML = '<i class="bi bi-stop-fill"></i>'; 
+      recordBtn.classList.add('recording-active'); 
+    }
+    
+    showToast("Recording... Click again to stop (max 60s)");
+    
+    setTimeout(() => { 
+      if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
+        window.stopRecording();
+        showToast("Auto-stopped after 60 seconds");
+      }
+    }, 60000);
+  } catch (err) { 
+    showToast("Microphone error: " + err.message, true);
+  }
 };
-window.stopRecording = function() { if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } };
-window.toggleRecording = function() { isRecording ? window.stopRecording() : window.startRecording(); };
+
+window.stopRecording = function() { 
+  if (mediaRecorder && mediaRecorder.state === 'recording') { 
+    mediaRecorder.stop(); 
+    isRecording = false; 
+  }
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+};
+
+window.toggleRecording = function() { 
+  isRecording ? window.stopRecording() : window.startRecording(); 
+};
 
 // ==================== EMOJI ====================
 function buildEmojiGrid() { let html = '<div class="emoji-grid">'; for (const [emoji, name] of Object.entries(emojis)) { html += `<div class="emoji-item" title="${name}" onclick="insertEmoji('${emoji}')">${emoji}</div>`; } html += '</div>'; return html; }
@@ -706,7 +798,7 @@ function renderChatWindowHeader() {
   if (selectMode) {
     headerContainer.innerHTML = `<div class="selection-header"><div><span class="selected-badge"><i class="bi bi-check2-square me-1"></i>${selectedCount} selected</span></div><div class="d-flex gap-2"><button class="cancel-select-btn" onclick="toggleSelectMode()"><i class="bi bi-x-lg"></i> Cancel</button>${selectedCount > 0 ? `<button class="delete-selected-btn" onclick="deleteSelectedMessages()"><i class="bi bi-trash3"></i> Delete (${selectedCount})</button>` : ''}</div></div>`;
   } else {
-    headerContainer.innerHTML = `<div class="card-header-custom"><div class="d-flex align-items-center gap-2"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(currentClass?.class_room_no || 'Chat')} Chat Room</span></div></div><div class="d-flex gap-2"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i></button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i></button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i></button></div></div>`;
+    headerContainer.innerHTML = `<div class="card-header-custom"><div class="d-flex align-items-center gap-2"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(currentClass?.class_room_no || 'Chat')} Chat Room</span></div></div><div class="d-flex gap-2"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i> Clear All</button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Select</button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i> Students</button></div></div>`;
   }
 }
 
