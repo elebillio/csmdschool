@@ -21,6 +21,10 @@
     overflow: hidden;
     margin-bottom: 16px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 32px);
+    max-height: 700px;
   }
   .card-header-custom {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -29,6 +33,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
   }
   .back-btn {
     background: rgba(255,255,255,0.2);
@@ -41,7 +46,20 @@
   }
   .back-btn:hover { background: rgba(255,255,255,0.3); }
   
-  /* Selection Mode Header */
+  .clear-all-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 5px 12px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .clear-all-btn:hover { background: rgba(220, 38, 38, 0.8); }
+  
   .selection-header {
     background: #ef4444;
     color: white;
@@ -49,6 +67,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
   }
   .select-mode-btn {
     background: rgba(255,255,255,0.2);
@@ -62,11 +81,6 @@
     align-items: center;
     gap: 5px;
   }
-  .select-mode-btn.active {
-    background: #f59e0b;
-    color: white;
-  }
-  .select-mode-btn:hover { background: rgba(255,255,255,0.3); }
   .delete-selected-btn {
     background: #ef4444;
     border: none;
@@ -79,7 +93,6 @@
     align-items: center;
     gap: 5px;
   }
-  .delete-selected-btn:hover { background: #dc2626; }
   .cancel-select-btn {
     background: rgba(255,255,255,0.2);
     border: none;
@@ -123,7 +136,7 @@
   }
   
   .chat-messages {
-    height: 380px;
+    flex: 1;
     overflow-y: auto;
     padding: 16px;
     background: #f8fafc;
@@ -167,7 +180,6 @@
     opacity: 0.7;
   }
   
-  /* Selection Checkbox */
   .message-checkbox {
     width: 20px;
     height: 20px;
@@ -190,7 +202,6 @@
     border: 2px solid #f59e0b;
   }
   
-  /* Deleted Message Style */
   .message.deleted .message-bubble {
     background: #f1f5f9;
     color: #94a3b8;
@@ -221,11 +232,11 @@
   .chat-input-area {
     display: flex;
     gap: 8px;
-    padding: 12px;
+    padding: 12px 16px;
     background: white;
     border-top: 1px solid #eef2f8;
     align-items: center;
-    flex-wrap: wrap;
+    flex-shrink: 0;
     position: relative;
   }
   .chat-input {
@@ -235,7 +246,6 @@
     padding: 10px 16px;
     font-size: 0.8rem;
     outline: none;
-    min-width: 120px;
   }
   .chat-input:focus { border-color: #1e3c72; }
   .chat-btn {
@@ -245,6 +255,7 @@
     padding: 8px 12px;
     cursor: pointer;
     transition: all 0.2s;
+    font-size: 1rem;
   }
   .chat-btn:hover { background: #e2e8f0; }
   .send-btn {
@@ -263,7 +274,6 @@
     100% { opacity: 1; }
   }
   
-  /* Emoji Dropdown */
   .emoji-dropdown {
     position: absolute;
     bottom: 70px;
@@ -363,7 +373,6 @@
     height: auto;
   }
   
-  /* Badge */
   .selected-badge {
     background: #f59e0b;
     color: white;
@@ -408,7 +417,6 @@
 </div>
 
 <script>
-// Supabase configuration
 const SUPABASE_URL = "https://tqcfcztyvmedmuhohpps.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -419,376 +427,201 @@ let currentClass = null;
 let currentMessages = [];
 let messageSubscription = null;
 let allStudents = [];
-
-// Selection Mode Variables
 let selectMode = false;
 let selectedMessages = new Set();
-
-// Voice Recording Variables
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-// Common Emojis
 const emojis = {
   "😀": "Grinning", "😃": "Smiley", "😄": "Smile", "😁": "Beaming",
   "😆": "Laughing", "😅": "Sweat", "😂": "Joy", "🤣": "Rolling",
   "😊": "Blush", "😇": "Angel", "🥰": "Hearts", "😍": "Heart Eyes",
-  "🤩": "Star", "😘": "Kiss", "😗": "Kissing", "😚": "Kiss Eyes",
-  "😋": "Yum", "😛": "Tongue", "😜": "Wink Tongue", "🤪": "Zany",
-  "🥲": "Tear", "🤑": "Money", "🤗": "Hug", "🤔": "Think",
-  "😐": "Neutral", "😑": "Blank", "😶": "Mute", "😏": "Smirk",
-  "😒": "Unamused", "🙄": "Roll Eyes", "😬": "Grimace", "😌": "Relieved",
-  "😔": "Pensive", "😪": "Sleepy", "🤤": "Drool", "😴": "Sleeping",
-  "😷": "Mask", "🤒": "Fever", "🤕": "Injured", "🥳": "Party",
-  "😎": "Cool", "🤓": "Nerd", "🧐": "Monocle", "😕": "Confused",
-  "😟": "Worried", "🙁": "Sad", "☹️": "Frown", "😮": "Open",
-  "😯": "Hushed", "😲": "Astonished", "😳": "Flushed", "🥺": "Pleading",
-  "😢": "Cry", "😭": "Loud Cry", "😱": "Scream", "💕": "Hearts",
-  "❤️": "Red Heart", "💙": "Blue Heart", "💚": "Green Heart", "💛": "Yellow Heart",
-  "💜": "Purple Heart", "🖤": "Black Heart", "💯": "100", "👍": "Thumbs Up",
-  "👎": "Thumbs Down", "👏": "Clap", "🙏": "Pray", "🔥": "Fire",
-  "✨": "Sparkles", "⭐": "Star", "✅": "Check", "🎉": "Party"
+  "❤️": "Red Heart", "💙": "Blue Heart", "💚": "Green Heart",
+  "👍": "Thumbs Up", "👎": "Thumbs Down", "👏": "Clap", "🙏": "Pray",
+  "🔥": "Fire", "✨": "Sparkles", "⭐": "Star", "✅": "Check", "🎉": "Party"
 };
 
-// ==================== UTILITY FUNCTIONS ====================
+function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
+function formatTime(date) { return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
-}
-
-function formatTime(date) {
-  return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+function showToast(message) {
+  let toast = document.getElementById('customToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'customToast';
+    toast.style.cssText = `position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#333; color:white; padding:8px 16px; border-radius:30px; font-size:0.75rem; z-index:9999; opacity:0; transition:opacity 0.3s; pointer-events:none;`;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2000);
 }
 
 function goBack() {
-  if (currentClass) {
-    if (messageSubscription) {
-      supabaseClient.removeChannel(messageSubscription);
-      messageSubscription = null;
-    }
-    currentClass = null;
-    currentMessages = [];
-    selectMode = false;
-    selectedMessages.clear();
-    showClassesList();
-  } else {
-    window.location.href = 'index.html';
-  }
+  if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
+  currentClass = null; currentMessages = []; selectMode = false; selectedMessages.clear();
+  showClassesList();
 }
 
-// ==================== SELECTION MODE FUNCTIONS ====================
-
-function toggleSelectMode() {
-  selectMode = !selectMode;
-  if (!selectMode) {
-    selectedMessages.clear();
-  }
-  renderMessages();
-  renderChatWindowHeader();
-}
-
-function toggleSelectMessage(messageId) {
-  if (selectedMessages.has(messageId)) {
-    selectedMessages.delete(messageId);
-  } else {
-    selectedMessages.add(messageId);
-  }
-  renderMessages();
-  renderChatWindowHeader();
-}
-
-function selectAllMessages() {
-  const adminMessages = currentMessages.filter(m => m.sender_type === 'admin' && !m.is_deleted);
-  for (const msg of adminMessages) {
-    selectedMessages.add(msg.id);
-  }
-  renderMessages();
-  renderChatWindowHeader();
-}
-
-function deselectAllMessages() {
-  selectedMessages.clear();
-  renderMessages();
-  renderChatWindowHeader();
-}
-
-async function deleteSelectedMessages() {
-  if (selectedMessages.size === 0) {
-    showToast("No messages selected");
+// ==================== CLEAR ALL MESSAGES ====================
+async function clearAllMessages() {
+  if (!currentClass) {
+    showToast("❌ No chat room is open. Please select a class first.");
     return;
   }
   
-  if (!confirm(`Delete ${selectedMessages.size} selected message(s)?`)) {
+  const classId = currentClass.class_room_id;
+  const className = currentClass.class_room_no || "this";
+  
+  if (!classId) {
+    showToast("❌ Invalid chat room. Please try selecting the class again.");
     return;
   }
   
-  const messageIds = Array.from(selectedMessages);
+  const confirmed = confirm(`⚠️ Are you sure you want to delete ALL messages in ${className} chat room?\n\nThis action cannot be undone.`);
+  if (!confirmed) return;
   
-  const { error } = await supabaseClient
-    .from("class_chat_messages")
-    .update({ is_deleted: true, message: "This message was deleted" })
-    .in("id", messageIds)
-    .eq("sender_type", "admin");
-  
-  if (error) {
-    showToast("Failed to delete: " + error.message);
-  } else {
-    // Update local messages
-    for (const id of messageIds) {
-      const index = currentMessages.findIndex(m => m.id === id);
-      if (index !== -1) {
-        currentMessages[index].is_deleted = true;
-        currentMessages[index].message = "This message was deleted";
-      }
+  try {
+    const { error, data } = await supabaseClient
+      .from("class_chat_messages")
+      .delete()
+      .eq("class_id", classId)
+      .select();
+    
+    if (error) {
+      showToast("Failed to clear messages: " + error.message);
+    } else {
+      currentMessages = [];
+      renderMessages();
+      showToast(`✅ All ${data?.length || 0} messages cleared from ${className} chat room!`);
     }
-    selectedMessages.clear();
-    selectMode = false;
-    renderMessages();
-    renderChatWindowHeader();
-    showToast(`${messageIds.length} message(s) deleted`);
+  } catch (err) {
+    showToast("Error: " + err.message);
   }
 }
 
-// ==================== STEP 1: CLASSES LIST ====================
-
+// ==================== CLASSES LIST ====================
 async function loadClasses() {
-  const { data } = await supabaseClient
-    .from("class_rooms")
-    .select("*")
-    .order("class_room_serial");
+  const { data } = await supabaseClient.from("class_rooms").select("*").order("class_room_serial");
   if (data) allClasses = data;
 }
 
 function showClassesList() {
   const container = document.getElementById('appContainer');
-  
   let classesHtml = '';
   if (allClasses.length === 0) {
     classesHtml = '<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">No classes found</p></div>';
   } else {
     for (const cls of allClasses) {
-      classesHtml += `
-        <div class="list-item" onclick="openChatRoom(${cls.class_room_id})">
-          <div class="list-icon class-icon"><i class="bi bi-building"></i></div>
-          <div class="list-info">
-            <div class="list-title">${escapeHtml(cls.class_room_no)}</div>
-            <div class="list-subtitle">Click to enter chat room</div>
-          </div>
-          <div class="list-badge"><i class="bi bi-chat-dots-fill"></i> Enter</div>
-        </div>
-      `;
+      classesHtml += `<div class="list-item" onclick="openChatRoom(${cls.class_room_id})">
+        <div class="list-icon class-icon"><i class="bi bi-building"></i></div>
+        <div class="list-info"><div class="list-title">${escapeHtml(cls.class_room_no)}</div><div class="list-subtitle">Click to enter chat room</div></div>
+        <div class="list-badge"><i class="bi bi-chat-dots-fill"></i> Enter</div>
+      </div>`;
     }
   }
-  
-  const html = `
-    <div class="card-custom">
-      <div class="card-header-custom">
-        <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
-        <h5 class="mb-0"><i class="bi bi-chat-dots-fill me-2"></i>Class Chat Rooms</h5>
-        <div style="width: 60px;"></div>
-      </div>
-      <div style="padding: 0;">
-        ${classesHtml}
-      </div>
-    </div>
-  `;
-  
-  container.innerHTML = html;
+  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><h5 class="mb-0"><i class="bi bi-chat-dots-fill me-2"></i>Class Chat Rooms</h5><div style="width:60px;"></div></div><div style="padding:0; flex:1; overflow-y:auto;">${classesHtml}</div></div>`;
 }
 
-// ==================== STEP 2: CHAT ROOM FOR SELECTED CLASS ====================
-
-window.openChatRoom = async function(classId) {
-  currentClass = allClasses.find(c => c.class_room_id === classId);
-  if (!currentClass) return;
-  
-  selectMode = false;
-  selectedMessages.clear();
-  
-  await loadClassStudents(classId);
-  
-  if (messageSubscription) {
-    await supabaseClient.removeChannel(messageSubscription);
-    messageSubscription = null;
+// ==================== SELECTION MODE ====================
+function toggleSelectMode() { selectMode = !selectMode; if (!selectMode) selectedMessages.clear(); renderMessages(); renderChatWindowHeader(); }
+function toggleSelectMessage(messageId) { if (selectedMessages.has(messageId)) selectedMessages.delete(messageId); else selectedMessages.add(messageId); renderMessages(); renderChatWindowHeader(); }
+async function deleteSelectedMessages() {
+  if (selectedMessages.size === 0) { showToast("No messages selected"); return; }
+  if (!confirm(`Delete ${selectedMessages.size} selected message(s)?`)) return;
+  const messageIds = Array.from(selectedMessages);
+  const { error } = await supabaseClient.from("class_chat_messages").update({ is_deleted: true, message: "This message was deleted" }).in("id", messageIds);
+  if (error) showToast("Failed to delete: " + error.message);
+  else {
+    for (const id of messageIds) { const idx = currentMessages.findIndex(m => m.id === id); if (idx !== -1) { currentMessages[idx].is_deleted = true; currentMessages[idx].message = "This message was deleted"; } }
+    selectedMessages.clear(); selectMode = false; renderMessages(); renderChatWindowHeader(); showToast(`${messageIds.length} message(s) deleted`);
   }
-  
-  messageSubscription = supabaseClient
-    .channel(`class_chat_${classId}`)
-    .on('postgres_changes', 
-      { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'class_chat_messages',
-        filter: `class_id=eq.${classId}`
-      },
-      (payload) => { receiveMessage(payload.new); }
-    )
-    .on('postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'class_chat_messages',
-        filter: `class_id=eq.${classId}`
-      },
-      (payload) => { updateMessage(payload.new); }
-    )
+}
+
+// ==================== CHAT ROOM ====================
+window.openChatRoom = async function(classId) {
+  const selectedClass = allClasses.find(c => c.class_room_id === classId);
+  if (!selectedClass) { showToast("Class not found"); return; }
+  currentClass = selectedClass;
+  selectMode = false; selectedMessages.clear();
+  await loadClassStudents(classId);
+  if (messageSubscription) await supabaseClient.removeChannel(messageSubscription);
+  messageSubscription = supabaseClient.channel(`class_chat_${classId}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (payload) => { currentMessages.push(payload.new); renderMessages(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (payload) => { const idx = currentMessages.findIndex(m => m.id === payload.new.id); if (idx !== -1) { currentMessages[idx] = payload.new; renderMessages(); } })
     .subscribe();
-  
   await loadClassMessages(classId);
   renderChatWindow();
-}
+  showToast(`Now in ${selectedClass.class_room_no} chat room`);
+};
 
-function updateMessage(updatedMsg) {
-  const index = currentMessages.findIndex(m => m.id === updatedMsg.id);
-  if (index !== -1) {
-    currentMessages[index] = updatedMsg;
-    renderMessages();
-  }
-}
-
-async function loadClassStudents(classId) {
-  const { data } = await supabaseClient
-    .from("students")
-    .select("stu_id, stu_name, stu_admission_no, stu_father, stu_image")
-    .eq("stu_class_room_id", classId)
-    .order("stu_name");
-  
-  if (data) allStudents = data;
-}
-
-async function loadClassMessages(classId) {
-  const { data } = await supabaseClient
-    .from("class_chat_messages")
-    .select("*")
-    .eq("class_id", classId)
-    .order("created_at", { ascending: true });
-  
-  if (data) {
-    currentMessages = data;
-  }
-}
+async function loadClassStudents(classId) { const { data } = await supabaseClient.from("students").select("*").eq("stu_class_room_id", classId).order("stu_name"); if (data) allStudents = data; }
+async function loadClassMessages(classId) { const { data } = await supabaseClient.from("class_chat_messages").select("*").eq("class_id", classId).order("created_at", { ascending: true }); if (data) currentMessages = data; }
 
 function renderMessages() {
   const container = document.getElementById('chatMessages');
   if (!container) return;
-  
   let html = '';
   for (const msg of currentMessages) {
     const isSent = msg.sender_type === 'admin';
     const isDeleted = msg.is_deleted === true;
     const time = formatTime(msg.created_at);
     const isSelected = selectedMessages.has(msg.id);
-    
     let contentHtml = '';
-    if (isDeleted) {
-      contentHtml = `<div class="deleted-text"><i class="bi bi-trash3"></i> Message deleted</div>`;
-    } else if (msg.message_type === 'image') {
-      contentHtml = `<img src="${msg.media_url}" class="chat-image" onclick="showImagePreview('${msg.media_url}')">`;
-    } else if (msg.message_type === 'voice') {
-      contentHtml = `
-        <div class="voice-message">
-          <audio controls src="${msg.media_url}"></audio>
-        </div>
-      `;
-    } else {
-      contentHtml = escapeHtml(msg.message);
-    }
-    
+    if (isDeleted) contentHtml = `<div class="deleted-text"><i class="bi bi-trash3"></i> Message deleted</div>`;
+    else if (msg.message_type === 'image') contentHtml = `<img src="${msg.media_url}" class="chat-image" onclick="showImagePreview('${msg.media_url}')">`;
+    else if (msg.message_type === 'voice') contentHtml = `<div class="voice-message"><audio controls src="${msg.media_url}"></audio></div>`;
+    else contentHtml = escapeHtml(msg.message);
     const showCheckbox = selectMode && isSent && !isDeleted;
-    const checkboxHtml = showCheckbox ? `
-      <div class="message-checkbox ${isSelected ? 'checked' : ''}" onclick="toggleSelectMessage(${msg.id})">
-        ${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}
-      </div>
-    ` : '';
-    
-    const messageClass = `message ${isSent ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${isSelected ? 'selected' : ''}`;
-    
-    html += `
-      <div class="${messageClass}" data-msg-id="${msg.id}">
-        ${checkboxHtml}
-        <div class="message-bubble">
-          ${!isSent && !isDeleted ? `<div class="message-sender">${escapeHtml(msg.sender_name || 'Student')}</div>` : ''}
-          ${contentHtml}
-          <div class="message-time">${time}</div>
-        </div>
-      </div>
-    `;
+    const checkboxHtml = showCheckbox ? `<div class="message-checkbox ${isSelected ? 'checked' : ''}" onclick="toggleSelectMessage(${msg.id})">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>` : '';
+    html += `<div class="message ${isSent ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${isSelected ? 'selected' : ''}">${checkboxHtml}<div class="message-bubble">${!isSent && !isDeleted ? `<div class="message-sender">${escapeHtml(msg.sender_name || 'Student')}</div>` : ''}${contentHtml}<div class="message-time">${time}</div></div></div>`;
   }
   container.innerHTML = html;
   container.scrollTop = container.scrollHeight;
 }
 
-function receiveMessage(newMsg) {
-  currentMessages.push(newMsg);
-  renderMessages();
-}
-
+// FIXED: sendMessage - using class_room_id
 window.sendMessage = async function() {
+  if (!currentClass) { 
+    showToast("Please open a chat room first"); 
+    return; 
+  }
+  
+  const classId = currentClass.class_room_id;
+  if (!classId) {
+    showToast("Invalid chat room. Please try again.");
+    return;
+  }
+  
   const input = document.getElementById('chatInput');
   const message = input.value.trim();
-  if (!message || !currentClass) return;
+  if (!message) return;
   
   const { error } = await supabaseClient
     .from("class_chat_messages")
-    .insert({
-      class_id: currentClass.class_room_id,
-      sender_id: currentAdmin.emp_id,
-      sender_type: 'admin',
-      sender_name: currentAdmin.emp_name,
-      message_type: 'text',
-      message: message,
-      is_deleted: false
+    .insert({ 
+      class_id: classId, 
+      sender_id: currentAdmin.emp_id, 
+      sender_type: 'admin', 
+      sender_name: currentAdmin.emp_name, 
+      message_type: 'text', 
+      message: message, 
+      is_deleted: false 
     });
   
-  if (!error) {
+  if (error) {
+    showToast("Failed to send: " + error.message);
+  } else {
     input.value = '';
   }
 }
 
-function renderChatWindowHeader() {
-  const headerContainer = document.getElementById('chatHeaderContainer');
-  if (!headerContainer) return;
-  
-  const selectedCount = selectedMessages.size;
-  const adminMessagesCount = currentMessages.filter(m => m.sender_type === 'admin' && !m.is_deleted).length;
-  
-  if (selectMode) {
-    headerContainer.innerHTML = `
-      <div class="selection-header">
-        <div>
-          <span class="selected-badge"><i class="bi bi-check2-square me-1"></i>${selectedCount} selected</span>
-        </div>
-        <div class="d-flex gap-2">
-          <button class="cancel-select-btn" onclick="toggleSelectMode()"><i class="bi bi-x-lg"></i> Cancel</button>
-          ${selectedCount > 0 ? `<button class="delete-selected-btn" onclick="deleteSelectedMessages()"><i class="bi bi-trash3"></i> Delete (${selectedCount})</button>` : ''}
-        </div>
-      </div>
-    `;
-  } else {
-    headerContainer.innerHTML = `
-      <div class="card-header-custom">
-        <div class="d-flex align-items-center gap-2">
-          <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
-          <div class="room-title">
-            <i class="bi bi-chat-dots-fill"></i>
-            <span>${escapeHtml(currentClass.class_room_no)} Chat Room</span>
-          </div>
-        </div>
-        <div class="d-flex gap-2">
-          <button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Select</button>
-          <button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i> Students</button>
-        </div>
-      </div>
-    `;
-  }
-}
-
 // ==================== IMAGE UPLOAD ====================
-
 window.uploadImage = async function() {
-  if (!currentClass) return;
+  if (!currentClass) { showToast("Please open a chat room first"); return; }
+  const classId = currentClass.class_room_id;
+  if (!classId) { showToast("Invalid chat room"); return; }
   
   const input = document.createElement('input');
   input.type = 'file';
@@ -796,274 +629,96 @@ window.uploadImage = async function() {
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
     showToast("Uploading image...");
-    
-    const fileName = `class_${currentClass.class_room_id}_${Date.now()}.${file.name.split('.').pop()}`;
-    const { error } = await supabaseClient.storage
-      .from('chat-media')
-      .upload(fileName, file);
-    
-    if (error) {
-      alert("Upload failed: " + error.message);
-      return;
-    }
-    
-    const { data: urlData } = supabaseClient.storage
-      .from('chat-media')
-      .getPublicUrl(fileName);
-    
-    await supabaseClient.from("class_chat_messages").insert({
-      class_id: currentClass.class_room_id,
-      sender_id: currentAdmin.emp_id,
-      sender_type: 'admin',
-      sender_name: currentAdmin.emp_name,
-      message_type: 'image',
-      media_url: urlData.publicUrl,
-      is_deleted: false
-    });
-    
+    const fileName = `class_${classId}_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, file);
+    if (error) { alert("Upload failed: " + error.message); return; }
+    const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
+    await supabaseClient.from("class_chat_messages").insert({ class_id: classId, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'image', media_url: urlData.publicUrl, is_deleted: false });
     showToast("Image sent!");
   };
   input.click();
-}
+};
 
-window.showImagePreview = function(url) {
-  const img = document.getElementById('previewImage');
-  img.src = url;
-  const modal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
-  modal.show();
-}
+window.showImagePreview = function(url) { document.getElementById('previewImage').src = url; new bootstrap.Modal(document.getElementById('imagePreviewModal')).show(); }
 
 // ==================== VOICE RECORDING ====================
-
 window.startRecording = async function() {
-  if (!currentClass) return;
+  if (!currentClass) { showToast("Please open a chat room first"); return; }
+  const classId = currentClass.class_room_id;
+  if (!classId) { showToast("Invalid chat room"); return; }
   
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
-    
-    mediaRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
-    };
-    
+    mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
     mediaRecorder.onstop = async () => {
       const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-      const fileName = `voice_class_${currentClass.class_room_id}_${Date.now()}.webm`;
-      
-      const { error } = await supabaseClient.storage
-        .from('chat-media')
-        .upload(fileName, audioBlob);
-      
-      if (error) {
-        alert("Voice upload failed: " + error.message);
-        return;
-      }
-      
-      const { data: urlData } = supabaseClient.storage
-        .from('chat-media')
-        .getPublicUrl(fileName);
-      
-      await supabaseClient.from("class_chat_messages").insert({
-        class_id: currentClass.class_room_id,
-        sender_id: currentAdmin.emp_id,
-        sender_type: 'admin',
-        sender_name: currentAdmin.emp_name,
-        message_type: 'voice',
-        media_url: urlData.publicUrl,
-        is_deleted: false
-      });
-      
+      const fileName = `voice_class_${classId}_${Date.now()}.webm`;
+      const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, audioBlob);
+      if (error) { alert("Voice upload failed: " + error.message); return; }
+      const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
+      await supabaseClient.from("class_chat_messages").insert({ class_id: classId, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'voice', media_url: urlData.publicUrl, is_deleted: false });
       stream.getTracks().forEach(track => track.stop());
-      
       const recordBtn = document.getElementById('recordBtn');
-      if (recordBtn) {
-        recordBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
-        recordBtn.classList.remove('recording-active');
-      }
+      if (recordBtn) { recordBtn.innerHTML = '<i class="bi bi-mic-fill"></i>'; recordBtn.classList.remove('recording-active'); }
       showToast("Voice message sent!");
     };
-    
     mediaRecorder.start();
     isRecording = true;
-    
     const recordBtn = document.getElementById('recordBtn');
-    if (recordBtn) {
-      recordBtn.innerHTML = '<i class="bi bi-stop-fill"></i>';
-      recordBtn.classList.add('recording-active');
-    }
-    
-    setTimeout(() => {
-      if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
-        window.stopRecording();
-      }
-    }, 60000);
-    
-  } catch (err) {
-    alert("Microphone access denied. Please allow microphone permission.");
-    console.error(err);
-  }
-}
+    if (recordBtn) { recordBtn.innerHTML = '<i class="bi bi-stop-fill"></i>'; recordBtn.classList.add('recording-active'); }
+    setTimeout(() => { if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') window.stopRecording(); }, 60000);
+  } catch (err) { alert("Microphone access denied."); }
+};
+window.stopRecording = function() { if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } };
+window.toggleRecording = function() { isRecording ? window.stopRecording() : window.startRecording(); };
 
-window.stopRecording = function() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-    isRecording = false;
-  }
-}
+// ==================== EMOJI ====================
+function buildEmojiGrid() { let html = '<div class="emoji-grid">'; for (const [emoji, name] of Object.entries(emojis)) { html += `<div class="emoji-item" title="${name}" onclick="insertEmoji('${emoji}')">${emoji}</div>`; } html += '</div>'; return html; }
+window.toggleEmojiPicker = function() { const dropdown = document.getElementById('emojiDropdown'); if (!dropdown) return; if (dropdown.style.display === 'none' || !dropdown.style.display) { dropdown.innerHTML = buildEmojiGrid(); dropdown.style.display = 'block'; } else { dropdown.style.display = 'none'; } };
+window.insertEmoji = function(emoji) { const input = document.getElementById('chatInput'); if (input) { input.value += emoji; input.focus(); } document.getElementById('emojiDropdown').style.display = 'none'; };
+document.addEventListener('click', function(e) { const dropdown = document.getElementById('emojiDropdown'); const emojiBtn = document.getElementById('emojiBtn'); if (dropdown && emojiBtn && !dropdown.contains(e.target) && !emojiBtn.contains(e.target)) { dropdown.style.display = 'none'; } });
 
-window.toggleRecording = function() {
-  if (isRecording) {
-    window.stopRecording();
-  } else {
-    window.startRecording();
-  }
-}
-
-// ==================== EMOJI PICKER ====================
-
-function buildEmojiGrid() {
-  let html = '<div class="emoji-grid">';
-  for (const [emoji, name] of Object.entries(emojis)) {
-    html += `<div class="emoji-item" title="${name}" onclick="insertEmoji('${emoji}')">${emoji}</div>`;
-  }
-  html += '</div>';
-  return html;
-}
-
-window.toggleEmojiPicker = function() {
-  const dropdown = document.getElementById('emojiDropdown');
-  if (!dropdown) return;
-  
-  if (dropdown.style.display === 'none' || !dropdown.style.display) {
-    dropdown.innerHTML = buildEmojiGrid();
-    dropdown.style.display = 'block';
-  } else {
-    dropdown.style.display = 'none';
-  }
-}
-
-window.insertEmoji = function(emoji) {
-  const input = document.getElementById('chatInput');
-  if (input) {
-    input.value += emoji;
-    input.focus();
-  }
-  document.getElementById('emojiDropdown').style.display = 'none';
-}
-
-// Close emoji picker when clicking outside
-document.addEventListener('click', function(e) {
-  const dropdown = document.getElementById('emojiDropdown');
-  const emojiBtn = document.getElementById('emojiBtn');
-  if (dropdown && emojiBtn) {
-    if (!dropdown.contains(e.target) && !emojiBtn.contains(e.target)) {
-      dropdown.style.display = 'none';
-    }
-  }
-});
-
-// ==================== STUDENTS LIST MODAL ====================
-
+// ==================== STUDENTS LIST ====================
 window.showStudentsList = function() {
   const container = document.getElementById('studentsListModal');
   if (!container) return;
-  
-  if (allStudents.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-muted">No students in this class</div>';
-  } else {
+  if (allStudents.length === 0) container.innerHTML = '<div class="text-center py-4 text-muted">No students in this class</div>';
+  else {
     let html = '';
     for (const student of allStudents) {
       const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
       const isOnline = Math.random() > 0.5;
-      html += `
-        <div class="student-list-item">
-          <div class="student-avatar-small">${initial}</div>
-          <div class="flex-grow-1">
-            <div class="fw-bold">${escapeHtml(student.stu_name)}</div>
-            <div class="small text-muted">${escapeHtml(student.stu_admission_no)}</div>
-          </div>
-          <div>
-            <span class="online-dot ${isOnline ? 'online' : 'offline'}"></span>
-            <span class="small">${isOnline ? 'Online' : 'Offline'}</span>
-          </div>
-        </div>
-      `;
+      html += `<div class="student-list-item"><div class="student-avatar-small">${initial}</div><div class="flex-grow-1"><div class="fw-bold">${escapeHtml(student.stu_name)}</div><div class="small text-muted">${escapeHtml(student.stu_admission_no)}</div></div><div><span class="online-dot ${isOnline ? 'online' : 'offline'}"></span><span class="small">${isOnline ? 'Online' : 'Offline'}</span></div></div>`;
     }
     container.innerHTML = html;
   }
-  
-  const modal = new bootstrap.Modal(document.getElementById('studentsModal'));
-  modal.show();
-}
-
-// ==================== TOAST NOTIFICATION ====================
-
-function showToast(message) {
-  let toast = document.getElementById('customToast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'customToast';
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    `;
-    document.body.appendChild(toast);
-  }
-  
-  toast.textContent = message;
-  toast.style.opacity = '1';
-  setTimeout(() => {
-    toast.style.opacity = '0';
-  }, 2000);
-}
+  new bootstrap.Modal(document.getElementById('studentsModal')).show();
+};
 
 // ==================== RENDER CHAT WINDOW ====================
+function renderChatWindowHeader() {
+  const headerContainer = document.getElementById('chatHeaderContainer');
+  if (!headerContainer) return;
+  const selectedCount = selectedMessages.size;
+  if (selectMode) {
+    headerContainer.innerHTML = `<div class="selection-header"><div><span class="selected-badge"><i class="bi bi-check2-square me-1"></i>${selectedCount} selected</span></div><div class="d-flex gap-2"><button class="cancel-select-btn" onclick="toggleSelectMode()"><i class="bi bi-x-lg"></i> Cancel</button>${selectedCount > 0 ? `<button class="delete-selected-btn" onclick="deleteSelectedMessages()"><i class="bi bi-trash3"></i> Delete (${selectedCount})</button>` : ''}</div></div>`;
+  } else {
+    headerContainer.innerHTML = `<div class="card-header-custom"><div class="d-flex align-items-center gap-2"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(currentClass?.class_room_no || 'Chat')} Chat Room</span></div></div><div class="d-flex gap-2"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i> Clear All</button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Select</button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i> Students</button></div></div>`;
+  }
+}
 
 function renderChatWindow() {
   const container = document.getElementById('appContainer');
-  
-  const html = `
-    <div class="card-custom">
-      <div id="chatHeaderContainer"></div>
-      <div class="chat-messages" id="chatMessages"></div>
-      <div class="chat-input-area">
-        <button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button>
-        <div id="emojiDropdown" class="emoji-dropdown"></div>
-        <button class="chat-btn" onclick="uploadImage()">📸</button>
-        <button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button>
-        <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
-        <button class="chat-btn send-btn" onclick="sendMessage()">Send</button>
-      </div>
-    </div>
-  `;
-  
-  container.innerHTML = html;
+  container.innerHTML = `<div class="card-custom"><div id="chatHeaderContainer"></div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-area"><button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button><div id="emojiDropdown" class="emoji-dropdown"></div><button class="chat-btn" onclick="uploadImage()">📸</button><button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button><input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()"><button class="chat-btn send-btn" onclick="sendMessage()">Send</button></div></div>`;
   renderChatWindowHeader();
   renderMessages();
-  
-  setTimeout(() => document.getElementById('chatInput')?.focus(), 100);
+  setTimeout(() => { const input = document.getElementById('chatInput'); if (input) input.focus(); }, 100);
 }
 
-// ==================== INITIALIZE ====================
-
-async function init() {
-  await loadClasses();
-  showClassesList();
-}
+async function init() { await loadClasses(); showClassesList(); }
 
 // Make functions global
 window.goBack = goBack;
@@ -1073,8 +728,13 @@ window.deleteSelectedMessages = deleteSelectedMessages;
 window.toggleEmojiPicker = toggleEmojiPicker;
 window.insertEmoji = insertEmoji;
 window.showStudentsList = showStudentsList;
+window.openChatRoom = openChatRoom;
+window.uploadImage = uploadImage;
+window.toggleRecording = toggleRecording;
+window.showImagePreview = showImagePreview;
+window.sendMessage = sendMessage;
+window.clearAllMessages = clearAllMessages;
 
-// Start
 init();
 </script>
 </body>
