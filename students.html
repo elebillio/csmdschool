@@ -200,6 +200,7 @@
           <div class="col-6"><input id="modal_stu_mobile1" class="form-control form-control-sm" placeholder="Mobile No 1"></div>
           <div class="col-6"><input id="modal_stu_mobile2" class="form-control form-control-sm" placeholder="Mobile No 2"></div>
           <div class="col-12"><input id="modal_stu_image" class="form-control form-control-sm" placeholder="Image URL (https://... or data:image...)"></div>
+          <div class="col-12"><input type="password" id="modal_stu_password" class="form-control form-control-sm" placeholder="Password (for Student Login)"></div>
         </div>
         <div class="form-section-title"><i class="bi bi-book"></i> Academic</div>
         <div class="row g-2">
@@ -268,7 +269,6 @@ function getStudentImageUrl(student) {
         if (student.stu_image.startsWith('data:image')) {
             return student.stu_image;
         }
-        // It might be base64 without prefix
         return `data:image/jpeg;base64,${student.stu_image}`;
     }
     return null;
@@ -510,6 +510,7 @@ function showStudentDetail(id) {
         { icon: "bi-person", label: "Mother Name", value: currentStudent.stu_mother },
         { icon: "bi-phone", label: "Mobile 1", value: currentStudent.stu_mobile1 },
         { icon: "bi-phone", label: "Mobile 2", value: currentStudent.stu_mobile2 },
+        { icon: "bi-lock", label: "Password", value: currentStudent.stu_password ? "●●●●●●●●" : "Not set" },
         { icon: "bi-calendar", label: "Session", value: getSessionName(currentStudent.session_id) },
         { icon: "bi-building", label: "Class", value: getClassroomName(currentStudent.stu_class_room_id) },
         { icon: "bi-gender-ambiguous", label: "Gender", value: currentStudent.stu_gender_id == 1 ? "Male" : (currentStudent.stu_gender_id == 2 ? "Female" : "") },
@@ -559,7 +560,7 @@ function backToStudentList() {
 async function saveStudent() {
     const stu_id = document.getElementById("modal_stu_id").value;
     const data = {};
-    const fields = ['stu_name', 'stu_admission_no', 'stu_family_group', 'stu_bform_no', 'stu_father', 'stu_mother', 'stu_mobile1', 'stu_mobile2', 'session_id', 'stu_class_room_id', 'stu_gender_id', 'stu_status_id', 'stu_roll_no', 'stu_birth_date', 'stu_admission_date', 'stu_blood_group_id', 'stu_address', 'stu_city', 'stu_state', 'stu_pincode', 'stu_country', 'stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance', 'stu_guardian_name', 'stu_guardian_mobile', 'stu_guardian_relation', 'stu_previous_school_name', 'stu_image', 'stu_remarks'];
+    const fields = ['stu_name', 'stu_admission_no', 'stu_family_group', 'stu_bform_no', 'stu_father', 'stu_mother', 'stu_mobile1', 'stu_mobile2', 'session_id', 'stu_class_room_id', 'stu_gender_id', 'stu_status_id', 'stu_roll_no', 'stu_birth_date', 'stu_admission_date', 'stu_blood_group_id', 'stu_address', 'stu_city', 'stu_state', 'stu_pincode', 'stu_country', 'stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance', 'stu_guardian_name', 'stu_guardian_mobile', 'stu_guardian_relation', 'stu_previous_school_name', 'stu_image', 'stu_remarks', 'stu_password'];
     
     for(const f of fields) { 
         const val = document.getElementById(`modal_${f}`)?.value; 
@@ -589,11 +590,12 @@ async function saveStudent() {
 function editCurrentStudent() {
     if (!currentStudent) return;
     document.getElementById("modal_stu_id").value = currentStudent.stu_id || "";
-    const fieldMap = ['stu_name', 'stu_admission_no', 'stu_family_group', 'stu_bform_no', 'stu_father', 'stu_mother', 'stu_mobile1', 'stu_mobile2', 'session_id', 'stu_class_room_id', 'stu_gender_id', 'stu_status_id', 'stu_roll_no', 'stu_birth_date', 'stu_admission_date', 'stu_blood_group_id', 'stu_address', 'stu_city', 'stu_state', 'stu_pincode', 'stu_country', 'stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance', 'stu_guardian_name', 'stu_guardian_mobile', 'stu_guardian_relation', 'stu_previous_school_name', 'stu_image', 'stu_remarks'];
+    const fieldMap = ['stu_name', 'stu_admission_no', 'stu_family_group', 'stu_bform_no', 'stu_father', 'stu_mother', 'stu_mobile1', 'stu_mobile2', 'session_id', 'stu_class_room_id', 'stu_gender_id', 'stu_status_id', 'stu_roll_no', 'stu_birth_date', 'stu_admission_date', 'stu_blood_group_id', 'stu_address', 'stu_city', 'stu_state', 'stu_pincode', 'stu_country', 'stu_fee_scale', 'stu_fee_scale_con', 'stu_rent_scale', 'stu_beginning_balance', 'stu_guardian_name', 'stu_guardian_mobile', 'stu_guardian_relation', 'stu_previous_school_name', 'stu_image', 'stu_remarks', 'stu_password'];
     
     for(const f of fieldMap) { 
         const elem = document.getElementById(`modal_${f}`); 
         if(elem && currentStudent[f] !== undefined && currentStudent[f] !== null) elem.value = currentStudent[f]; 
+        else if(elem && f === 'stu_password') elem.value = '';
     }
     new bootstrap.Modal(document.getElementById("studentModal")).show();
 }
