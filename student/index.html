@@ -11,26 +11,147 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  * { font-family: system-ui, sans-serif; }
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
   body { background: #f0f4f8; padding: 0; margin: 0; }
   
-  .login-container { max-width: 400px; margin: 0 auto; padding: 40px 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e3c72, #2a5298); }
-  .login-card { background: white; border-radius: 32px; padding: 32px 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; }
-  .login-header { text-align: center; margin-bottom: 28px; }
-  .login-header h2 { color: #1e3c72; font-weight: 700; margin-top: 12px; }
-  .school-logo { width: 70px; height: 70px; background: linear-gradient(135deg, #1e3c72, #2a5298); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: white; font-size: 2rem; }
+  .ticker-container-full {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    z-index: 9999;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+  .ticker-inner {
+    max-width: 550px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .ticker-label-full {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: #f59e0b;
+    color: white;
+    padding: 4px 12px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    border-radius: 0 30px 30px 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    z-index: 2;
+  }
+  .ticker-wrapper-full {
+    margin-left: 85px;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 6px 0;
+  }
+  .ticker-full {
+    display: inline-block;
+    white-space: nowrap;
+    animation: tickerScroll 30s linear infinite;
+  }
+  .ticker-full span {
+    display: inline-block;
+    margin-right: 40px;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+  .ticker-full span i { margin-right: 5px; }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
   
-  .app-container { max-width: 550px; margin: 0 auto; padding: 16px; min-height: 100vh; background: #f0f4f8; }
-  .header-card { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 28px; padding: 20px; margin-bottom: 16px; }
-  .student-avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; margin-right: 16px; }
-  .student-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white; }
+  body { padding-top: 42px; }
   
-  .stat-card { background: white; border-radius: 20px; padding: 14px; text-align: center; flex: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin: 0 4px; }
+  .dashboard-container { max-width: 550px; margin: 0 auto; padding: 20px 16px 80px 16px; min-height: 100vh; }
+  
+  .header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    color: white; 
+    padding: 20px; 
+    border-radius: 28px; 
+    margin-bottom: 20px; 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .student-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: bold;
+  }
+  .student-img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+  }
+  .logout-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 6px 14px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .stats-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .stat-card { 
+    background: white; 
+    border-radius: 20px; 
+    padding: 12px 10px; 
+    text-align: center; 
+    flex: 1;
+    min-width: 100px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    border: 1px solid #eef2f8;
+  }
   .stat-card i { font-size: 1.5rem; margin-bottom: 6px; }
+  .stat-card h3 { font-size: 1.2rem; font-weight: 800; margin: 0; color: #1e293b; }
+  .stat-card p { margin: 4px 0 0; font-size: 0.6rem; color: #64748b; }
   
-  .module-card { background: white; border-radius: 20px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #eef2f8; }
+  .module-card {
+    background: white;
+    border-radius: 20px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border: 1px solid #eef2f8;
+  }
   .module-card:active { transform: scale(0.99); background: #f8fafc; }
-  .module-icon { width: 48px; height: 48px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white; }
+  .module-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: white;
+  }
   .module-icon.result { background: linear-gradient(135deg, #8B5CF6, #6D28D9); }
   .module-icon.fee { background: linear-gradient(135deg, #f59e0b, #ef4444); }
   .module-icon.syllabus { background: linear-gradient(135deg, #06b6d4, #0891b2); }
@@ -39,45 +160,154 @@
   .module-info { flex: 1; }
   .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; }
   .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
+  .module-arrow { color: #94a3b8; transition: transform 0.2s; }
+  .module-card:active .module-arrow { transform: translateX(4px); }
   
-  .detail-card { background: white; border-radius: 24px; overflow: hidden; margin-bottom: 16px; }
-  .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
-  .back-btn { background: transparent; border: none; color: white; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
-  .info-row { display: flex; padding: 12px 20px; border-bottom: 1px solid #eef2f8; }
-  .info-label { width: 35%; font-weight: 700; font-size: 0.75rem; color: #475569; }
-  .info-value { width: 65%; font-size: 0.85rem; color: #0f172a; }
+  .welcome-banner {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: 20px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #fcd34d;
+  }
+  .welcome-banner i { font-size: 1.5rem; color: #d97706; }
   
-  .toast-custom { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .iframe-container {
+    position: fixed;
+    top: 42px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 42px);
+    background: white;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+  }
+  iframe { 
+    width: 100%; 
+    height: 100%; 
+    border: none;
+    display: block;
+    background: #f0f4f8;
+  }
+  
+  .login-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+  }
+  .login-card {
+    background: white;
+    border-radius: 32px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    width: 100%;
+  }
+  .school-logo {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    color: white;
+    font-size: 2rem;
+  }
+  
+  .toast-custom {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
   .toast-custom.show { opacity: 1; }
-  .logout-btn { background: rgba(255,255,255,0.2); border: none; border-radius: 30px; padding: 6px 14px; color: white; font-size: 0.7rem; cursor: pointer; }
+  
+  .floating-back {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1001;
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .floating-back i { font-size: 1rem; }
+  
+  @media (max-width: 640px) {
+    body { padding-top: 38px; }
+    .iframe-container { top: 38px; height: calc(100% - 38px); }
+    .ticker-label-full { padding: 3px 10px; font-size: 0.55rem; }
+    .ticker-wrapper-full { margin-left: 75px; }
+    .floating-back { bottom: 15px; right: 15px; padding: 8px 16px; font-size: 0.7rem; }
+  }
 </style>
 </head>
 <body>
 
-<!-- LOGIN VIEW -->
-<div id="loginView" class="login-container">
-  <div class="login-card">
-    <div class="login-header">
-      <div class="school-logo"><i class="bi bi-backpack4-fill"></i></div>
-      <h2>Student Login</h2>
-      <p>The Leads High School (Dinga)</p>
+<div class="ticker-container-full">
+  <div class="ticker-inner">
+    <div class="ticker-label-full"><i class="bi bi-megaphone-fill"></i> NOTICE</div>
+    <div class="ticker-wrapper-full">
+      <div class="ticker-full" id="tickerText"></div>
     </div>
-    <div class="mb-3">
-      <label class="form-label fw-bold small">Admission Number</label>
-      <input type="text" id="loginAdmission" class="form-control" placeholder="e.g., A-00001-24">
-    </div>
-    <div class="mb-4">
-      <label class="form-label fw-bold small">Password</label>
-      <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password">
-    </div>
-    <button class="btn btn-primary w-100 rounded-pill py-2" onclick="studentLogin()"><i class="bi bi-box-arrow-in-right"></i> Login</button>
   </div>
 </div>
 
-<!-- MAIN APP VIEW -->
-<div id="appView" style="display: none;">
-  <div class="app-container" id="appContainer"></div>
+<div id="loginView" class="login-container">
+  <div class="login-card">
+    <div class="text-center mb-3">
+      <div class="school-logo"><i class="bi bi-backpack4-fill"></i></div>
+      <h2 class="mt-3 fw-bold" style="color:#1e3c72;">Student Login</h2>
+      <p class="text-muted small">The Leads High School (Dinga)</p>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-bold small">Admission Number</label>
+      <input type="text" id="loginAdmission" class="form-control rounded-pill" placeholder="e.g., A-00001-24">
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-bold small">Password</label>
+      <input type="password" id="loginPassword" class="form-control rounded-pill" placeholder="Enter your password">
+    </div>
+    <button class="btn btn-primary w-100 rounded-pill py-2" id="loginBtn"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+  </div>
 </div>
+
+<div id="dashboardView" style="display: none;">
+  <div class="dashboard-container" id="dashboardContainer"></div>
+</div>
+
+<div class="iframe-container" id="iframeContainer">
+  <iframe id="moduleIframe" src="about:blank"></iframe>
+</div>
+
 
 <div id="toastMsg" class="toast-custom"></div>
 
@@ -90,8 +320,7 @@ let currentStudent = null;
 let allClassrooms = [];
 let allFees = [];
 let allExamResults = [];
-let allExamTypes = [];
-let allDateSheets = [];
+let announcements = [];
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -100,19 +329,47 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+}
+
 function getClassroomName(classroomId) {
   const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
   return classroom ? classroom.class_room_no : `Class ${classroomId}`;
 }
 
-function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+function loadAnnouncements() {
+  const saved = localStorage.getItem('schoolAnnouncements');
+  if (saved) {
+    try { announcements = JSON.parse(saved); } catch(e) { announcements = []; }
+  }
+  if (!announcements.length) {
+    announcements = [
+      { icon: "bi-calendar-event", text: "📢 Annual Examination 2025 will start from 1st June 2025" },
+      { icon: "bi-trophy", text: "🎉 Summer Vacation from 15th June to 31st July 2025" },
+      { icon: "bi-cash-stack", text: "💰 Fee submission deadline: 10th of every month" }
+    ];
+  }
+  renderTicker();
+}
 
-// ==================== LOGIN ====================
+function renderTicker() {
+  const tickerContainer = document.getElementById('tickerText');
+  if (!tickerContainer) return;
+  let html = '';
+  const looped = [...announcements, ...announcements];
+  for (const ann of looped) {
+    html += `<span><i class="bi ${ann.icon}"></i> ${ann.text}</span>`;
+  }
+  tickerContainer.innerHTML = html;
+}
+
 async function studentLogin() {
   const admissionNo = document.getElementById('loginAdmission').value.trim();
   const password = document.getElementById('loginPassword').value.trim();
 
-  if(!admissionNo || !password) {
+  if (!admissionNo || !password) {
     alert("Please enter Admission Number and Password");
     return;
   }
@@ -124,46 +381,68 @@ async function studentLogin() {
     .eq("stu_password", password)
     .single();
 
-  if(error || !data) {
+  if (error || !data) {
     alert("Invalid Admission Number or Password");
     return;
   }
 
   currentStudent = data;
-  localStorage.setItem('studentLoggedIn', JSON.stringify(currentStudent));
+  
+  const sessionData = {
+    student: currentStudent,
+    timestamp: Date.now(),
+    studentId: currentStudent.stu_id
+  };
+  localStorage.setItem('studentLoggedIn', JSON.stringify(sessionData));
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  
   await loadMasterData();
   showDashboard();
 }
 
-function logout() {
+// LOGOUT FUNCTION
+function doLogout() {
   currentStudent = null;
   localStorage.removeItem('studentLoggedIn');
+  localStorage.removeItem('currentStudent');
+  
+  const iframeContainer = document.getElementById('iframeContainer');
+  if (iframeContainer) iframeContainer.style.display = 'none';
+  
+  document.getElementById('dashboardView').style.display = 'none';
   document.getElementById('loginView').style.display = 'flex';
-  document.getElementById('appView').style.display = 'none';
+  
   document.getElementById('loginAdmission').value = '';
   document.getElementById('loginPassword').value = '';
+  
+  document.getElementById('floatingBackBtn').style.display = 'none';
+  
+  showToast("Logged out successfully");
 }
 
 async function loadMasterData() {
-  const [classrooms, fees, examResults, examTypes, dateSheets] = await Promise.all([
+  if (!currentStudent) return;
+  
+  const [classrooms, fees, examResults] = await Promise.all([
     supabase1.from("class_rooms").select("*"),
     supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id),
-    supabase1.from("examinations").select("*").eq("stu_id", currentStudent.stu_id),
-    supabase1.from("exam_type").select("*"),
-    supabase1.from("exam_date_sheet").select("*")
+    supabase1.from("examinations").select("*").eq("stu_id", currentStudent.stu_id)
   ]);
   
-  if(classrooms.data) allClassrooms = classrooms.data;
-  if(fees.data) allFees = fees.data;
-  if(examResults.data) allExamResults = examResults.data;
-  if(examTypes.data) allExamTypes = examTypes.data;
-  if(dateSheets.data) allDateSheets = dateSheets.data;
+  if (classrooms.data) allClassrooms = classrooms.data;
+  if (fees.data) allFees = fees.data;
+  if (examResults.data) allExamResults = examResults.data;
 }
 
-// ==================== DASHBOARD ====================
 function showDashboard() {
-  const container = document.getElementById('appContainer');
+  if (!currentStudent) {
+    doLogout();
+    return;
+  }
+  
+  const container = document.getElementById('dashboardContainer');
   const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  
   let avatarHtml = '';
   if (currentStudent.stu_image && currentStudent.stu_image !== '') {
     let imageSrc = currentStudent.stu_image;
@@ -176,13 +455,12 @@ function showDashboard() {
   const totalFee = allFees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
   const paidFee = allFees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
   const dueFee = totalFee - paidFee;
-  
   const examResultsCount = allExamResults.length;
   
   const html = `
-    <div class="header-card">
+    <div class="header">
       <div class="d-flex justify-content-between align-items-start">
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-3">
           ${avatarHtml}
           <div>
             <h4 class="fw-bold mb-0">${escapeHtml(currentStudent.stu_name)}</h4>
@@ -190,7 +468,7 @@ function showDashboard() {
             <p class="mb-0 opacity-75 small">${escapeHtml(currentStudent.stu_father)}</p>
           </div>
         </div>
-        <button class="logout-btn" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+        <button class="logout-btn" onclick="doLogout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
       </div>
       <div class="row mt-3">
         <div class="col-6"><small>📚 Class</small><br><strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong></div>
@@ -198,51 +476,72 @@ function showDashboard() {
       </div>
     </div>
     
-    <div class="d-flex gap-2 mb-4">
-      <div class="stat-card"><i class="bi bi-cash-stack text-warning"></i><h5 class="mb-0">PKR ${dueFee.toLocaleString()}</h5><small>Fee Due</small></div>
-      <div class="stat-card"><i class="bi bi-trophy-fill text-success"></i><h5 class="mb-0">${examResultsCount}</h5><small>Results</small></div>
+    <div class="welcome-banner">
+      <i class="bi bi-emoji-smile"></i>
+      <div>
+        <h4 class="mb-0" style="font-size:0.85rem;">Welcome, ${escapeHtml(currentStudent.stu_name.split(' ')[0])}!</h4>
+        <p class="mb-0 small">Stay updated with your academic progress</p>
+      </div>
     </div>
     
-    <div class="module-card" onclick="openModule('sturesult.html')">
+    <div class="stats-row">
+      <div class="stat-card">
+        <i class="bi bi-cash-stack text-warning"></i>
+        <h3>PKR ${dueFee.toLocaleString()}</h3>
+        <p>Fee Due</p>
+      </div>
+      <div class="stat-card">
+        <i class="bi bi-trophy-fill text-success"></i>
+        <h3>${examResultsCount}</h3>
+        <p>Results Published</p>
+      </div>
+    </div>
+    
+    <div class="module-card" onclick="openModule('sturesult')">
       <div class="module-icon result"><i class="bi bi-trophy-fill"></i></div>
       <div class="module-info"><h3>My Results</h3><p>View exam results & grades</p></div>
-      <i class="bi bi-chevron-right text-muted"></i>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModule('stufee.html')">
+    <div class="module-card" onclick="openModule('stufee')">
       <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
       <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
-      <i class="bi bi-chevron-right text-muted"></i>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModule('stusyllabus.html')">
+    <div class="module-card" onclick="openModule('stusyllabus')">
       <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
       <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
-      <i class="bi bi-chevron-right text-muted"></i>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModule('stuattendance.html')">
+    <div class="module-card" onclick="openModule('stuattendance')">
       <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
       <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
-      <i class="bi bi-chevron-right text-muted"></i>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
     <div class="module-card" onclick="showProfile()">
       <div class="module-icon profile"><i class="bi bi-person-circle"></i></div>
       <div class="module-info"><h3>My Profile</h3><p>Personal information</p></div>
-      <i class="bi bi-chevron-right text-muted"></i>
+      <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
   `;
   
   container.innerHTML = html;
   document.getElementById('loginView').style.display = 'none';
-  document.getElementById('appView').style.display = 'block';
+  document.getElementById('dashboardView').style.display = 'block';
 }
 
-// ==================== PROFILE ====================
 function showProfile() {
-  const container = document.getElementById('appContainer');
+  if (!currentStudent) {
+    doLogout();
+    return;
+  }
+  
+  const container = document.getElementById('dashboardContainer');
   const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  
   let avatarHtml = '';
   if (currentStudent.stu_image && currentStudent.stu_image !== '') {
     let imageSrc = currentStudent.stu_image;
@@ -253,56 +552,169 @@ function showProfile() {
   }
   
   const profileHtml = `
-    <div class="detail-card">
-      <div class="detail-header">
-        <button class="back-btn" onclick="showDashboard()"><i class="bi bi-arrow-left"></i> Back</button>
+    <div style="background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px;">
+      <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px;">
+        <button class="logout-btn" onclick="showDashboard()" style="background: rgba(255,255,255,0.2); border: none; border-radius: 30px; padding: 5px 12px;"><i class="bi bi-arrow-left"></i> Back</button>
         <h5 class="mb-0">👤 My Profile</h5>
-        <div></div>
       </div>
       <div class="text-center pt-4">${avatarHtml}</div>
       <div class="p-3">
-        <div class="info-row"><div class="info-label">Full Name</div><div class="info-value">${escapeHtml(currentStudent.stu_name)}</div></div>
-        <div class="info-row"><div class="info-label">Admission No</div><div class="info-value">${escapeHtml(currentStudent.stu_admission_no)}</div></div>
-        <div class="info-row"><div class="info-label">Father Name</div><div class="info-value">${escapeHtml(currentStudent.stu_father)}</div></div>
-        <div class="info-row"><div class="info-label">Class</div><div class="info-value">${getClassroomName(currentStudent.stu_class_room_id)}</div></div>
-        <div class="info-row"><div class="info-label">Mobile No</div><div class="info-value">${currentStudent.stu_mobile1 || 'N/A'}</div></div>
-        <div class="info-row"><div class="info-label">Alternate Mobile</div><div class="info-value">${currentStudent.stu_mobile2 || 'N/A'}</div></div>
-        <div class="info-row"><div class="info-label">Gender</div><div class="info-value">${currentStudent.stu_gender || 'N/A'}</div></div>
-        <div class="info-row"><div class="info-label">Date of Birth</div><div class="info-value">${currentStudent.stu_dob || 'N/A'}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Full Name</div><div>${escapeHtml(currentStudent.stu_name)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Admission No</div><div>${escapeHtml(currentStudent.stu_admission_no)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Father Name</div><div>${escapeHtml(currentStudent.stu_father)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Class</div><div>${getClassroomName(currentStudent.stu_class_room_id)}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Mobile No</div><div>${currentStudent.stu_mobile1 || 'N/A'}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Alternate Mobile</div><div>${currentStudent.stu_mobile2 || 'N/A'}</div></div>
+        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Gender</div><div>${currentStudent.stu_gender || 'N/A'}</div></div>
+        <div class="d-flex py-2"><div class="fw-bold" style="width: 35%;">Date of Birth</div><div>${currentStudent.stu_dob || 'N/A'}</div></div>
       </div>
     </div>
   `;
   container.innerHTML = profileHtml;
 }
 
-// ==================== OPEN MODULE ====================
 function openModule(pageName) {
-  // Pass current student data to iframe or new page
-  // Store student data in localStorage for other pages
+  if (!currentStudent) {
+    doLogout();
+    return;
+  }
+  
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
-  window.location.href = pageName;
+  
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  
+  iframe.src = `${pageName}.html?stu_id=${currentStudent.stu_id}&fromStudentPortal=true`;
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+  
+  document.getElementById('floatingBackBtn').style.display = 'flex';
 }
 
-// Check for existing session
-window.onload = () => {
-  const saved = localStorage.getItem('studentLoggedIn');
-  if(saved) {
+function closeIframe() {
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  iframe.src = 'about:blank';
+  iframeContainer.style.display = 'none';
+  document.getElementById('dashboardView').style.display = 'block';
+  
+  document.getElementById('floatingBackBtn').style.display = 'none';
+  
+  if (currentStudent) {
+    loadMasterData();
+    showDashboard();
+  }
+}
+
+async function restoreSession() {
+  const savedSession = localStorage.getItem('studentLoggedIn');
+  const savedStudent = localStorage.getItem('currentStudent');
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlStudentId = urlParams.get('stu_id');
+  
+  if (urlStudentId && !currentStudent) {
+    const { data, error } = await supabase1
+      .from("students")
+      .select("*")
+      .eq("stu_id", urlStudentId)
+      .single();
+    if (!error && data) {
+      currentStudent = data;
+      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+      await loadMasterData();
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('dashboardView').style.display = 'block';
+      showDashboard();
+      return true;
+    }
+  }
+  
+  if (savedSession) {
     try {
-      currentStudent = JSON.parse(saved);
-      loadMasterData().then(() => {
-        document.getElementById('loginView').style.display = 'none';
-        document.getElementById('appView').style.display = 'block';
-        showDashboard();
-      });
+      const sessionData = JSON.parse(savedSession);
+      let studentData = sessionData.student || sessionData;
+      
+      if (studentData && studentData.stu_id) {
+        const { data, error } = await supabase1
+          .from("students")
+          .select("*")
+          .eq("stu_id", studentData.stu_id)
+          .single();
+        
+        if (!error && data) {
+          currentStudent = data;
+          await loadMasterData();
+          document.getElementById('loginView').style.display = 'none';
+          document.getElementById('dashboardView').style.display = 'block';
+          showDashboard();
+          return true;
+        } else {
+          localStorage.removeItem('studentLoggedIn');
+          localStorage.removeItem('currentStudent');
+        }
+      }
+    } catch(e) {
+      console.error("Session restore error:", e);
+    }
+  }
+  
+  if (savedStudent && !currentStudent) {
+    try {
+      const studentData = JSON.parse(savedStudent);
+      if (studentData && studentData.stu_id) {
+        const { data, error } = await supabase1
+          .from("students")
+          .select("*")
+          .eq("stu_id", studentData.stu_id)
+          .single();
+        
+        if (!error && data) {
+          currentStudent = data;
+          await loadMasterData();
+          document.getElementById('loginView').style.display = 'none';
+          document.getElementById('dashboardView').style.display = 'block';
+          showDashboard();
+          return true;
+        }
+      }
     } catch(e) {}
   }
+  
+  document.getElementById('dashboardView').style.display = 'none';
+  document.getElementById('loginView').style.display = 'flex';
+  document.getElementById('floatingBackBtn').style.display = 'none';
+  return false;
+}
+
+window.addEventListener('pageshow', async function(event) {
+  const iframeContainer = document.getElementById('iframeContainer');
+  if (iframeContainer && iframeContainer.style.display === 'flex') {
+    document.getElementById('floatingBackBtn').style.display = 'flex';
+  } else if (currentStudent) {
+    document.getElementById('loginView').style.display = 'none';
+    document.getElementById('dashboardView').style.display = 'block';
+    document.getElementById('floatingBackBtn').style.display = 'none';
+    showDashboard();
+  } else {
+    await restoreSession();
+  }
+});
+
+window.onload = async function() {
+  loadAnnouncements();
+  await restoreSession();
+  
+  document.getElementById('loginBtn').onclick = studentLogin;
+  document.getElementById('floatingBackBtn').onclick = closeIframe;
 };
 
-window.studentLogin = studentLogin;
-window.logout = logout;
-window.showDashboard = showDashboard;
-window.showProfile = showProfile;
+// Make functions global for onclick
+window.doLogout = doLogout;
 window.openModule = openModule;
+window.showProfile = showProfile;
+window.closeIframe = closeIframe;
+window.showDashboard = showDashboard;
 </script>
 </body>
 </html>
