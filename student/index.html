@@ -1,1 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Student Portal | The Leads School</title>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, sans-serif; }
+  body { background: #f0f4f8; padding: 0; margin: 0; }
+  
+  .login-container { max-width: 400px; margin: 0 auto; padding: 40px 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1e3c72, #2a5298); }
+  .login-card { background: white; border-radius: 32px; padding: 32px 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 100%; }
+  .login-header { text-align: center; margin-bottom: 28px; }
+  .login-header h2 { color: #1e3c72; font-weight: 700; margin-top: 12px; }
+  .school-logo { width: 70px; height: 70px; background: linear-gradient(135deg, #1e3c72, #2a5298); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto; color: white; font-size: 2rem; }
+  
+  .app-container { max-width: 550px; margin: 0 auto; padding: 16px; min-height: 100vh; background: #f0f4f8; }
+  .header-card { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 28px; padding: 20px; margin-bottom: 16px; }
+  .student-avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: bold; margin-right: 16px; }
+  .student-img { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white; }
+  
+  .stat-card { background: white; border-radius: 20px; padding: 14px; text-align: center; flex: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin: 0 4px; }
+  .stat-card i { font-size: 1.5rem; margin-bottom: 6px; }
+  
+  .module-card { background: white; border-radius: 20px; padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #eef2f8; }
+  .module-card:active { transform: scale(0.99); background: #f8fafc; }
+  .module-icon { width: 48px; height: 48px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: white; }
+  .module-icon.result { background: linear-gradient(135deg, #8B5CF6, #6D28D9); }
+  .module-icon.fee { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .module-icon.syllabus { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+  .module-icon.attendance { background: linear-gradient(135deg, #11998e, #38ef7d); }
+  .module-icon.profile { background: linear-gradient(135deg, #667eea, #764ba2); }
+  .module-info { flex: 1; }
+  .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; }
+  .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
+  
+  .detail-card { background: white; border-radius: 24px; overflow: hidden; margin-bottom: 16px; }
+  .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
+  .back-btn { background: transparent; border: none; color: white; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .info-row { display: flex; padding: 12px 20px; border-bottom: 1px solid #eef2f8; }
+  .info-label { width: 35%; font-weight: 700; font-size: 0.75rem; color: #475569; }
+  .info-value { width: 65%; font-size: 0.85rem; color: #0f172a; }
+  
+  .toast-custom { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast-custom.show { opacity: 1; }
+  .logout-btn { background: rgba(255,255,255,0.2); border: none; border-radius: 30px; padding: 6px 14px; color: white; font-size: 0.7rem; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div id="loginView" class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="school-logo"><i class="bi bi-backpack4-fill"></i></div>
+      <h2>Student Login</h2>
+      <p>The Leads High School (Dinga)</p>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-bold small">Admission Number</label>
+      <input type="text" id="loginAdmission" class="form-control" placeholder="e.g., A-00001-24">
+    </div>
+    <div class="mb-4">
+      <label class="form-label fw-bold small">Password</label>
+      <input type="password" id="loginPassword" class="form-control" placeholder="Enter your password">
+    </div>
+    <button class="btn btn-primary w-100 rounded-pill py-2" onclick="studentLogin()"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+  </div>
+</div>
+
+<!-- MAIN APP VIEW -->
+<div id="appView" style="display: none;">
+  <div class="app-container" id="appContainer"></div>
+</div>
+
+<div id="toastMsg" class="toast-custom"></div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let currentStudent = null;
+let allClassrooms = [];
+let allFees = [];
+let allExamResults = [];
+let allExamTypes = [];
+let allDateSheets = [];
+
+function showToast(message) {
+  const toast = document.getElementById('toastMsg');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function getClassroomName(classroomId) {
+  const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
+  return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
+
+// ==================== LOGIN ====================
+async function studentLogin() {
+  const admissionNo = document.getElementById('loginAdmission').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
+
+  if(!admissionNo || !password) {
+    alert("Please enter Admission Number and Password");
+    return;
+  }
+
+  const { data, error } = await supabase1
+    .from("students")
+    .select("*")
+    .eq("stu_admission_no", admissionNo)
+    .eq("stu_password", password)
+    .single();
+
+  if(error || !data) {
+    alert("Invalid Admission Number or Password");
+    return;
+  }
+
+  currentStudent = data;
+  localStorage.setItem('studentLoggedIn', JSON.stringify(currentStudent));
+  await loadMasterData();
+  showDashboard();
+}
+
+function logout() {
+  currentStudent = null;
+  localStorage.removeItem('studentLoggedIn');
+  document.getElementById('loginView').style.display = 'flex';
+  document.getElementById('appView').style.display = 'none';
+  document.getElementById('loginAdmission').value = '';
+  document.getElementById('loginPassword').value = '';
+}
+
+async function loadMasterData() {
+  const [classrooms, fees, examResults, examTypes, dateSheets] = await Promise.all([
+    supabase1.from("class_rooms").select("*"),
+    supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id),
+    supabase1.from("examinations").select("*").eq("stu_id", currentStudent.stu_id),
+    supabase1.from("exam_type").select("*"),
+    supabase1.from("exam_date_sheet").select("*")
+  ]);
+  
+  if(classrooms.data) allClassrooms = classrooms.data;
+  if(fees.data) allFees = fees.data;
+  if(examResults.data) allExamResults = examResults.data;
+  if(examTypes.data) allExamTypes = examTypes.data;
+  if(dateSheets.data) allDateSheets = dateSheets.data;
+}
+
+// ==================== DASHBOARD ====================
+function showDashboard() {
+  const container = document.getElementById('appContainer');
+  const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  let avatarHtml = '';
+  if (currentStudent.stu_image && currentStudent.stu_image !== '') {
+    let imageSrc = currentStudent.stu_image;
+    if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
+    avatarHtml = `<img src="${imageSrc}" class="student-img" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  } else {
+    avatarHtml = `<div class="student-avatar">${initial}</div>`;
+  }
+  
+  const totalFee = allFees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
+  const paidFee = allFees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
+  const dueFee = totalFee - paidFee;
+  
+  const examResultsCount = allExamResults.length;
+  
+  const html = `
+    <div class="header-card">
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex align-items-center">
+          ${avatarHtml}
+          <div>
+            <h4 class="fw-bold mb-0">${escapeHtml(currentStudent.stu_name)}</h4>
+            <p class="mb-0 opacity-75 small">${escapeHtml(currentStudent.stu_admission_no)}</p>
+            <p class="mb-0 opacity-75 small">${escapeHtml(currentStudent.stu_father)}</p>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
+      </div>
+      <div class="row mt-3">
+        <div class="col-6"><small>📚 Class</small><br><strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong></div>
+        <div class="col-6"><small>📞 Mobile</small><br><strong>${currentStudent.stu_mobile1 || 'N/A'}</strong></div>
+      </div>
+    </div>
+    
+    <div class="d-flex gap-2 mb-4">
+      <div class="stat-card"><i class="bi bi-cash-stack text-warning"></i><h5 class="mb-0">PKR ${dueFee.toLocaleString()}</h5><small>Fee Due</small></div>
+      <div class="stat-card"><i class="bi bi-trophy-fill text-success"></i><h5 class="mb-0">${examResultsCount}</h5><small>Results</small></div>
+    </div>
+    
+    <div class="module-card" onclick="openModule('sturesult.html')">
+      <div class="module-icon result"><i class="bi bi-trophy-fill"></i></div>
+      <div class="module-info"><h3>My Results</h3><p>View exam results & grades</p></div>
+      <i class="bi bi-chevron-right text-muted"></i>
+    </div>
+    
+    <div class="module-card" onclick="openModule('stufee.html')">
+      <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
+      <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
+      <i class="bi bi-chevron-right text-muted"></i>
+    </div>
+    
+    <div class="module-card" onclick="openModule('stusyllabus.html')">
+      <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
+      <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
+      <i class="bi bi-chevron-right text-muted"></i>
+    </div>
+    
+    <div class="module-card" onclick="openModule('stuattendance.html')">
+      <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
+      <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
+      <i class="bi bi-chevron-right text-muted"></i>
+    </div>
+    
+    <div class="module-card" onclick="showProfile()">
+      <div class="module-icon profile"><i class="bi bi-person-circle"></i></div>
+      <div class="module-info"><h3>My Profile</h3><p>Personal information</p></div>
+      <i class="bi bi-chevron-right text-muted"></i>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+  document.getElementById('loginView').style.display = 'none';
+  document.getElementById('appView').style.display = 'block';
+}
+
+// ==================== PROFILE ====================
+function showProfile() {
+  const container = document.getElementById('appContainer');
+  const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  let avatarHtml = '';
+  if (currentStudent.stu_image && currentStudent.stu_image !== '') {
+    let imageSrc = currentStudent.stu_image;
+    if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
+    avatarHtml = `<img src="${imageSrc}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  } else {
+    avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
+  }
+  
+  const profileHtml = `
+    <div class="detail-card">
+      <div class="detail-header">
+        <button class="back-btn" onclick="showDashboard()"><i class="bi bi-arrow-left"></i> Back</button>
+        <h5 class="mb-0">👤 My Profile</h5>
+        <div></div>
+      </div>
+      <div class="text-center pt-4">${avatarHtml}</div>
+      <div class="p-3">
+        <div class="info-row"><div class="info-label">Full Name</div><div class="info-value">${escapeHtml(currentStudent.stu_name)}</div></div>
+        <div class="info-row"><div class="info-label">Admission No</div><div class="info-value">${escapeHtml(currentStudent.stu_admission_no)}</div></div>
+        <div class="info-row"><div class="info-label">Father Name</div><div class="info-value">${escapeHtml(currentStudent.stu_father)}</div></div>
+        <div class="info-row"><div class="info-label">Class</div><div class="info-value">${getClassroomName(currentStudent.stu_class_room_id)}</div></div>
+        <div class="info-row"><div class="info-label">Mobile No</div><div class="info-value">${currentStudent.stu_mobile1 || 'N/A'}</div></div>
+        <div class="info-row"><div class="info-label">Alternate Mobile</div><div class="info-value">${currentStudent.stu_mobile2 || 'N/A'}</div></div>
+        <div class="info-row"><div class="info-label">Gender</div><div class="info-value">${currentStudent.stu_gender || 'N/A'}</div></div>
+        <div class="info-row"><div class="info-label">Date of Birth</div><div class="info-value">${currentStudent.stu_dob || 'N/A'}</div></div>
+      </div>
+    </div>
+  `;
+  container.innerHTML = profileHtml;
+}
+
+// ==================== OPEN MODULE ====================
+function openModule(pageName) {
+  // Pass current student data to iframe or new page
+  // Store student data in localStorage for other pages
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  window.location.href = pageName;
+}
+
+// Check for existing session
+window.onload = () => {
+  const saved = localStorage.getItem('studentLoggedIn');
+  if(saved) {
+    try {
+      currentStudent = JSON.parse(saved);
+      loadMasterData().then(() => {
+        document.getElementById('loginView').style.display = 'none';
+        document.getElementById('appView').style.display = 'block';
+        showDashboard();
+      });
+    } catch(e) {}
+  }
+};
+
+window.studentLogin = studentLogin;
+window.logout = logout;
+window.showDashboard = showDashboard;
+window.showProfile = showProfile;
+window.openModule = openModule;
+</script>
+</body>
+</html>
