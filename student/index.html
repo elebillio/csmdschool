@@ -207,6 +207,14 @@
     font-weight: bold;
     font-size: 1rem;
     cursor: pointer;
+    object-fit: cover;
+  }
+  .sibling-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
   }
   .sibling-info { flex: 1; }
   .sibling-name { 
@@ -417,7 +425,6 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
-
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
@@ -447,6 +454,16 @@ function escapeHtml(str) {
 function getClassroomName(classroomId) {
   const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
   return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+function getStudentImageUrl(student) {
+  if (student.stu_image && typeof student.stu_image === 'string' && student.stu_image.length > 10) {
+    if (student.stu_image.startsWith('data:image') || student.stu_image.startsWith('http')) {
+      return student.stu_image;
+    }
+    return `data:image/jpeg;base64,${student.stu_image}`;
+  }
+  return null;
 }
 
 function loadAnnouncements() {
@@ -589,19 +606,17 @@ function showStudentProfile(student) {
   
   const container = document.getElementById('dashboardContainer');
   const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
+  const imgUrl = getStudentImageUrl(student);
   
   let avatarHtml = '';
-  if (student.stu_image && student.stu_image !== '') {
-    let imageSrc = student.stu_image;
-    if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
-    avatarHtml = `<img src="${imageSrc}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  if (imgUrl) {
+    avatarHtml = `<img src="${imgUrl}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
   } else {
     avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
   }
   
   // Check if this is the current student
   const isCurrent = (student.stu_id === currentStudent.stu_id);
-  const backAction = isCurrent ? 'showDashboard' : `showStudentProfileById(${student.stu_id})`;
   
   const profileHtml = `
     <div style="background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px;">
@@ -654,12 +669,11 @@ function showDashboard() {
   
   const container = document.getElementById('dashboardContainer');
   const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  const currentImgUrl = getStudentImageUrl(currentStudent);
   
   let avatarHtml = '';
-  if (currentStudent.stu_image && currentStudent.stu_image !== '') {
-    let imageSrc = currentStudent.stu_image;
-    if (!imageSrc.startsWith('data:image')) imageSrc = 'data:image/jpeg;base64,' + imageSrc;
-    avatarHtml = `<img src="${imageSrc}" class="student-img" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  if (currentImgUrl) {
+    avatarHtml = `<img src="${currentImgUrl}" class="student-img" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
   } else {
     avatarHtml = `<div class="student-avatar">${initial}</div>`;
   }
@@ -669,15 +683,24 @@ function showDashboard() {
   const dueFee = totalFee - paidFee;
   const examResultsCount = allExamResults.length;
   
-  // Build siblings/family HTML
+  // Build siblings/family HTML with images
   let familyHtml = '';
   if (siblingStudents && siblingStudents.length > 0) {
     let siblingsHtml = '';
     for (const sibling of siblingStudents) {
       const siblingInitial = sibling.stu_name?.charAt(0).toUpperCase() || '?';
+      const siblingImgUrl = getStudentImageUrl(sibling);
+      
+      let siblingAvatarHtml = '';
+      if (siblingImgUrl) {
+        siblingAvatarHtml = `<img src="${siblingImgUrl}" class="sibling-img" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">`;
+      } else {
+        siblingAvatarHtml = `<div class="sibling-avatar" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${siblingInitial}</div>`;
+      }
+      
       siblingsHtml += `
         <div class="sibling-item">
-          <div class="sibling-avatar" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${siblingInitial}</div>
+          ${siblingAvatarHtml}
           <div class="sibling-info">
             <div class="sibling-name" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${escapeHtml(sibling.stu_name)}</div>
             <div class="sibling-details">${escapeHtml(sibling.stu_admission_no)} | ${getClassroomName(sibling.stu_class_room_id)}</div>
