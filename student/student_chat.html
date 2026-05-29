@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Class Chat | Student Portal</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, sans-serif; }
+  body { background: #f0f4f8; padding: 0; margin: 0; }
+  .app-container { max-width: 550px; margin: 0 auto; padding: 16px; height: 100vh; display: flex; flex-direction: column; }
+  
+  .card-custom {
+    background: white;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: calc(100vh - 32px);
+  }
+  .card-header-custom {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 16px 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 5px 12px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #f8fafc;
+  }
+  .message {
+    margin-bottom: 12px;
+    display: flex;
+  }
+  .message.sent { justify-content: flex-end; }
+  .message.received { justify-content: flex-start; }
+  .message-bubble {
+    max-width: 75%;
+    padding: 10px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+  }
+  .message.sent .message-bubble {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .message.received .message-bubble {
+    background: white;
+    color: #1e293b;
+    border: 1px solid #eef2f8;
+    border-bottom-left-radius: 4px;
+  }
+  .message-sender {
+    font-size: 0.6rem;
+    font-weight: 600;
+    margin-bottom: 3px;
+    color: #64748b;
+  }
+  .message-time {
+    font-size: 0.55rem;
+    margin-top: 4px;
+    opacity: 0.7;
+  }
+  
+  .voice-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  audio {
+    height: 36px;
+    max-width: 200px;
+    border-radius: 20px;
+  }
+  
+  .chat-image {
+    max-width: 200px;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  
+  .chat-input-area {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: white;
+    border-top: 1px solid #eef2f8;
+    align-items: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .chat-input {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    outline: none;
+  }
+  .chat-input:focus { border-color: #1e3c72; }
+  .chat-btn {
+    background: #f1f5f9;
+    border: none;
+    border-radius: 30px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1rem;
+  }
+  .chat-btn:hover { background: #e2e8f0; }
+  .send-btn {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    padding: 8px 20px;
+  }
+  
+  /* Recording Animation */
+  .recording-active {
+    background: #ef4444;
+    color: white;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+  
+  .emoji-dropdown {
+    position: absolute;
+    bottom: 70px;
+    left: 10px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 10px;
+    display: none;
+    z-index: 1000;
+    width: 280px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+  }
+  .emoji-item {
+    font-size: 1.3rem;
+    cursor: pointer;
+    text-align: center;
+    padding: 5px;
+    border-radius: 8px;
+    transition: background 0.2s;
+  }
+  .emoji-item:hover {
+    background: #f1f5f9;
+    transform: scale(1.1);
+  }
+  
+  .image-preview-modal {
+    max-width: 90vw;
+    max-height: 90vh;
+  }
+  .image-preview-modal img {
+    width: 100%;
+    height: auto;
+  }
+  
+  .class-info {
+    background: #f1f5f9;
+    padding: 8px 16px;
+    font-size: 0.7rem;
+    color: #475569;
+    text-align: center;
+    border-bottom: 1px solid #eef2f8;
+    flex-shrink: 0;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+  }
+  
+  .sibling-view-badge {
+    background: #ec489a;
+    padding: 2px 8px;
+    border-radius: 30px;
+    font-size: 0.6rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container" id="appContainer"></div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered image-preview-modal">
+    <div class="modal-content bg-transparent border-0">
+      <div class="text-end mb-2">
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <img id="previewImage" src="" class="rounded-3">
+    </div>
+  </div>
+</div>
+
+<script>
+// Supabase configuration
+const SUPABASE_URL = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentStudent = null;
+let currentClass = null;
+let currentMessages = [];
+let messageSubscription = null;
+let allClassrooms = [];
+let siblingName = "";
+let isSiblingView = false;
+let siblingStudentId = null;
+
+// Voice Recording Variables
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let recordingTimer = null;
+let recordingSeconds = 0;
+
+function showToast(message) {
+  let toast = document.getElementById('customToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'customToast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+}
+
+function formatTime(date) {
+  return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function goBack() {
+  if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+    window.parent.closeIframe();
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+
+function getClassroomName(classroomId) {
+  const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
+  return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+async function loadStudentData() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetStudentId = urlParams.get('stu_id');
+  const viewerId = urlParams.get('viewer_id');
+  const siblingNameParam = urlParams.get('sibling_name');
+  
+  console.log("URL Parameters:", { targetStudentId, viewerId, siblingNameParam });
+  
+  if (siblingNameParam) {
+    siblingName = decodeURIComponent(siblingNameParam);
+    isSiblingView = true;
+    console.log("Sibling name from URL:", siblingName);
+  }
+  
+  if (targetStudentId && targetStudentId !== 'null') {
+    siblingStudentId = targetStudentId;
+    isSiblingView = true;
+    console.log("Sibling ID from URL:", siblingStudentId);
+  }
+  
+  if (viewerId && viewerId !== 'null') {
+    const { data, error } = await supabaseClient.from("students").select("*").eq("stu_id", viewerId).single();
+    if (!error && data) currentStudent = data;
+  }
+  
+  if (!currentStudent) {
+    const saved = localStorage.getItem('currentStudent');
+    if (saved) { 
+      try { currentStudent = JSON.parse(saved); } catch(e) {}
+    }
+  }
+  
+  if (!currentStudent) {
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if (savedLogin) {
+      try { 
+        const sessionData = JSON.parse(savedLogin);
+        currentStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  if (siblingStudentId && !siblingName) {
+    const { data, error } = await supabaseClient.from("students").select("stu_name").eq("stu_id", siblingStudentId).single();
+    if (!error && data) {
+      siblingName = data.stu_name;
+      console.log("Sibling name from DB:", siblingName);
+    }
+  }
+  
+  let targetStudent = currentStudent;
+  if (isSiblingView && siblingStudentId) {
+    const { data, error } = await supabaseClient.from("students").select("*").eq("stu_id", siblingStudentId).single();
+    if (!error && data) {
+      targetStudent = data;
+      if (!siblingName) siblingName = data.stu_name;
+      console.log("Target student (sibling):", targetStudent.stu_name);
+    }
+  }
+  
+  if (!currentStudent) {
+    showToast("Session expired. Please login again.");
+    setTimeout(() => goBack(), 1500);
+    return false;
+  }
+  
+  const { data: classrooms } = await supabaseClient.from("class_rooms").select("*");
+  if (classrooms) allClassrooms = classrooms;
+  
+  await loadChatRoom(targetStudent);
+  return true;
+}
+
+async function loadChatRoom(student) {
+  if (!student) return;
+  
+  console.log("Loading chat room for student:", student.stu_name, "Class ID:", student.stu_class_room_id);
+  
+  const { data: rooms } = await supabaseClient
+    .from("chat_rooms")
+    .select("*")
+    .eq("class_room_id", student.stu_class_room_id)
+    .eq("is_active", true);
+  
+  if (!rooms || rooms.length === 0) {
+    renderNoChatRoom(student);
+    return;
+  }
+  
+  currentClass = rooms[0];
+  console.log("Chat room loaded:", currentClass.room_name);
+  
+  if (messageSubscription) {
+    await supabaseClient.removeChannel(messageSubscription);
+    messageSubscription = null;
+  }
+  
+  messageSubscription = supabaseClient
+    .channel(`class_chat_${currentClass.id}`)
+    .on('postgres_changes', 
+      { event: 'INSERT', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${currentClass.id}` },
+      (payload) => { currentMessages.push(payload.new); renderMessages(); }
+    )
+    .subscribe();
+  
+  await loadClassMessages();
+  renderChatWindow(student);
+}
+
+async function loadClassMessages() {
+  const { data } = await supabaseClient
+    .from("class_chat_messages")
+    .select("*")
+    .eq("class_id", currentClass.id)
+    .order("created_at", { ascending: true });
+  
+  if (data) currentMessages = data;
+}
+
+function renderMessages() {
+  const container = document.getElementById('chatMessages');
+  if (!container) return;
+  
+  let html = '';
+  for (const msg of currentMessages) {
+    const isSent = msg.sender_type === 'student' && msg.sender_id === currentStudent.stu_id;
+    const time = formatTime(msg.created_at);
+    
+    let contentHtml = '';
+    if (msg.message_type === 'image') {
+      contentHtml = `<img src="${msg.media_url}" class="chat-image" onclick="showImagePreview('${msg.media_url}')">`;
+    } else if (msg.message_type === 'voice') {
+      contentHtml = `<div class="voice-message"><audio controls src="${msg.media_url}"></audio></div>`;
+    } else {
+      contentHtml = escapeHtml(msg.message);
+    }
+    
+    let senderDisplay = '';
+    if (!isSent) {
+      if (msg.sender_type === 'admin') {
+        senderDisplay = `<div class="message-sender">Admin</div>`;
+      } else if (msg.sender_type === 'student') {
+        if (isSiblingView && siblingStudentId && msg.sender_id == siblingStudentId) {
+          senderDisplay = `<div class="message-sender">${escapeHtml(siblingName)}</div>`;
+        } else if (msg.sender_id !== currentStudent.stu_id) {
+          senderDisplay = `<div class="message-sender">${escapeHtml(msg.sender_name || 'Student')}</div>`;
+        }
+      }
+    }
+    
+    html += `
+      <div class="message ${isSent ? 'sent' : 'received'}">
+        <div class="message-bubble">
+          ${senderDisplay}
+          ${contentHtml}
+          <div class="message-time">${time}</div>
+        </div>
+      </div>
+    `;
+  }
+  container.innerHTML = html;
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const message = input.value.trim();
+  if (!message || !currentClass) return;
+  
+  let senderName = currentStudent.stu_name;
+  let senderId = currentStudent.stu_id;
+  
+  if (isSiblingView && siblingStudentId) {
+    senderName = siblingName;
+    senderId = siblingStudentId;
+  }
+  
+  await supabaseClient
+    .from("class_chat_messages")
+    .insert({
+      class_id: currentClass.id,
+      sender_id: senderId,
+      sender_type: 'student',
+      sender_name: senderName,
+      message_type: 'text',
+      message: message
+    });
+  
+  input.value = '';
+}
+
+// ==================== VOICE RECORDING ====================
+
+async function startRecording() {
+  if (!currentClass) return;
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+    
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const fileName = `voice_student_${currentStudent.stu_id}_${Date.now()}.webm`;
+      
+      const { error } = await supabaseClient.storage
+        .from('chat-media')
+        .upload(fileName, audioBlob);
+      
+      if (error) {
+        alert("Voice upload failed: " + error.message);
+        return;
+      }
+      
+      const { data: urlData } = supabaseClient.storage
+        .from('chat-media')
+        .getPublicUrl(fileName);
+      
+      let senderName = currentStudent.stu_name;
+      let senderId = currentStudent.stu_id;
+      
+      if (isSiblingView && siblingStudentId) {
+        senderName = siblingName;
+        senderId = siblingStudentId;
+      }
+      
+      await supabaseClient.from("class_chat_messages").insert({
+        class_id: currentClass.id,
+        sender_id: senderId,
+        sender_type: 'student',
+        sender_name: senderName,
+        message_type: 'voice',
+        media_url: urlData.publicUrl
+      });
+      
+      stream.getTracks().forEach(track => track.stop());
+      
+      const recordBtn = document.getElementById('recordBtn');
+      if (recordBtn) {
+        recordBtn.innerHTML = '<i class="bi bi-mic-fill"></i>';
+        recordBtn.classList.remove('recording-active');
+      }
+      
+      if (recordingTimer) {
+        clearInterval(recordingTimer);
+        recordingTimer = null;
+      }
+      
+      showToast("Voice message sent!");
+    };
+    
+    mediaRecorder.start();
+    isRecording = true;
+    
+    recordingSeconds = 0;
+    recordingTimer = setInterval(() => {
+      recordingSeconds++;
+      const timerDisplay = document.getElementById('recordingTimer');
+      if (timerDisplay) {
+        timerDisplay.textContent = `${recordingSeconds}s`;
+      }
+    }, 1000);
+    
+    const recordBtn = document.getElementById('recordBtn');
+    if (recordBtn) {
+      recordBtn.innerHTML = '<i class="bi bi-stop-fill"></i>';
+      recordBtn.classList.add('recording-active');
+    }
+    
+    setTimeout(() => {
+      if (isRecording && mediaRecorder && mediaRecorder.state === 'recording') {
+        stopRecording();
+      }
+    }, 60000);
+    
+  } catch (err) {
+    alert("Microphone access denied. Please allow microphone permission.");
+    console.error(err);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    isRecording = false;
+  }
+  if (recordingTimer) {
+    clearInterval(recordingTimer);
+    recordingTimer = null;
+  }
+}
+
+function toggleRecording() {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+// ==================== IMAGE UPLOAD ====================
+
+window.uploadImage = async function() {
+  if (!currentClass) return;
+  
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast("Uploading image...");
+    const fileName = `student_${currentStudent.stu_id}_${Date.now()}.${file.name.split('.').pop()}`;
+    const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, file);
+    if (error) { alert("Upload failed: " + error.message); return; }
+    const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
+    
+    let senderName = currentStudent.stu_name;
+    let senderId = currentStudent.stu_id;
+    
+    if (isSiblingView && siblingStudentId) {
+      senderName = siblingName;
+      senderId = siblingStudentId;
+    }
+    
+    await supabaseClient.from("class_chat_messages").insert({
+      class_id: currentClass.id,
+      sender_id: senderId,
+      sender_type: 'student',
+      sender_name: senderName,
+      message_type: 'image',
+      media_url: urlData.publicUrl
+    });
+    showToast("Image sent!");
+  };
+  input.click();
+};
+
+window.showImagePreview = function(url) {
+  document.getElementById('previewImage').src = url;
+  new bootstrap.Modal(document.getElementById('imagePreviewModal')).show();
+}
+
+function buildEmojiGrid() {
+  let html = '<div class="emoji-grid">';
+  const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🫢', '🫣', '🤫', '🤔', '🫡', '🤐', '🤨', '😐', '😑', '😶', '🫥', '😏', '😒', '🙄', '😬', '😮‍💨', '🤥', '🫨', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤑', '🤠', '🥳', '🥸', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙈', '🙉', '🙊', '💋', '💌', '💘', '💝', '💖', '💗', '💓', '💞', '💕', '💟', '❣️', '💔', '❤️', '🧡', '💛', '💚', '💙', '💜', '🤎', '🖤', '🤍', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💣', '💬', '👋', '🤚', '🖐️', '✋', '🖖', '🫱', '🫲', '🫳', '🫴', '👌', '🤌', '🤏', '✌️', '🤞', '🫰', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '🫵', '👍', '👎', '✊', '👊', '🤛', '🤜', '👏', '🙌', '🫶', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '🫦'];
+  for (const emoji of emojis) {
+    html += `<div class="emoji-item" onclick="insertEmoji('${emoji}')">${emoji}</div>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+window.toggleEmojiPicker = function() {
+  const dropdown = document.getElementById('emojiDropdown');
+  if (!dropdown) return;
+  if (dropdown.style.display === 'none' || !dropdown.style.display) {
+    dropdown.innerHTML = buildEmojiGrid();
+    dropdown.style.display = 'block';
+  } else {
+    dropdown.style.display = 'none';
+  }
+}
+
+window.insertEmoji = function(emoji) {
+  const input = document.getElementById('chatInput');
+  if (input) { input.value += emoji; input.focus(); }
+  document.getElementById('emojiDropdown').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('emojiDropdown');
+  const emojiBtn = document.getElementById('emojiBtn');
+  if (dropdown && emojiBtn && !dropdown.contains(e.target) && !emojiBtn.contains(e.target)) {
+    dropdown.style.display = 'none';
+  }
+});
+
+function renderChatWindow(student) {
+  const container = document.getElementById('appContainer');
+  const className = getClassroomName(student.stu_class_room_id);
+  
+  let headerTitle = `${escapeHtml(className)} Chat Room`;
+  let infoText = `<i class="bi bi-info-circle-fill me-1"></i> Connected to your class chat room`;
+  
+  if (isSiblingView && siblingName) {
+    headerTitle = `Chat with ${escapeHtml(siblingName)} (${escapeHtml(className)})`;
+    infoText = `<i class="bi bi-people-fill me-1"></i> You are viewing ${escapeHtml(siblingName)}'s class chat`;
+  }
+  
+  container.innerHTML = `
+    <div class="card-custom">
+      <div class="card-header-custom">
+        <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+        <div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(headerTitle)}</span></div>
+        ${isSiblingView ? `<span class="sibling-view-badge"><i class="bi bi-eye-fill"></i> Viewing</span>` : ''}
+      </div>
+      <div class="class-info">${infoText}</div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area">
+        <button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button>
+        <div id="emojiDropdown" class="emoji-dropdown"></div>
+        <button class="chat-btn" onclick="uploadImage()">📸</button>
+        <button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button>
+        <input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button class="chat-btn send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  `;
+  
+  renderMessages();
+  setTimeout(() => document.getElementById('chatInput')?.focus(), 100);
+}
+
+function renderNoChatRoom(student) {
+  const container = document.getElementById('appContainer');
+  const className = getClassroomName(student.stu_class_room_id);
+  
+  let message = `No chat room available for ${escapeHtml(className)}`;
+  if (isSiblingView && siblingName) {
+    message = `No chat room available for ${escapeHtml(siblingName)}'s class (${escapeHtml(className)})`;
+  }
+  
+  container.innerHTML = `
+    <div class="card-custom">
+      <div class="card-header-custom">
+        <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+        <h5 class="mb-0"><i class="bi bi-chat-dots-fill me-2"></i>Class Chat</h5>
+        <div style="width: 60px;"></div>
+      </div>
+      <div class="empty-state">
+        <i class="bi bi-chat-square-text" style="font-size: 3rem;"></i>
+        <p class="mt-3">${message}</p>
+        <small class="text-muted">Please contact school administration.</small>
+      </div>
+    </div>
+  `;
+}
+
+async function init() {
+  await loadStudentData();
+}
+
+// Make functions global
+window.goBack = goBack;
+window.sendMessage = sendMessage;
+window.uploadImage = uploadImage;
+window.toggleRecording = toggleRecording;
+window.toggleEmojiPicker = toggleEmojiPicker;
+window.insertEmoji = insertEmoji;
+window.showImagePreview = showImagePreview;
+
+init();
+</script>
+</body>
+</html>
