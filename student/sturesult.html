@@ -32,6 +32,11 @@
   }
   .back-btn:hover { background: rgba(255,255,255,0.3); }
   
+  .report-header { background: #f1f5f9; border-radius: 20px; padding: 12px; margin-bottom: 16px; text-align: center; }
+  .report-header .student-name { font-size: 1.1rem; font-weight: 700; color: #1e3c72; }
+  .student-img-small { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: #e2e8f0; }
+  .avatar-small { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; margin: 0 auto; }
+  
   .expand-collapse-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
   .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.2s; }
   .expand-collapse-btn:hover { background: #e2e8f0; }
@@ -139,6 +144,7 @@ const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let currentStudent = null;
+let viewerStudent = null;
 let allExamTypes = [];
 let allSubjects = [];
 let allClassrooms = [];
@@ -163,6 +169,16 @@ function getClassroomName(classroomId) {
   return classroom ? classroom.class_room_no : `Class ${classroomId}`;
 }
 
+function getStudentImageUrl(student) {
+  if (student.stu_image && typeof student.stu_image === 'string' && student.stu_image.length > 10) {
+    if (student.stu_image.startsWith('data:image') || student.stu_image.startsWith('http')) {
+      return student.stu_image;
+    }
+    return `data:image/jpeg;base64,${student.stu_image}`;
+  }
+  return null;
+}
+
 function getGradeText(cid) {
   if(cid===7) return { text: 'A+', class: 'grade-a-plus' };
   if(cid===6) return { text: 'A', class: 'grade-a' };
@@ -183,55 +199,62 @@ function getConditionIdFromPercentage(p) {
   return 1;
 }
 
-// FIXED: Back button function that works in both iframe and standalone mode
+// Back button function that works in both iframe and standalone mode
 function goBack() {
-  // Check if we are inside an iframe (student portal iframe)
   if (window.parent && window.parent !== window) {
-    // We are in iframe - call parent's closeIframe function
     if (typeof window.parent.closeIframe === 'function') {
       window.parent.closeIframe();
     } else {
-      // Fallback: try to navigate parent back to index
       window.parent.location.href = 'index.html';
     }
   } else {
-    // Standalone mode - go to index
     window.location.href = 'index.html';
   }
 }
 
 async function loadData() {
-  // Try to get student from multiple sources
-  const saved = localStorage.getItem('currentStudent');
-  if(saved) {
-    try {
-      currentStudent = JSON.parse(saved);
-    } catch(e) {}
+  // Get URL parameters for sibling viewing
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetStudentId = urlParams.get('stu_id');
+  const viewerId = urlParams.get('viewer_id');
+  
+  // Load viewer student (logged-in user)
+  if (viewerId && viewerId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", viewerId).single();
+    if (!error && data) {
+      viewerStudent = data;
+    }
   }
   
-  if(!currentStudent) {
-    const savedLogin = localStorage.getItem('studentLoggedIn');
-    if(savedLogin) {
+  if (!viewerStudent) {
+    const saved = localStorage.getItem('currentStudent');
+    if (saved) {
       try {
-        const sessionData = JSON.parse(savedLogin);
-        currentStudent = sessionData.student || sessionData;
+        viewerStudent = JSON.parse(saved);
       } catch(e) {}
     }
   }
   
-  // Also check URL parameters (if passed from parent)
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlStudentId = urlParams.get('stu_id');
-  if (!currentStudent && urlStudentId) {
-    const { data, error } = await supabase1
-      .from("students")
-      .select("*")
-      .eq("stu_id", urlStudentId)
-      .single();
+  if (!viewerStudent) {
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if (savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        viewerStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Load target student (the one whose data we want to view - could be sibling)
+  if (targetStudentId && targetStudentId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", targetStudentId).single();
     if (!error && data) {
       currentStudent = data;
-      localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+    } else {
+      currentStudent = viewerStudent;
     }
+  } else {
+    currentStudent = viewerStudent;
   }
   
   if(!currentStudent) {
@@ -247,7 +270,7 @@ async function loadData() {
     return;
   }
   
-  // Load all required data
+  // Load all required data for the target student
   const [examTypes, classrooms, dateSheets, subjects, examResults] = await Promise.all([
     supabase1.from("exam_type").select("*"),
     supabase1.from("class_rooms").select("*"),
@@ -262,15 +285,32 @@ async function loadData() {
   if(subjects.data) allSubjects = subjects.data;
   if(examResults.data) allExamResults = examResults.data;
   
-  console.log("Exam Types:", allExamTypes.length);
-  console.log("Subjects:", allSubjects.length);
-  console.log("Results:", allExamResults.length);
+  console.log("Loading results for student:", currentStudent.stu_name, "Class:", currentStudent.stu_class_room_id);
   
   renderResultPage();
 }
 
 function renderResultPage() {
   const container = document.getElementById('appContainer');
+  
+  // Get student image
+  const imgUrl = getStudentImageUrl(currentStudent);
+  const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  
+  let avatarHtml = '';
+  if (imgUrl) {
+    avatarHtml = `<img src="${imgUrl}" class="student-img-small" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.avatar-small').style.display='flex';">`;
+    avatarHtml += `<div class="avatar-small" style="display:none;">${initial}</div>`;
+  } else {
+    avatarHtml = `<div class="avatar-small">${initial}</div>`;
+  }
+  
+  // Show which student's data is being viewed
+  const viewingNote = (viewerStudent && currentStudent.stu_id !== viewerStudent.stu_id) 
+    ? `<div class="alert alert-info py-1 px-3 mb-2 rounded-pill text-center" style="font-size:0.7rem; background:#dbeafe; color:#1e40af; border:none;">
+        <i class="bi bi-eye-fill me-1"></i> Viewing: ${escapeHtml(currentStudent.stu_name)} (${escapeHtml(currentStudent.stu_admission_no)})
+       </div>`
+    : '';
   
   const html = `
     <div class="detail-card">
@@ -280,17 +320,12 @@ function renderResultPage() {
         <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
-        <!-- Student Info Summary -->
-        <div class="mb-3 pb-2 border-bottom">
-          <div class="d-flex justify-content-between align-items-center">
-            <div>
-              <strong>${escapeHtml(currentStudent.stu_name)}</strong><br>
-              <small class="text-muted">${escapeHtml(currentStudent.stu_admission_no)}</small>
-            </div>
-            <div class="text-end">
-              <small class="text-muted">Class</small><br>
-              <strong>${getClassroomName(currentStudent.stu_class_room_id)}</strong>
-            </div>
+        ${viewingNote}
+        <div class="report-header d-flex align-items-center gap-3">
+          <div style="position:relative;">${avatarHtml}</div>
+          <div class="text-start">
+            <div class="student-name">${escapeHtml(currentStudent.stu_name)}</div>
+            <div class="small text-muted">${escapeHtml(currentStudent.stu_admission_no)} | ${getClassroomName(currentStudent.stu_class_room_id)}</div>
           </div>
         </div>
         <div class="expand-collapse-bar" id="expandCollapseBar"></div>
