@@ -175,63 +175,6 @@
   }
   .welcome-banner i { font-size: 1.5rem; color: #d97706; }
   
-  .family-card {
-    background: white;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    border: 1px solid #eef2f8;
-  }
-  .family-header {
-    background: linear-gradient(135deg, #ec489a, #be185d);
-    padding: 12px 16px;
-    color: white;
-    font-weight: 600;
-    font-size: 0.85rem;
-  }
-  .sibling-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #eef2f8;
-    transition: background 0.2s;
-  }
-  .sibling-item:last-child { border-bottom: none; }
-  .sibling-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1rem;
-  }
-  .sibling-info { flex: 1; }
-  .sibling-name { font-weight: 600; font-size: 0.85rem; color: #1e293b; }
-  .sibling-details { font-size: 0.65rem; color: #64748b; }
-  .sibling-class { background: #f1f5f9; padding: 2px 8px; border-radius: 30px; font-size: 0.6rem; }
-  .sibling-actions {
-    display: flex;
-    gap: 6px;
-  }
-  .sibling-action-btn {
-    background: #f1f5f9;
-    border: none;
-    border-radius: 30px;
-    padding: 5px 10px;
-    font-size: 0.6rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #475569;
-  }
-  .sibling-action-btn:hover { background: #e2e8f0; transform: scale(1.05); }
-  .sibling-action-btn i { font-size: 0.65rem; margin-right: 3px; }
-  
   .iframe-container {
     position: fixed;
     top: 42px;
@@ -268,6 +211,54 @@
     box-shadow: 0 20px 40px rgba(0,0,0,0.2);
     width: 100%;
   }
+  
+  /* Custom Logo Styles */
+  .custom-logo {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .logo-box {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-radius: 24px;
+    padding: 20px 15px;
+    display: inline-block;
+    width: 100%;
+    max-width: 200px;
+  }
+  .logo-text {
+    color: white;
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .logo-text .the {
+    font-size: 0.7rem;
+    letter-spacing: 3px;
+    opacity: 0.8;
+  }
+  .logo-text .leads {
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+    font-weight: 900;
+  }
+  .logo-text .school {
+    font-size: 0.8rem;
+    letter-spacing: 4px;
+    opacity: 0.9;
+  }
+  .logo-text .live {
+    font-size: 0.6rem;
+    letter-spacing: 5px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.3);
+    display: inline-block;
+  }
+  .logo-text .at {
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    opacity: 0.7;
+  }
+  
   .school-logo {
     width: 70px;
     height: 70px;
@@ -324,8 +315,6 @@
     .ticker-label-full { padding: 3px 10px; font-size: 0.55rem; }
     .ticker-wrapper-full { margin-left: 75px; }
     .floating-back { bottom: 15px; right: 15px; padding: 8px 16px; font-size: 0.7rem; }
-    .sibling-actions { flex-direction: column; gap: 4px; }
-    .sibling-action-btn { padding: 3px 8px; font-size: 0.55rem; }
   }
 </style>
 </head>
@@ -342,11 +331,19 @@
 
 <div id="loginView" class="login-container">
   <div class="login-card">
-    <div class="text-center mb-3">
-      <div class="school-logo"><i class="bi bi-backpack4-fill"></i></div>
-      <h2 class="mt-3 fw-bold" style="color:#1e3c72;">Student Login</h2>
-      <p class="text-muted small">The Leads High School (Dinga)</p>
+    <div class="custom-logo">
+      <div class="logo-box">
+        <div class="logo-text">
+          <div class="the">THE</div>
+          <div class="leads">LEADS</div>
+          <div class="school">SCHOOL</div>
+          <div class="live">LIVE</div>
+          <div class="at">AT</div>
+        </div>
+      </div>
     </div>
+    <h2 class="mt-3 fw-bold text-center" style="color:#1e3c72;">Student Login</h2>
+    <p class="text-muted small text-center">The Leads High School (Dinga)</p>
     <div class="mb-3">
       <label class="form-label fw-bold small">Admission Number</label>
       <input type="text" id="loginAdmission" class="form-control rounded-pill" placeholder="e.g., A-00001-24">
@@ -367,6 +364,10 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
+<button class="floating-back" id="floatingBackBtn">
+  <i class="bi bi-arrow-left"></i> Back to Dashboard
+</button>
+
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
@@ -378,7 +379,6 @@ let currentStudent = null;
 let allClassrooms = [];
 let allFees = [];
 let allExamResults = [];
-let siblingStudents = [];
 let announcements = [];
 
 function showToast(message) {
@@ -424,55 +424,6 @@ function renderTicker() {
   tickerContainer.innerHTML = html;
 }
 
-// Fetch sibling students based on family group or father name
-async function loadSiblingStudents() {
-  if (!currentStudent) return [];
-  
-  let query = supabase1.from("students").select("*").neq("stu_id", currentStudent.stu_id);
-  
-  // Try to filter by stu_family_group first
-  if (currentStudent.stu_family_group && currentStudent.stu_family_group !== '') {
-    query = query.eq("stu_family_group", currentStudent.stu_family_group);
-  } 
-  // If no family group, filter by father name
-  else if (currentStudent.stu_father && currentStudent.stu_father !== '') {
-    query = query.ilike("stu_father", currentStudent.stu_father);
-  }
-  // If still nothing, filter by admission number pattern (remove last digits)
-  else {
-    const admissionPattern = currentStudent.stu_admission_no?.replace(/[0-9]+$/, '');
-    if (admissionPattern && admissionPattern !== '') {
-      query = query.ilike("stu_admission_no", `${admissionPattern}%`);
-    } else {
-      return [];
-    }
-  }
-  
-  const { data, error } = await query;
-  if (!error && data && data.length > 0) {
-    siblingStudents = data;
-    return siblingStudents;
-  }
-  return [];
-}
-
-// Function to open module for any student (sibling or current)
-function openModuleForStudent(pageName, studentId) {
-  if (!studentId) return;
-  
-  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
-  
-  const iframeContainer = document.getElementById('iframeContainer');
-  const iframe = document.getElementById('moduleIframe');
-  
-  // Pass both the current student ID and the selected sibling ID
-  iframe.src = `${pageName}.html?stu_id=${studentId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true`;
-  iframeContainer.style.display = 'flex';
-  document.getElementById('dashboardView').style.display = 'none';
-  
-  document.getElementById('floatingBackBtn').style.display = 'flex';
-}
-
 async function studentLogin() {
   const admissionNo = document.getElementById('loginAdmission').value.trim();
   const password = document.getElementById('loginPassword').value.trim();
@@ -505,14 +456,11 @@ async function studentLogin() {
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
   
   await loadMasterData();
-  await loadSiblingStudents();
   showDashboard();
 }
 
-// LOGOUT FUNCTION
 function doLogout() {
   currentStudent = null;
-  siblingStudents = [];
   localStorage.removeItem('studentLoggedIn');
   localStorage.removeItem('currentStudent');
   
@@ -567,57 +515,6 @@ function showDashboard() {
   const dueFee = totalFee - paidFee;
   const examResultsCount = allExamResults.length;
   
-  // Build siblings/family HTML with action buttons
-  let familyHtml = '';
-  if (siblingStudents && siblingStudents.length > 0) {
-    let siblingsHtml = '';
-    for (const sibling of siblingStudents) {
-      const siblingInitial = sibling.stu_name?.charAt(0).toUpperCase() || '?';
-      siblingsHtml += `
-        <div class="sibling-item">
-          <div class="sibling-avatar">${siblingInitial}</div>
-          <div class="sibling-info">
-            <div class="sibling-name">${escapeHtml(sibling.stu_name)}</div>
-            <div class="sibling-details">${escapeHtml(sibling.stu_admission_no)} | ${escapeHtml(sibling.stu_father)}</div>
-            <div class="sibling-class mt-1 d-inline-block">${getClassroomName(sibling.stu_class_room_id)}</div>
-          </div>
-          <div class="sibling-actions">
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('sturesult', ${sibling.stu_id})" title="View Results">
-              <i class="bi bi-trophy-fill"></i> Result
-            </button>
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stusyllabus', ${sibling.stu_id})" title="View Syllabus">
-              <i class="bi bi-journal-bookmark-fill"></i> Syllabus
-            </button>
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stuattendance', ${sibling.stu_id})" title="View Attendance">
-              <i class="bi bi-calendar-check-fill"></i> Attendance
-            </button>
-          </div>
-        </div>
-      `;
-    }
-    familyHtml = `
-      <div class="family-card">
-        <div class="family-header">
-          <i class="bi bi-people-fill me-2"></i> Family Members (Siblings)
-        </div>
-        ${siblingsHtml}
-      </div>
-    `;
-  } else if (currentStudent.stu_family_group && currentStudent.stu_family_group !== '') {
-    familyHtml = `
-      <div class="family-card">
-        <div class="family-header">
-          <i class="bi bi-person me-2"></i> Family Group: ${escapeHtml(currentStudent.stu_family_group)}
-        </div>
-        <div class="sibling-item">
-          <div class="sibling-info text-center text-muted py-2">
-            <i class="bi bi-info-circle"></i> No other siblings found in this family group
-          </div>
-        </div>
-      </div>
-    `;
-  }
-  
   const html = `
     <div class="header">
       <div class="d-flex justify-content-between align-items-start">
@@ -636,8 +533,6 @@ function showDashboard() {
         <div class="col-6"><small>📞 Mobile</small><br><strong>${currentStudent.stu_mobile1 || 'N/A'}</strong></div>
       </div>
     </div>
-    
-    ${familyHtml}
     
     <div class="welcome-banner">
       <i class="bi bi-emoji-smile"></i>
@@ -660,25 +555,25 @@ function showDashboard() {
       </div>
     </div>
     
-    <div class="module-card" onclick="openModuleForStudent('sturesult', ${currentStudent.stu_id})">
+    <div class="module-card" onclick="openModule('sturesult')">
       <div class="module-icon result"><i class="bi bi-trophy-fill"></i></div>
       <div class="module-info"><h3>My Results</h3><p>View exam results & grades</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModuleForStudent('stufee', ${currentStudent.stu_id})">
+    <div class="module-card" onclick="openModule('stufee')">
       <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
       <div class="module-info"><h3>Fee Details</h3><p>Check fee status & history</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModuleForStudent('stusyllabus', ${currentStudent.stu_id})">
+    <div class="module-card" onclick="openModule('stusyllabus')">
       <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
       <div class="module-info"><h3>Syllabus</h3><p>Home Work, Vocation Work, Annual Work</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
     </div>
     
-    <div class="module-card" onclick="openModuleForStudent('stuattendance', ${currentStudent.stu_id})">
+    <div class="module-card" onclick="openModule('stuattendance')">
       <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
       <div class="module-info"><h3>Attendance</h3><p>View attendance history</p></div>
       <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
@@ -725,7 +620,6 @@ function showProfile() {
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Full Name</div><div>${escapeHtml(currentStudent.stu_name)}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Admission No</div><div>${escapeHtml(currentStudent.stu_admission_no)}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Father Name</div><div>${escapeHtml(currentStudent.stu_father)}</div></div>
-        <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Family Group</div><div>${escapeHtml(currentStudent.stu_family_group) || 'Not assigned'}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Class</div><div>${getClassroomName(currentStudent.stu_class_room_id)}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Mobile No</div><div>${currentStudent.stu_mobile1 || 'N/A'}</div></div>
         <div class="d-flex py-2 border-bottom"><div class="fw-bold" style="width: 35%;">Alternate Mobile</div><div>${currentStudent.stu_mobile2 || 'N/A'}</div></div>
@@ -735,6 +629,24 @@ function showProfile() {
     </div>
   `;
   container.innerHTML = profileHtml;
+}
+
+function openModule(pageName) {
+  if (!currentStudent) {
+    doLogout();
+    return;
+  }
+  
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  
+  iframe.src = `${pageName}.html?stu_id=${currentStudent.stu_id}&fromStudentPortal=true`;
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+  
+  document.getElementById('floatingBackBtn').style.display = 'flex';
 }
 
 function closeIframe() {
@@ -769,7 +681,6 @@ async function restoreSession() {
       currentStudent = data;
       localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
       await loadMasterData();
-      await loadSiblingStudents();
       document.getElementById('loginView').style.display = 'none';
       document.getElementById('dashboardView').style.display = 'block';
       showDashboard();
@@ -792,7 +703,6 @@ async function restoreSession() {
         if (!error && data) {
           currentStudent = data;
           await loadMasterData();
-          await loadSiblingStudents();
           document.getElementById('loginView').style.display = 'none';
           document.getElementById('dashboardView').style.display = 'block';
           showDashboard();
@@ -820,7 +730,6 @@ async function restoreSession() {
         if (!error && data) {
           currentStudent = data;
           await loadMasterData();
-          await loadSiblingStudents();
           document.getElementById('loginView').style.display = 'none';
           document.getElementById('dashboardView').style.display = 'block';
           showDashboard();
@@ -858,9 +767,8 @@ window.onload = async function() {
   document.getElementById('floatingBackBtn').onclick = closeIframe;
 };
 
-// Make functions global for onclick
 window.doLogout = doLogout;
-window.openModuleForStudent = openModuleForStudent;
+window.openModule = openModule;
 window.showProfile = showProfile;
 window.closeIframe = closeIframe;
 window.showDashboard = showDashboard;
