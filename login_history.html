@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Login History | Admin Panel</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, sans-serif; }
+  body { background: #f0f4f8; padding: 0; margin: 0; }
+  .app-container { max-width: 550px; margin: 0 auto; padding: 16px; }
+  
+  .card-custom {
+    background: white;
+    border-radius: 28px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  .card-header-custom {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 16px 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .back-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 5px 12px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+  
+  .history-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef2f8;
+    transition: background 0.2s;
+  }
+  .history-item:hover { background: #f8fafc; }
+  .student-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e293b;
+  }
+  .student-details {
+    font-size: 0.65rem;
+    color: #64748b;
+  }
+  .login-time {
+    font-size: 0.7rem;
+    color: #10b981;
+    font-weight: 500;
+  }
+  .device-badge {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 30px;
+    font-size: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .filter-bar {
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #eef2f8;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .filter-input {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    padding: 6px 12px;
+    font-size: 0.7rem;
+    outline: none;
+  }
+  .date-filter {
+    width: 120px;
+  }
+  
+  .stats-row {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    border-bottom: 1px solid #eef2f8;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    flex: 1;
+    text-align: center;
+    background: white;
+    border-radius: 16px;
+    padding: 8px;
+    border: 1px solid #eef2f8;
+  }
+  .stat-number {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #1e3c72;
+  }
+  .stat-label {
+    font-size: 0.6rem;
+    color: #64748b;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+  }
+  
+  @media (max-width: 550px) {
+    .filter-bar { flex-direction: column; }
+    .date-filter { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container" id="appContainer"></div>
+
+<script>
+const SUPABASE_URL = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allHistory = [];
+let filteredHistory = [];
+let searchTerm = "";
+let dateFilter = "";
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch(e) { return dateStr; }
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-PK');
+  } catch(e) { return dateStr; }
+}
+
+function showToast(message) {
+  let toast = document.getElementById('customToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'customToast';
+    toast.style.cssText = `
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.75rem;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+}
+
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+async function loadLoginHistory() {
+  let query = supabaseClient
+    .from("student_login_history")
+    .select("*")
+    .order("login_time", { ascending: false });
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    showToast("Error loading history: " + error.message);
+    return;
+  }
+  
+  allHistory = data || [];
+  applyFilters();
+}
+
+function applyFilters() {
+  let filtered = [...allHistory];
+  
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter(h => 
+      h.student_name?.toLowerCase().includes(term) ||
+      h.student_admission_no?.toLowerCase().includes(term)
+    );
+  }
+  
+  if (dateFilter) {
+    filtered = filtered.filter(h => h.login_date === dateFilter);
+  }
+  
+  filteredHistory = filtered;
+  renderHistory();
+}
+
+function renderHistory() {
+  const container = document.getElementById('historyContainer');
+  if (!container) return;
+  
+  // Calculate stats
+  const totalLogins = filteredHistory.length;
+  const uniqueStudents = new Set(filteredHistory.map(h => h.student_id)).size;
+  const todayLogins = filteredHistory.filter(h => h.login_date === new Date().toISOString().split('T')[0]).length;
+  
+  let statsHtml = `
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-number">${totalLogins}</div><div class="stat-label">Total Logins</div></div>
+      <div class="stat-card"><div class="stat-number">${uniqueStudents}</div><div class="stat-label">Unique Students</div></div>
+      <div class="stat-card"><div class="stat-number">${todayLogins}</div><div class="stat-label">Today</div></div>
+    </div>
+  `;
+  
+  if (filteredHistory.length === 0) {
+    container.innerHTML = statsHtml + '<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">No login records found</p></div>';
+    return;
+  }
+  
+  let historyHtml = '';
+  for (const record of filteredHistory) {
+    const deviceIcon = record.device_type === 'Mobile' ? 'bi-phone' : (record.device_type === 'Tablet' ? 'bi-tablet' : 'bi-laptop');
+    historyHtml += `
+      <div class="history-item">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <div class="student-name">${escapeHtml(record.student_name)}</div>
+            <div class="student-details">${escapeHtml(record.student_admission_no)}</div>
+          </div>
+          <div class="login-time"><i class="bi bi-clock"></i> ${formatDateTime(record.login_time)}</div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+          <div>
+            <span class="device-badge"><i class="bi ${deviceIcon}"></i> ${record.device_type || 'Unknown'}</span>
+            ${record.ip_address ? `<span class="device-badge ms-1"><i class="bi bi-wifi"></i> ${record.ip_address}</span>` : ''}
+          </div>
+          <small class="text-muted">${formatDate(record.login_date)}</small>
+        </div>
+      </div>
+    `;
+  }
+  
+  container.innerHTML = statsHtml + historyHtml;
+}
+
+function renderPage() {
+  const container = document.getElementById('appContainer');
+  
+  // Get unique dates for filter
+  const uniqueDates = [...new Set(allHistory.map(h => h.login_date))].filter(d => d);
+  
+  let dateOptions = '<option value="">All Dates</option>';
+  for (const date of uniqueDates) {
+    dateOptions += `<option value="${date}">${formatDate(date)}</option>`;
+  }
+  
+  const html = `
+    <div class="card-custom">
+      <div class="card-header-custom">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Login History</h5>
+        <div style="width: 60px;"></div>
+      </div>
+      <div class="filter-bar">
+        <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Search by name or admission..." onkeyup="searchHistory()">
+        <select id="dateSelect" class="filter-input date-filter" onchange="filterByDate()">
+          ${dateOptions}
+        </select>
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetFilters()" style="border-radius:30px;"><i class="bi bi-arrow-repeat"></i> Reset</button>
+      </div>
+      <div id="historyContainer" style="max-height: 550px; overflow-y: auto;"></div>
+    </div>
+  `;
+  
+  container.innerHTML = html;
+  renderHistory();
+}
+
+function searchHistory() {
+  searchTerm = document.getElementById('searchInput')?.value || '';
+  applyFilters();
+}
+
+function filterByDate() {
+  dateFilter = document.getElementById('dateSelect')?.value || '';
+  applyFilters();
+}
+
+function resetFilters() {
+  searchTerm = "";
+  dateFilter = "";
+  const searchInput = document.getElementById('searchInput');
+  const dateSelect = document.getElementById('dateSelect');
+  if (searchInput) searchInput.value = "";
+  if (dateSelect) dateSelect.value = "";
+  applyFilters();
+}
+
+async function init() {
+  await loadLoginHistory();
+  renderPage();
+}
+
+// Make functions global
+window.goBack = goBack;
+window.searchHistory = searchHistory;
+window.filterByDate = filterByDate;
+window.resetFilters = resetFilters;
+
+init();
+</script>
+</body>
+</html>
