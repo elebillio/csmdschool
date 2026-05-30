@@ -142,25 +142,66 @@ let filteredHistory = [];
 let searchTerm = "";
 let dateFilter = "";
 
+// Pakistan timezone offset (UTC+5)
+const PAKISTAN_TZ = 'Asia/Karachi';
+
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
 }
 
+// Convert UTC to Pakistan time
+function convertToPakistanTime(utcDateStr) {
+  if (!utcDateStr) return null;
+  try {
+    const utcDate = new Date(utcDateStr);
+    // Pakistan is UTC+5 (no daylight saving in this context)
+    const pakistanTime = new Date(utcDate.getTime() + (5 * 60 * 60 * 1000));
+    return pakistanTime;
+  } catch(e) {
+    console.error("Date conversion error:", e);
+    return new Date(utcDateStr);
+  }
+}
+
 function formatDateTime(dateStr) {
   if (!dateStr) return '—';
   try {
-    const d = new Date(dateStr);
-    return d.toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-  } catch(e) { return dateStr; }
+    const pakTime = convertToPakistanTime(dateStr);
+    // Format: 31 May 2025, 01:49 AM
+    return pakTime.toLocaleString('en-PK', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch(e) { 
+    return dateStr; 
+  }
 }
 
-function formatDate(dateStr) {
+function formatDateOnly(dateStr) {
   if (!dateStr) return '—';
   try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-PK');
-  } catch(e) { return dateStr; }
+    const pakTime = convertToPakistanTime(dateStr);
+    // Format: 2025-05-31
+    return pakTime.toISOString().split('T')[0];
+  } catch(e) { 
+    return dateStr; 
+  }
+}
+
+function formatDateForDisplay(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    const pakTime = convertToPakistanTime(dateStr);
+    // Format: 31 May 2025
+    return pakTime.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch(e) { 
+    return dateStr; 
+  }
 }
 
 function showToast(message) {
@@ -201,6 +242,7 @@ function goBack() {
     window.location.href = 'index.html';
   }
 }
+
 async function loadLoginHistory() {
   let query = supabaseClient
     .from("student_login_history")
@@ -214,7 +256,12 @@ async function loadLoginHistory() {
     return;
   }
   
-  allHistory = data || [];
+  // Add Pakistan date to each record for filtering
+  allHistory = (data || []).map(record => ({
+    ...record,
+    pakistan_date: formatDateOnly(record.login_time)
+  }));
+  
   applyFilters();
 }
 
@@ -230,7 +277,7 @@ function applyFilters() {
   }
   
   if (dateFilter) {
-    filtered = filtered.filter(h => h.login_date === dateFilter);
+    filtered = filtered.filter(h => h.pakistan_date === dateFilter);
   }
   
   filteredHistory = filtered;
@@ -244,13 +291,16 @@ function renderHistory() {
   // Calculate stats
   const totalLogins = filteredHistory.length;
   const uniqueStudents = new Set(filteredHistory.map(h => h.student_id)).size;
-  const todayLogins = filteredHistory.filter(h => h.login_date === new Date().toISOString().split('T')[0]).length;
+  
+  // Today in Pakistan time
+  const todayPak = new Date(new Date().getTime() + (5 * 60 * 60 * 1000)).toISOString().split('T')[0];
+  const todayLogins = filteredHistory.filter(h => h.pakistan_date === todayPak).length;
   
   let statsHtml = `
     <div class="stats-row">
       <div class="stat-card"><div class="stat-number">${totalLogins}</div><div class="stat-label">Total Logins</div></div>
       <div class="stat-card"><div class="stat-number">${uniqueStudents}</div><div class="stat-label">Unique Students</div></div>
-      <div class="stat-card"><div class="stat-number">${todayLogins}</div><div class="stat-label">Today</div></div>
+      <div class="stat-card"><div class="stat-number">${todayLogins}</div><div class="stat-label">Today (PKT)</div></div>
     </div>
   `;
   
@@ -276,7 +326,7 @@ function renderHistory() {
             <span class="device-badge"><i class="bi ${deviceIcon}"></i> ${record.device_type || 'Unknown'}</span>
             ${record.ip_address ? `<span class="device-badge ms-1"><i class="bi bi-wifi"></i> ${record.ip_address}</span>` : ''}
           </div>
-          <small class="text-muted">${formatDate(record.login_date)}</small>
+          <small class="text-muted">${formatDateForDisplay(record.login_time)}</small>
         </div>
       </div>
     `;
@@ -288,18 +338,20 @@ function renderHistory() {
 function renderPage() {
   const container = document.getElementById('appContainer');
   
-  // Get unique dates for filter
-  const uniqueDates = [...new Set(allHistory.map(h => h.login_date))].filter(d => d);
+  // Get unique dates for filter (Pakistan dates)
+  const uniqueDates = [...new Set(allHistory.map(h => h.pakistan_date))].filter(d => d);
   
-  let dateOptions = '<option value="">All Dates</option>';
+  let dateOptions = '<option value="">All Dates (PKT)</option>';
   for (const date of uniqueDates) {
-    dateOptions += `<option value="${date}">${formatDate(date)}</option>`;
+    // Format date for display: 31 May 2025
+    const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
+    dateOptions += `<option value="${date}">${displayDate}</option>`;
   }
   
   const html = `
     <div class="card-custom">
       <div class="card-header-custom">
-        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Login History</h5>
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Login History (Pakistan Time)</h5>
         <div style="width: 60px;"></div>
       </div>
       <div class="filter-bar">
