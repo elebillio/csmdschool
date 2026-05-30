@@ -90,7 +90,7 @@
     font-size: 0.7rem;
   }
   
-  /* List Items */
+  /* List Items with Unread Badge */
   .list-item {
     display: flex;
     align-items: center;
@@ -99,6 +99,7 @@
     border-bottom: 1px solid #eef2f8;
     cursor: pointer;
     transition: background 0.2s;
+    position: relative;
   }
   .list-item:active { background: #f8fafc; }
   .list-icon {
@@ -113,7 +114,15 @@
     background: linear-gradient(135deg, #667eea, #764ba2);
   }
   .list-info { flex: 1; }
-  .list-title { font-weight: 600; font-size: 0.9rem; color: #1e293b; }
+  .list-title { 
+    font-weight: 600; 
+    font-size: 0.9rem; 
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
   .list-subtitle { font-size: 0.6rem; color: #64748b; margin-top: 2px; }
   .list-badge {
     background: #f1f5f9;
@@ -121,6 +130,32 @@
     border-radius: 20px;
     font-size: 0.65rem;
     color: #475569;
+  }
+  /* Unread Message Badge */
+  .unread-badge {
+    background: #ef4444;
+    color: white;
+    border-radius: 30px;
+    padding: 2px 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    min-width: 22px;
+    text-align: center;
+    animation: pulse 0.5s ease-in-out;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  .last-msg-preview {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
   }
   
   /* Chat Messages */
@@ -230,10 +265,6 @@
     background: #ef4444;
     color: white;
     animation: pulse 1s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
   }
   
   /* Emoji Dropdown */
@@ -370,6 +401,9 @@ let audioChunks = [];
 let isRecording = false;
 let recordingTimer = null;
 
+// Store last read message timestamp per class
+let lastReadTimestamps = {};
+
 const emojis = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","😌","😔","😪","🤤","😴","😷","🤒","🤕","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👻","👽","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","🙈","🙉","🙊","💋","💌","💘","💝","💖","💗","💓","💞","💕","💔","❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💯","💢","💥","💫","💦","💨","💣","💬","👋","🤚","🖐️","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦵","🦶","👂","👃","🧠","🦷","🦴","👀","👅","👄","❤️","🔥","✨","⭐","✅","🎉"];
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
@@ -386,6 +420,36 @@ function showToast(msg, isErr = false) {
   toast.style.background = isErr ? '#ef4444' : '#333';
   toast.style.opacity = '1';
   setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+}
+
+// Get unread count for a class
+async function getUnreadCount(classId) {
+  const lastRead = lastReadTimestamps[classId] || new Date(0).toISOString();
+  const { count, error } = await supabaseClient
+    .from("class_chat_messages")
+    .select("*", { count: "exact", head: true })
+    .eq("class_id", classId)
+    .gt("created_at", lastRead)
+    .neq("sender_type", "admin");
+  
+  if (error) return 0;
+  return count || 0;
+}
+
+// Get last message preview for a class
+async function getLastMessagePreview(classId) {
+  const { data, error } = await supabaseClient
+    .from("class_chat_messages")
+    .select("message, message_type, created_at, sender_name")
+    .eq("class_id", classId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  
+  if (error || !data || data.length === 0) return null;
+  const msg = data[0];
+  let preview = msg.message_type === 'image' ? '📸 Image' : (msg.message_type === 'voice' ? '🎤 Voice message' : msg.message);
+  if (preview && preview.length > 30) preview = preview.substring(0, 30) + '...';
+  return { preview, time: formatTime(msg.created_at), sender: msg.sender_name };
 }
 
 function goBack() {
@@ -409,15 +473,24 @@ async function loadClasses() {
   if (data) allClasses = data;
 }
 
-function showClassesList() {
+async function showClassesList() {
   const container = document.getElementById('appContainer');
   let html = '';
-  if (allClasses.length === 0) html = '<div class="empty-state"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">No classes</p></div>';
-  else {
+  if (allClasses.length === 0) {
+    html = '<div class="empty-state"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">No classes</p></div>';
+  } else {
     for (const cls of allClasses) {
+      const unreadCount = await getUnreadCount(cls.class_room_id);
+      const lastMsg = await getLastMessagePreview(cls.class_room_id);
+      const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
+      const lastMsgHtml = lastMsg ? `<div class="last-msg-preview"><i class="bi bi-chat-text"></i> ${escapeHtml(lastMsg.sender || 'Student')}: ${escapeHtml(lastMsg.preview)}</div>` : '<div class="last-msg-preview text-muted"><i class="bi bi-chat-dots"></i> No messages yet</div>';
+      
       html += `<div class="list-item" onclick="openChatRoom(${cls.class_room_id})">
         <div class="list-icon"><i class="bi bi-building"></i></div>
-        <div class="list-info"><div class="list-title">${escapeHtml(cls.class_room_no)}</div><div class="list-subtitle">Tap to enter</div></div>
+        <div class="list-info">
+          <div class="list-title">${escapeHtml(cls.class_room_no)} ${unreadBadge}</div>
+          ${lastMsgHtml}
+        </div>
         <div class="list-badge"><i class="bi bi-chat-dots-fill"></i> Enter</div>
       </div>`;
     }
@@ -444,12 +517,26 @@ window.openChatRoom = async function(classId) {
   if (!selectedClass) { showToast("Class not found", true); return; }
   currentClass = selectedClass;
   selectMode = false; selectedMessages.clear();
+  
+  // Update last read timestamp for this class
+  lastReadTimestamps[classId] = new Date().toISOString();
+  
   const { data: students } = await supabaseClient.from("students").select("*").eq("stu_class_room_id", classId).order("stu_name");
   if (students) allStudents = students;
   if (messageSubscription) await supabaseClient.removeChannel(messageSubscription);
   messageSubscription = supabaseClient.channel(`class_chat_${classId}`)
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (p) => { currentMessages.push(p.new); renderMessages(); })
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (p) => { const i = currentMessages.findIndex(m => m.id === p.new.id); if (i !== -1) { currentMessages[i] = p.new; renderMessages(); } })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (p) => { 
+      currentMessages.push(p.new); 
+      renderMessages();
+      // Update unread count in class list when not in this chat
+      if (currentClass?.class_room_id !== classId) {
+        showClassesList();
+      }
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (p) => { 
+      const i = currentMessages.findIndex(m => m.id === p.new.id); 
+      if (i !== -1) { currentMessages[i] = p.new; renderMessages(); } 
+    })
     .subscribe();
   const { data: msgs } = await supabaseClient.from("class_chat_messages").select("*").eq("class_id", classId).order("created_at", { ascending: true });
   if (msgs) currentMessages = msgs;
@@ -588,7 +675,16 @@ function renderChatWindow() {
   setTimeout(() => document.getElementById('chatInput')?.focus(), 100);
 }
 
-async function init() { await loadClasses(); showClassesList(); }
+async function init() { 
+  await loadClasses(); 
+  await showClassesList();
+  // Refresh class list every 5 seconds to update unread counts
+  setInterval(async () => {
+    if (!currentClass) {
+      await showClassesList();
+    }
+  }, 5000);
+}
 
 window.goBack = goBack;
 window.toggleSelectMode = toggleSelectMode;
