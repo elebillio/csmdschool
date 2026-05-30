@@ -58,6 +58,13 @@
     border-radius: 20px;
     font-size: 0.6rem;
   }
+  .online-status-badge {
+    background: #10b981;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.6rem;
+    margin-left: 8px;
+  }
   
   .chat-messages {
     flex: 1;
@@ -254,6 +261,90 @@ let audioChunks = [];
 let isRecording = false;
 let recordingTimer = null;
 
+// Online status tracking variables
+let heartbeatInterval = null;
+let currentStudentId = null;
+
+// ========== ONLINE STATUS FUNCTIONS ==========
+async function updateOnlineStatus(isOnline) {
+    if (!currentStudentId && currentStudent) {
+        currentStudentId = currentStudent.stu_id;
+    }
+    if (!currentStudentId) return;
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from("student_online_status")
+            .upsert({ 
+                student_id: currentStudentId, 
+                is_online: isOnline,
+                last_seen: new Date().toISOString()
+            });
+        
+        if (error) {
+            console.error("Error updating online status:", error);
+        } else {
+            console.log(`Online status updated: ${isOnline} for student ${currentStudentId}`);
+        }
+    } catch (err) {
+        console.error("Failed to update online status:", err);
+    }
+}
+
+function startHeartbeat() {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    
+    heartbeatInterval = setInterval(() => {
+        if (currentStudentId) {
+            updateOnlineStatus(true);
+        }
+    }, 30000); // Every 30 seconds
+}
+
+function stopHeartbeat() {
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+    }
+}
+
+// Handle page/tab close
+window.addEventListener('beforeunload', () => {
+    if (currentStudentId) {
+        // Use sendBeacon for reliable delivery during page unload
+        const statusData = JSON.stringify({
+            student_id: currentStudentId,
+            is_online: false,
+            last_seen: new Date().toISOString()
+        });
+        
+        // Try direct update (may work)
+        updateOnlineStatus(false);
+    }
+});
+
+// Handle page visibility change (tab minimize/restore)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        console.log("Tab hidden - marking as away");
+        // Optional: Don't mark offline immediately, just reduce heartbeat
+    } else {
+        console.log("Tab active - marking online");
+        if (currentStudentId) {
+            updateOnlineStatus(true);
+        }
+    }
+});
+
+// Handle page unload (reliable)
+window.addEventListener('unload', () => {
+    if (currentStudentId) {
+        updateOnlineStatus(false);
+    }
+});
+
+// ========== END ONLINE STATUS FUNCTIONS ==========
+
 // Emojis list
 const emojis = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","😌","😔","😪","🤤","😴","😷","🤒","🤕","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👻","👽","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","🙈","🙉","🙊","💋","💌","💘","💝","💖","💗","💓","💞","💕","💔","❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💯","💢","💥","💫","💦","💨","💣","💬","👋","🤚","🖐️","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦵","🦶","👂","👃","🧠","🦷","🦴","👀","👅","👄","🔥","✨","⭐","✅","🎉"];
 
@@ -274,6 +365,12 @@ function showToast(msg, isErr = false) {
 }
 
 function goBack() {
+  // Stop heartbeat when leaving
+  stopHeartbeat();
+  if (currentStudentId) {
+    updateOnlineStatus(false);
+  }
+  
   if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
     window.parent.closeIframe();
   } else {
@@ -330,6 +427,14 @@ async function loadStudentData() {
   }
   
   if (!currentStudent) { showToast("Session expired", true); setTimeout(goBack, 1500); return false; }
+  
+  // Set student ID for online tracking
+  if (currentStudent) {
+    currentStudentId = currentStudent.stu_id;
+    // Start online status tracking
+    await updateOnlineStatus(true);
+    startHeartbeat();
+  }
   
   const { data: classrooms } = await supabaseClient.from("class_rooms").select("*");
   if (classrooms) allClassrooms = classrooms;
@@ -466,7 +571,7 @@ function renderChatWindow(student) {
     header = `Chat with ${escapeHtml(siblingName)} (${escapeHtml(className)})`;
     info = `<i class="bi bi-people-fill me-1"></i> Viewing ${escapeHtml(siblingName)}'s class`;
   }
-  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(header)}</span></div>${isSiblingView ? '<span class="sibling-view-badge"><i class="bi bi-eye-fill"></i> Viewing</span>' : ''}</div><div class="class-info">${info}</div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-area"><button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button><div id="emojiDropdown" class="emoji-dropdown"></div><button class="chat-btn" onclick="uploadImage()">📸</button><button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button><input type="text" id="chatInput" class="chat-input" placeholder="Message..." onkeypress="if(event.key==='Enter') sendMessage()"><button class="chat-btn send-btn" onclick="sendMessage()">Send</button></div></div>`;
+  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(header)}</span><span class="online-status-badge"><i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Online</span></div>${isSiblingView ? '<span class="sibling-view-badge"><i class="bi bi-eye-fill"></i> Viewing</span>' : ''}</div><div class="class-info">${info}</div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-area"><button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button><div id="emojiDropdown" class="emoji-dropdown"></div><button class="chat-btn" onclick="uploadImage()">📸</button><button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button><input type="text" id="chatInput" class="chat-input" placeholder="Message..." onkeypress="if(event.key==='Enter') sendMessage()"><button class="chat-btn send-btn" onclick="sendMessage()">Send</button></div></div>`;
   renderMessages();
   setTimeout(() => document.getElementById('chatInput')?.focus(), 100);
 }
@@ -493,7 +598,9 @@ window.toggleEmojiPicker = function() {
 window.insertEmoji = function(e) { const input = document.getElementById('chatInput'); if (input) { input.value += e; input.focus(); } document.getElementById('emojiDropdown').style.display = 'none'; };
 document.addEventListener('click', function(e) { const dd = document.getElementById('emojiDropdown'); const btn = document.getElementById('emojiBtn'); if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) dd.style.display = 'none'; });
 
-async function init() { await loadStudentData(); }
+async function init() { 
+  await loadStudentData();
+}
 
 window.goBack = goBack;
 window.sendMessage = sendMessage;
