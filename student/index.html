@@ -530,6 +530,7 @@ let allExamResults = [];
 let siblingStudents = [];
 let announcements = [];
 let selectedSibling = null;
+let onlineHeartbeatInterval = null;
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -582,6 +583,39 @@ function renderTicker() {
     html += `<span><i class="bi ${ann.icon}"></i> ${ann.text}</span>`;
   }
   tickerContainer.innerHTML = html;
+}
+
+// ==================== ONLINE STATUS FUNCTIONS ====================
+async function updateOnlineStatus(isOnline) {
+  if (!currentStudent) return;
+  try {
+    const { data: existing } = await supabase1
+      .from("student_online_status")
+      .select("id")
+      .eq("student_id", currentStudent.stu_id)
+      .single();
+    
+    if (existing) {
+      await supabase1
+        .from("student_online_status")
+        .update({ is_online: isOnline, last_seen: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("student_id", currentStudent.stu_id);
+    } else {
+      await supabase1
+        .from("student_online_status")
+        .insert({ student_id: currentStudent.stu_id, is_online: isOnline, last_seen: new Date().toISOString() });
+    }
+  } catch(e) { console.error("Online status error:", e); }
+}
+
+function startOnlineHeartbeat() {
+  if (onlineHeartbeatInterval) clearInterval(onlineHeartbeatInterval);
+  // Update status every 30 seconds
+  onlineHeartbeatInterval = setInterval(async () => {
+    if (currentStudent) {
+      await updateOnlineStatus(true);
+    }
+  }, 30000);
 }
 
 async function loadSiblingStudents() {
@@ -660,6 +694,9 @@ async function studentLogin() {
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
   
   await recordLoginHistory(currentStudent);
+  await updateOnlineStatus(true);
+  startOnlineHeartbeat();
+  
   await loadMasterData();
   await loadSiblingStudents();
   selectedSibling = null;
@@ -667,6 +704,15 @@ async function studentLogin() {
 }
 
 function doLogout() {
+  // Set offline status before logout
+  if (currentStudent) {
+    updateOnlineStatus(false);
+  }
+  if (onlineHeartbeatInterval) {
+    clearInterval(onlineHeartbeatInterval);
+    onlineHeartbeatInterval = null;
+  }
+  
   currentStudent = null;
   siblingStudents = [];
   selectedSibling = null;
@@ -720,7 +766,6 @@ function openModuleForStudent(pageName, studentId) {
 function selectSibling(sibling) {
   selectedSibling = sibling;
   showDashboard();
-  // Automatically open modal after selecting sibling
   setTimeout(() => {
     openModal();
   }, 100);
@@ -1053,6 +1098,13 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// Set online status to false when page is closed
+window.addEventListener('beforeunload', async () => {
+  if (currentStudent) {
+    await updateOnlineStatus(false);
+  }
+});
+
 window.addEventListener('pageshow', async function(event) {
   const iframeContainer = document.getElementById('iframeContainer');
   if (iframeContainer && iframeContainer.style.display === 'flex') {
@@ -1064,6 +1116,8 @@ window.addEventListener('pageshow', async function(event) {
     const floatingBtn = document.getElementById('floatingBackBtn');
     if (floatingBtn) floatingBtn.style.display = 'none';
     showDashboard();
+    // Update online status when page becomes visible again
+    updateOnlineStatus(true);
   } else { await restoreSession(); }
 });
 
@@ -1091,4 +1145,4 @@ window.closeModal = closeModal;
 window.modalAction = modalAction;
 </script>
 </body>
-</html>
+</html>  student logout hogya . admin chatroom list me abi bi online ah raha
