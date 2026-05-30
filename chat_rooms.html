@@ -26,7 +26,6 @@
     padding: 12px; 
   }
   
-  /* Card Styles */
   .card-custom {
     background: white;
     border-radius: 24px;
@@ -73,7 +72,6 @@
   }
   .room-title i { font-size: 1rem; }
   
-  /* Selection Header */
   .selection-header {
     background: #ef4444;
     color: white;
@@ -89,8 +87,17 @@
     padding: 2px 8px;
     font-size: 0.7rem;
   }
+  .cancel-select-btn, .delete-selected-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 20px;
+    padding: 4px 10px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+  .delete-selected-btn:hover { background: rgba(220,38,38,0.8); }
   
-  /* List Items with Unread Badge */
   .list-item {
     display: flex;
     align-items: center;
@@ -131,7 +138,6 @@
     font-size: 0.65rem;
     color: #475569;
   }
-  /* Unread Message Badge */
   .unread-badge {
     background: #ef4444;
     color: white;
@@ -141,12 +147,11 @@
     font-weight: 600;
     min-width: 22px;
     text-align: center;
-    animation: pulse 0.5s ease-in-out;
+    animation: pulse 1s infinite;
   }
   @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
   .last-msg-preview {
     font-size: 0.6rem;
@@ -158,7 +163,6 @@
     max-width: 180px;
   }
   
-  /* Chat Messages */
   .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -220,12 +224,14 @@
     border-color: #1e3c72;
     color: white;
   }
+  .deleted-text {
+    opacity: 0.5;
+    font-style: italic;
+  }
   
-  /* Voice & Image */
   .voice-message audio { height: 32px; max-width: 180px; }
   .chat-image { max-width: 180px; border-radius: 12px; cursor: pointer; }
   
-  /* Chat Input - Fixed Bottom */
   .chat-input-area {
     display: flex;
     gap: 6px;
@@ -266,8 +272,11 @@
     color: white;
     animation: pulse 1s infinite;
   }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
   
-  /* Emoji Dropdown */
   .emoji-dropdown {
     position: absolute;
     bottom: 65px;
@@ -296,7 +305,6 @@
   }
   .emoji-item:hover { background: #f1f5f9; }
   
-  /* Student List Modal */
   .student-list-item {
     display: flex;
     align-items: center;
@@ -317,14 +325,28 @@
     font-size: 0.9rem;
   }
   .online-dot {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     display: inline-block;
     margin-right: 6px;
+    animation: pulseOnline 2s infinite;
+  }
+  @keyframes pulseOnline {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #10b981; }
+    50% { opacity: 0.7; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3); }
   }
   .online { background: #10b981; }
   .offline { background: #ef4444; }
+  .status-text {
+    font-size: 0.65rem;
+    font-weight: 500;
+  }
+  .last-seen-text {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
   
   .empty-state {
     text-align: center;
@@ -332,7 +354,6 @@
     color: #94a3b8;
   }
   
-  /* Toast */
   #customToast {
     position: fixed;
     bottom: 70px;
@@ -348,6 +369,14 @@
     transition: opacity 0.3s;
     pointer-events: none;
     white-space: nowrap;
+  }
+  
+  .online-count {
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 0.65rem;
+    margin-left: 8px;
   }
 </style>
 </head>
@@ -383,7 +412,6 @@
 </div>
 
 <script>
-// Supabase configuration
 const SUPABASE_URL = "https://tqcfcztyvmedmuhohpps.supabase.co";
 const SUPABASE_KEY = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -401,13 +429,32 @@ let audioChunks = [];
 let isRecording = false;
 let recordingTimer = null;
 
-// Store last read message timestamp per class
+// Store online status for students
+let studentOnlineStatus = {};
+let studentLastSeen = {};
+let onlineStatusSubscription = null;
+let statusCleanupInterval = null;
+
+// Store unread counts per class
+let unreadCounts = {};
 let lastReadTimestamps = {};
 
 const emojis = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","😌","😔","😪","🤤","😴","😷","🤒","🤕","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👻","👽","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","🙈","🙉","🙊","💋","💌","💘","💝","💖","💗","💓","💞","💕","💔","❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💯","💢","💥","💫","💦","💨","💣","💬","👋","🤚","🖐️","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦵","🦶","👂","👃","🧠","🦷","🦴","👀","👅","👄","❤️","🔥","✨","⭐","✅","🎉"];
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
 function formatTime(date) { return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+function formatLastSeen(date) {
+  if (!date) return 'Never';
+  const lastSeen = new Date(date);
+  const now = new Date();
+  const diffMs = now - lastSeen;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hours ago`;
+  return lastSeen.toLocaleDateString();
+}
 
 function showToast(msg, isErr = false) {
   let toast = document.getElementById('customToast');
@@ -422,39 +469,103 @@ function showToast(msg, isErr = false) {
   setTimeout(() => { toast.style.opacity = '0'; }, 2000);
 }
 
-// Get unread count for a class
-async function getUnreadCount(classId) {
-  const lastRead = lastReadTimestamps[classId] || new Date(0).toISOString();
-  const { count, error } = await supabaseClient
-    .from("class_chat_messages")
-    .select("*", { count: "exact", head: true })
-    .eq("class_id", classId)
-    .gt("created_at", lastRead)
-    .neq("sender_type", "admin");
-  
-  if (error) return 0;
-  return count || 0;
+// Update unread count for a class
+async function updateUnreadCount(classId) {
+  if (currentClass && currentClass.class_room_id === classId) {
+    // Currently viewing this chat, reset unread count
+    unreadCounts[classId] = 0;
+    lastReadTimestamps[classId] = new Date().toISOString();
+  } else {
+    // Count messages after last read time
+    const lastRead = lastReadTimestamps[classId] || new Date(0).toISOString();
+    const { count, error } = await supabaseClient
+      .from("class_chat_messages")
+      .select("*", { count: 'exact', head: true })
+      .eq("class_id", classId)
+      .eq("sender_type", "student")
+      .gt("created_at", lastRead);
+    
+    if (!error && count !== null) {
+      unreadCounts[classId] = count;
+    }
+  }
+  showClassesList(); // Refresh the list to show updated counts
 }
 
-// Get last message preview for a class
-async function getLastMessagePreview(classId) {
-  const { data, error } = await supabaseClient
-    .from("class_chat_messages")
-    .select("message, message_type, created_at, sender_name")
-    .eq("class_id", classId)
-    .order("created_at", { ascending: false })
-    .limit(1);
+// Cleanup stale online status
+async function cleanupStaleOnlineStatus() {
+  const staleTime = new Date(Date.now() - 65000).toISOString();
   
-  if (error || !data || data.length === 0) return null;
-  const msg = data[0];
-  let preview = msg.message_type === 'image' ? '📸 Image' : (msg.message_type === 'voice' ? '🎤 Voice message' : msg.message);
-  if (preview && preview.length > 30) preview = preview.substring(0, 30) + '...';
-  return { preview, time: formatTime(msg.created_at), sender: msg.sender_name };
+  const { error } = await supabaseClient
+    .from("student_online_status")
+    .update({ is_online: false })
+    .lt("last_seen", staleTime)
+    .eq("is_online", true);
+    
+  if (error) {
+    console.error("Cleanup error:", error);
+  } else {
+    if (currentClass) {
+      await loadOnlineStatus();
+    }
+  }
+}
+
+// Subscribe to real-time online status updates
+function subscribeToOnlineStatus() {
+  if (onlineStatusSubscription) {
+    supabaseClient.removeChannel(onlineStatusSubscription);
+  }
+  
+  onlineStatusSubscription = supabaseClient
+    .channel('online-status')
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'student_online_status' },
+      async (payload) => {
+        if (payload.new && payload.new.student_id) {
+          await loadOnlineStatus();
+          const modal = document.getElementById('studentsModal');
+          if (modal && modal.classList.contains('show')) {
+            showStudentsList();
+          }
+        }
+      }
+    )
+    .subscribe();
+}
+
+// Load online status for students
+async function loadOnlineStatus() {
+  if (allStudents.length === 0) return;
+  
+  const studentIds = allStudents.map(s => s.stu_id);
+  const { data, error } = await supabaseClient
+    .from("student_online_status")
+    .select("student_id, is_online, last_seen")
+    .in("student_id", studentIds);
+  
+  if (!error && data) {
+    studentOnlineStatus = {};
+    studentLastSeen = {};
+    for (const status of data) {
+      studentOnlineStatus[status.student_id] = status.is_online === true;
+      studentLastSeen[status.student_id] = status.last_seen;
+    }
+    for (const student of allStudents) {
+      if (studentOnlineStatus[student.stu_id] === undefined) {
+        studentOnlineStatus[student.stu_id] = false;
+        studentLastSeen[student.stu_id] = null;
+      }
+    }
+  }
 }
 
 function goBack() {
   if (messageSubscription) supabaseClient.removeChannel(messageSubscription);
-  currentClass = null; currentMessages = []; selectMode = false; selectedMessages.clear();
+  currentClass = null; 
+  currentMessages = []; 
+  selectMode = false; 
+  selectedMessages.clear();
   showClassesList();
 }
 
@@ -470,36 +581,97 @@ async function clearAllMessages() {
 
 async function loadClasses() {
   const { data } = await supabaseClient.from("class_rooms").select("*").order("class_room_serial");
-  if (data) allClasses = data;
+  if (data) {
+    allClasses = data;
+    // Load unread counts for all classes
+    for (const cls of allClasses) {
+      await updateUnreadCount(cls.class_room_id);
+    }
+  }
 }
 
 async function showClassesList() {
   const container = document.getElementById('appContainer');
+  
+  // Get online counts for each class
+  const { data: allStudentsData } = await supabaseClient.from("students").select("stu_id, stu_class_room_id");
+  const { data: statusData } = await supabaseClient.from("student_online_status").select("student_id, is_online");
+  
+  const onlineMap = {};
+  if (statusData) {
+    for (const s of statusData) {
+      if (s.is_online) onlineMap[s.student_id] = true;
+    }
+  }
+  
+  const classOnlineCount = {};
+  if (allStudentsData) {
+    for (const student of allStudentsData) {
+      const classId = student.stu_class_room_id;
+      if (!classOnlineCount[classId]) classOnlineCount[classId] = 0;
+      if (onlineMap[student.stu_id]) classOnlineCount[classId]++;
+    }
+  }
+  
   let html = '';
   if (allClasses.length === 0) {
     html = '<div class="empty-state"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">No classes</p></div>';
   } else {
     for (const cls of allClasses) {
-      const unreadCount = await getUnreadCount(cls.class_room_id);
-      const lastMsg = await getLastMessagePreview(cls.class_room_id);
+      const onlineCount = classOnlineCount[cls.class_room_id] || 0;
+      const unreadCount = unreadCounts[cls.class_room_id] || 0;
       const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
-      const lastMsgHtml = lastMsg ? `<div class="last-msg-preview"><i class="bi bi-chat-text"></i> ${escapeHtml(lastMsg.sender || 'Student')}: ${escapeHtml(lastMsg.preview)}</div>` : '<div class="last-msg-preview text-muted"><i class="bi bi-chat-dots"></i> No messages yet</div>';
+      const onlineBadge = onlineCount > 0 ? `<span class="online-count"><i class="bi bi-circle-fill" style="font-size: 0.5rem; color: #10b981;"></i> ${onlineCount} online</span>` : '';
+      
+      // Get last message for preview
+      const { data: lastMsg } = await supabaseClient
+        .from("class_chat_messages")
+        .select("*")
+        .eq("class_id", cls.class_room_id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      let lastMsgPreview = '<i class="bi bi-chat-dots"></i> Tap to enter';
+      if (lastMsg && lastMsg[0]) {
+        const msg = lastMsg[0];
+        if (msg.is_deleted) lastMsgPreview = 'Deleted message';
+        else if (msg.message_type === 'image') lastMsgPreview = '📷 Image';
+        else if (msg.message_type === 'voice') lastMsgPreview = '🎤 Voice message';
+        else lastMsgPreview = msg.message.substring(0, 40) + (msg.message.length > 40 ? '...' : '');
+        const sender = msg.sender_type === 'admin' ? 'Admin: ' : (msg.sender_name || 'Student: ');
+        lastMsgPreview = sender + lastMsgPreview;
+      }
       
       html += `<div class="list-item" onclick="openChatRoom(${cls.class_room_id})">
         <div class="list-icon"><i class="bi bi-building"></i></div>
         <div class="list-info">
-          <div class="list-title">${escapeHtml(cls.class_room_no)} ${unreadBadge}</div>
-          ${lastMsgHtml}
+          <div class="list-title">${escapeHtml(cls.class_room_no)} ${onlineBadge}</div>
+          <div class="last-msg-preview">${lastMsgPreview}</div>
         </div>
-        <div class="list-badge"><i class="bi bi-chat-dots-fill"></i> Enter</div>
+        <div class="d-flex align-items-center gap-2">
+          ${unreadBadge}
+          <div class="list-badge"><i class="bi bi-chat-dots-fill"></i> Enter</div>
+        </div>
       </div>`;
     }
   }
-  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</div><div style="width:50px;"></div></div><div style="flex:1; overflow-y:auto;">${html}</div></div>`;
+  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><div class="room-title"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</div><div style="width:50px;"></div></div><div style="flex:1; overflow-y:auto;">${html}</div></div>`;
 }
 
-function toggleSelectMode() { selectMode = !selectMode; if (!selectMode) selectedMessages.clear(); renderMessages(); renderChatWindowHeader(); }
-function toggleSelectMessage(id) { if (selectedMessages.has(id)) selectedMessages.delete(id); else selectedMessages.add(id); renderMessages(); renderChatWindowHeader(); }
+function toggleSelectMode() { 
+  selectMode = !selectMode; 
+  if (!selectMode) selectedMessages.clear(); 
+  renderMessages(); 
+  renderChatWindowHeader(); 
+}
+
+function toggleSelectMessage(id) { 
+  if (selectedMessages.has(id)) selectedMessages.delete(id); 
+  else selectedMessages.add(id); 
+  renderMessages(); 
+  renderChatWindowHeader(); 
+}
+
 async function deleteSelectedMessages() {
   if (selectedMessages.size === 0) { showToast("No messages selected", true); return; }
   if (!confirm(`Delete ${selectedMessages.size} message(s)?`)) return;
@@ -507,8 +679,18 @@ async function deleteSelectedMessages() {
   const { error } = await supabaseClient.from("class_chat_messages").update({ is_deleted: true, message: "Deleted" }).in("id", ids);
   if (error) showToast("Failed", true);
   else {
-    for (const id of ids) { const idx = currentMessages.findIndex(m => m.id === id); if (idx !== -1) { currentMessages[idx].is_deleted = true; currentMessages[idx].message = "Deleted"; } }
-    selectedMessages.clear(); selectMode = false; renderMessages(); renderChatWindowHeader(); showToast(`${ids.length} message(s) deleted`);
+    for (const id of ids) { 
+      const idx = currentMessages.findIndex(m => m.id === id); 
+      if (idx !== -1) { 
+        currentMessages[idx].is_deleted = true; 
+        currentMessages[idx].message = "Deleted"; 
+      } 
+    }
+    selectedMessages.clear(); 
+    selectMode = false; 
+    renderMessages(); 
+    renderChatWindowHeader(); 
+    showToast(`${ids.length} message(s) deleted`);
   }
 }
 
@@ -516,21 +698,28 @@ window.openChatRoom = async function(classId) {
   const selectedClass = allClasses.find(c => c.class_room_id === classId);
   if (!selectedClass) { showToast("Class not found", true); return; }
   currentClass = selectedClass;
-  selectMode = false; selectedMessages.clear();
+  selectMode = false; 
+  selectedMessages.clear();
   
-  // Update last read timestamp for this class
+  // Reset unread count for this class
   lastReadTimestamps[classId] = new Date().toISOString();
+  unreadCounts[classId] = 0;
   
   const { data: students } = await supabaseClient.from("students").select("*").eq("stu_class_room_id", classId).order("stu_name");
-  if (students) allStudents = students;
+  if (students) {
+    allStudents = students;
+    await loadOnlineStatus();
+    subscribeToOnlineStatus();
+  }
+  
   if (messageSubscription) await supabaseClient.removeChannel(messageSubscription);
   messageSubscription = supabaseClient.channel(`class_chat_${classId}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (p) => { 
       currentMessages.push(p.new); 
       renderMessages();
-      // Update unread count in class list when not in this chat
-      if (currentClass?.class_room_id !== classId) {
-        showClassesList();
+      // Update unread count if not viewing
+      if (!currentClass || currentClass.class_room_id !== classId) {
+        updateUnreadCount(classId);
       }
     })
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${classId}` }, (p) => { 
@@ -538,10 +727,14 @@ window.openChatRoom = async function(classId) {
       if (i !== -1) { currentMessages[i] = p.new; renderMessages(); } 
     })
     .subscribe();
+    
   const { data: msgs } = await supabaseClient.from("class_chat_messages").select("*").eq("class_id", classId).order("created_at", { ascending: true });
   if (msgs) currentMessages = msgs;
   renderChatWindow();
   showToast(`Now in ${selectedClass.class_room_no}`);
+  
+  // Update the class list to remove unread badge
+  showClassesList();
 };
 
 function renderMessages() {
@@ -559,7 +752,7 @@ function renderMessages() {
     else if (msg.message_type === 'voice') content = `<div class="voice-message"><audio controls src="${msg.media_url}"></audio></div>`;
     else content = escapeHtml(msg.message);
     const showCheck = selectMode && isSent && !isDel;
-    const chkHtml = showCheck ? `<div class="message-checkbox ${isSelected ? 'checked' : ''}" onclick="toggleSelectMessage(${msg.id})">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>` : '';
+    const chkHtml = showCheck ? `<div class="message-checkbox ${isSelected ? 'checked' : ''}" onclick="toggleSelectMessage('${msg.id}')">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>` : '';
     html += `<div class="message ${isSent ? 'sent' : 'received'} ${isDel ? 'deleted' : ''}">${chkHtml}<div class="message-bubble">${!isSent && !isDel ? `<div class="message-sender">${escapeHtml(msg.sender_name || 'Student')}</div>` : ''}${content}<div class="message-time">${time}</div></div></div>`;
   }
   container.innerHTML = html;
@@ -571,7 +764,15 @@ window.sendMessage = async function() {
   const input = document.getElementById('chatInput');
   const msg = input.value.trim();
   if (!msg) return;
-  await supabaseClient.from("class_chat_messages").insert({ class_id: currentClass.class_room_id, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'text', message: msg, is_deleted: false });
+  await supabaseClient.from("class_chat_messages").insert({ 
+    class_id: currentClass.class_room_id, 
+    sender_id: currentAdmin.emp_id, 
+    sender_type: 'admin', 
+    sender_name: currentAdmin.emp_name, 
+    message_type: 'text', 
+    message: msg, 
+    is_deleted: false 
+  });
   input.value = '';
 };
 
@@ -588,13 +789,24 @@ window.uploadImage = async function() {
     const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, file);
     if (error) { showToast("Upload failed", true); return; }
     const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
-    await supabaseClient.from("class_chat_messages").insert({ class_id: currentClass.class_room_id, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'image', media_url: urlData.publicUrl, is_deleted: false });
+    await supabaseClient.from("class_chat_messages").insert({ 
+      class_id: currentClass.class_room_id, 
+      sender_id: currentAdmin.emp_id, 
+      sender_type: 'admin', 
+      sender_name: currentAdmin.emp_name, 
+      message_type: 'image', 
+      media_url: urlData.publicUrl, 
+      is_deleted: false 
+    });
     showToast("Image sent");
   };
   input.click();
 };
 
-window.showImagePreview = function(url) { document.getElementById('previewImage').src = url; new bootstrap.Modal(document.getElementById('imagePreviewModal')).show(); };
+window.showImagePreview = function(url) { 
+  document.getElementById('previewImage').src = url; 
+  new bootstrap.Modal(document.getElementById('imagePreviewModal')).show(); 
+};
 
 window.startRecording = async function() {
   if (!currentClass) { showToast("Open a chat room first", true); return; }
@@ -609,7 +821,15 @@ window.startRecording = async function() {
       const { error } = await supabaseClient.storage.from('chat-media').upload(fileName, audioBlob);
       if (error) { showToast("Upload failed", true); return; }
       const { data: urlData } = supabaseClient.storage.from('chat-media').getPublicUrl(fileName);
-      await supabaseClient.from("class_chat_messages").insert({ class_id: currentClass.class_room_id, sender_id: currentAdmin.emp_id, sender_type: 'admin', sender_name: currentAdmin.emp_name, message_type: 'voice', media_url: urlData.publicUrl, is_deleted: false });
+      await supabaseClient.from("class_chat_messages").insert({ 
+        class_id: currentClass.class_room_id, 
+        sender_id: currentAdmin.emp_id, 
+        sender_type: 'admin', 
+        sender_name: currentAdmin.emp_name, 
+        message_type: 'voice', 
+        media_url: urlData.publicUrl, 
+        is_deleted: false 
+      });
       stream.getTracks().forEach(t => t.stop());
       const btn = document.getElementById('recordBtn');
       if (btn) { btn.innerHTML = '<i class="bi bi-mic-fill"></i>'; btn.classList.remove('recording-active'); }
@@ -620,12 +840,23 @@ window.startRecording = async function() {
     isRecording = true;
     const btn = document.getElementById('recordBtn');
     if (btn) { btn.innerHTML = '<i class="bi bi-stop-fill"></i>'; btn.classList.add('recording-active'); }
-    setTimeout(() => { if (isRecording && mediaRecorder?.state === 'recording') window.stopRecording(); }, 60000);
+    recordingTimer = setTimeout(() => { 
+      if (isRecording && mediaRecorder?.state === 'recording') window.stopRecording(); 
+    }, 60000);
   } catch (err) { showToast("Microphone access denied", true); }
 };
 
-window.stopRecording = function() { if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } if (recordingTimer) clearInterval(recordingTimer); };
-window.toggleRecording = function() { isRecording ? window.stopRecording() : window.startRecording(); };
+window.stopRecording = function() { 
+  if (mediaRecorder && mediaRecorder.state === 'ring') { 
+    mediaRecorder.stop(); 
+    isRecording = false; 
+  } 
+  if (recordingTimer) clearTimeout(recordingTimer); 
+};
+
+window.toggleRecording = function() { 
+  isRecording ? window.stopRecording() : window.startRecording(); 
+};
 
 window.toggleEmojiPicker = function() {
   const dd = document.getElementById('emojiDropdown');
@@ -638,8 +869,22 @@ window.toggleEmojiPicker = function() {
     dd.style.display = 'block';
   } else { dd.style.display = 'none'; }
 };
-window.insertEmoji = function(e) { const input = document.getElementById('chatInput'); if (input) { input.value += e; input.focus(); } document.getElementById('emojiDropdown').style.display = 'none'; };
-document.addEventListener('click', function(e) { const dd = document.getElementById('emojiDropdown'); const btn = document.getElementById('emojiBtn'); if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) dd.style.display = 'none'; });
+
+window.insertEmoji = function(e) { 
+  const input = document.getElementById('chatInput'); 
+  if (input) { 
+    input.value += e; 
+    input.focus(); 
+  } 
+  document.getElementById('emojiDropdown').style.display = 'none'; 
+};
+
+document.addEventListener('click', function(e) { 
+  const dd = document.getElementById('emojiDropdown'); 
+  const btn = document.getElementById('emojiBtn'); 
+  if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) 
+    dd.style.display = 'none'; 
+});
 
 window.showStudentsList = function() {
   const container = document.getElementById('studentsListModal');
@@ -649,7 +894,23 @@ window.showStudentsList = function() {
     let html = '';
     for (const s of allStudents) {
       const initial = s.stu_name?.charAt(0).toUpperCase() || '?';
-      html += `<div class="student-list-item"><div class="student-avatar-small">${initial}</div><div class="flex-grow-1"><div class="fw-bold fs-6">${escapeHtml(s.stu_name)}</div><div class="small text-muted">${escapeHtml(s.stu_admission_no)}</div></div><div><span class="online-dot online"></span><span class="small">Online</span></div></div>`;
+      const isOnline = studentOnlineStatus[s.stu_id] === true;
+      const statusClass = isOnline ? 'online' : 'offline';
+      const statusText = isOnline ? 'Online' : 'Offline';
+      const lastSeen = studentLastSeen[s.stu_id];
+      const lastSeenText = !isOnline && lastSeen ? `<div class="last-seen-text">Last seen: ${formatLastSeen(lastSeen)}</div>` : '';
+      html += `<div class="student-list-item">
+        <div class="student-avatar-small">${initial}</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold fs-6">${escapeHtml(s.stu_name)}</div>
+          <div class="small text-muted">${escapeHtml(s.stu_admission_no)}</div>
+          ${lastSeenText}
+        </div>
+        <div>
+          <span class="online-dot ${statusClass}"></span>
+          <span class="status-text">${statusText}</span>
+        </div>
+      </div>`;
     }
     container.innerHTML = html;
   }
@@ -663,7 +924,12 @@ function renderChatWindowHeader() {
   if (selectMode) {
     hc.innerHTML = `<div class="selection-header"><div><span class="selected-badge"><i class="bi bi-check2-square me-1"></i>${cnt} selected</span></div><div><button class="cancel-select-btn" onclick="toggleSelectMode()">Cancel</button><button class="delete-selected-btn ms-2" onclick="deleteSelectedMessages()">Delete</button></div></div>`;
   } else {
-    hc.innerHTML = `<div class="card-header-custom"><div><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><span class="ms-2 fw-medium">${escapeHtml(currentClass?.class_room_no || 'Chat')}</span></div><div class="d-flex gap-1"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i> Clear</button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Sel</button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i></button></div></div>`;
+    let onlineCount = 0;
+    for (const student of allStudents) {
+      if (studentOnlineStatus[student.stu_id] === true) onlineCount++;
+    }
+    const onlineBadge = onlineCount > 0 ? `<span class="online-count ms-2"><i class="bi bi-circle-fill" style="font-size: 0.5rem; color: #10b981;"></i> ${onlineCount} online</span>` : '';
+    hc.innerHTML = `<div class="card-header-custom"><div><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><span class="ms-2 fw-medium">${escapeHtml(currentClass?.class_room_no || 'Chat')}</span>${onlineBadge}</div><div class="d-flex gap-1"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i> Clear</button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Sel</button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i></button></div></div>`;
   }
 }
 
@@ -678,13 +944,19 @@ function renderChatWindow() {
 async function init() { 
   await loadClasses(); 
   await showClassesList();
-  // Refresh class list every 5 seconds to update unread counts
-  setInterval(async () => {
-    if (!currentClass) {
-      await showClassesList();
-    }
-  }, 5000);
+  
+  statusCleanupInterval = setInterval(cleanupStaleOnlineStatus, 30000);
+  await cleanupStaleOnlineStatus();
 }
+
+window.addEventListener('beforeunload', () => {
+  if (onlineStatusSubscription) {
+    supabaseClient.removeChannel(onlineStatusSubscription);
+  }
+  if (statusCleanupInterval) {
+    clearInterval(statusCleanupInterval);
+  }
+});
 
 window.goBack = goBack;
 window.toggleSelectMode = toggleSelectMode;
