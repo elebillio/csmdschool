@@ -136,6 +136,162 @@
   .stat-card h3 { font-size: 1.2rem; font-weight: 800; margin: 0; color: #1e293b; }
   .stat-card p { margin: 4px 0 0; font-size: 0.6rem; color: #64748b; }
   
+  /* Sibling List Styles */
+  .family-card {
+    background: white;
+    border-radius: 20px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid #eef2f8;
+  }
+  .family-header {
+    background: linear-gradient(135deg, #ec489a, #be185d);
+    padding: 12px 16px;
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .sibling-list {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .sibling-card {
+    flex: 0 0 auto;
+    text-align: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 16px;
+    transition: all 0.2s;
+    min-width: 70px;
+  }
+  .sibling-card.selected {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+  }
+  .sibling-avatar-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin: 0 auto 8px auto;
+    object-fit: cover;
+  }
+  .sibling-img-small {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .sibling-card-name {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #1e293b;
+  }
+  .sibling-card-class {
+    font-size: 0.55rem;
+    color: #64748b;
+  }
+  
+  /* Modal Styles */
+  .modal-custom {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-custom.show {
+    display: flex;
+  }
+  .modal-content-custom {
+    background: white;
+    border-radius: 28px;
+    width: 85%;
+    max-width: 320px;
+    overflow: hidden;
+    animation: modalSlideIn 0.2s ease;
+  }
+  @keyframes modalSlideIn {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal-header-custom {
+    background: linear-gradient(135deg, #ec489a, #be185d);
+    padding: 16px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-header-custom h5 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .close-modal {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    font-size: 1rem;
+  }
+  .close-modal:hover { background: rgba(255,255,255,0.3); }
+  .modal-body-custom {
+    padding: 16px;
+  }
+  .modal-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-bottom: 4px;
+  }
+  .modal-menu-item:hover { background: #f8fafc; }
+  .modal-menu-item i {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    color: #1e3c72;
+  }
+  .modal-menu-item span {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #1e293b;
+  }
+  .selected-sibling-name {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 4px;
+  }
+  
   .module-card {
     background: white;
     border-radius: 20px;
@@ -165,89 +321,12 @@
   .module-icon.syllabus { background: linear-gradient(135deg, #06b6d4, #0891b2); }
   .module-icon.attendance { background: linear-gradient(135deg, #11998e, #38ef7d); }
   .module-icon.profile { background: linear-gradient(135deg, #667eea, #764ba2); }
-  .module-icon.family { background: linear-gradient(135deg, #ec489a, #be185d); }
   .module-icon.chat { background: linear-gradient(135deg, #00b4d8, #0077b6); }
   .module-info { flex: 1; }
   .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; }
   .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
   .module-arrow { color: #94a3b8; transition: transform 0.2s; }
   .module-card:active .module-arrow { transform: translateX(4px); }
-  
-  .family-card {
-    background: white;
-    border-radius: 20px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    border: 1px solid #eef2f8;
-  }
-  .family-header {
-    background: linear-gradient(135deg, #ec489a, #be185d);
-    padding: 12px 16px;
-    color: white;
-    font-weight: 600;
-    font-size: 0.85rem;
-  }
-  .sibling-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid #eef2f8;
-    transition: background 0.2s;
-  }
-  .sibling-item:last-child { border-bottom: none; }
-  .sibling-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    object-fit: cover;
-  }
-  .sibling-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    cursor: pointer;
-  }
-  .sibling-info { flex: 1; }
-  .sibling-name { 
-    font-weight: 600; 
-    font-size: 0.85rem; 
-    color: #1e293b;
-    cursor: pointer;
-  }
-  .sibling-name:hover {
-    text-decoration: underline;
-    color: #ec489a;
-  }
-  .sibling-details { font-size: 0.65rem; color: #64748b; }
-  .sibling-class { background: #f1f5f9; padding: 2px 8px; border-radius: 30px; font-size: 0.6rem; display: inline-block; }
-  .sibling-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .sibling-action-btn {
-    background: #f1f5f9;
-    border: none;
-    border-radius: 30px;
-    padding: 5px 10px;
-    font-size: 0.6rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: #475569;
-  }
-  .sibling-action-btn:hover { background: #e2e8f0; transform: scale(1.05); }
-  .sibling-action-btn i { font-size: 0.65rem; margin-right: 3px; }
   
   .iframe-container {
     position: fixed;
@@ -286,7 +365,6 @@
     width: 100%;
   }
   
-  /* Custom Logo Styles */
   .custom-logo {
     text-align: center;
     margin-bottom: 20px;
@@ -304,34 +382,11 @@
     font-weight: 800;
     line-height: 1.2;
   }
-  .logo-text .the {
-    font-size: 0.7rem;
-    letter-spacing: 3px;
-    opacity: 0.8;
-  }
-  .logo-text .leads {
-    font-size: 1.8rem;
-    letter-spacing: 2px;
-    font-weight: 900;
-  }
-  .logo-text .school {
-    font-size: 0.8rem;
-    letter-spacing: 4px;
-    opacity: 0.9;
-  }
-  .logo-text .live {
-    font-size: 0.6rem;
-    letter-spacing: 5px;
-    margin-top: 8px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255,255,255,0.3);
-    display: inline-block;
-  }
-  .logo-text .at {
-    font-size: 0.55rem;
-    letter-spacing: 2px;
-    opacity: 0.7;
-  }
+  .logo-text .the { font-size: 0.7rem; letter-spacing: 3px; opacity: 0.8; }
+  .logo-text .leads { font-size: 1.8rem; letter-spacing: 2px; font-weight: 900; }
+  .logo-text .school { font-size: 0.8rem; letter-spacing: 4px; opacity: 0.9; }
+  .logo-text .live { font-size: 0.6rem; letter-spacing: 5px; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.3); display: inline-block; }
+  .logo-text .at { font-size: 0.55rem; letter-spacing: 2px; opacity: 0.7; }
   
   .toast-custom {
     position: fixed;
@@ -376,8 +431,9 @@
     .ticker-label-full { padding: 3px 10px; font-size: 0.55rem; }
     .ticker-wrapper-full { margin-left: 75px; }
     .floating-back { bottom: 15px; right: 15px; padding: 8px 16px; font-size: 0.7rem; }
-    .sibling-actions { flex-direction: column; gap: 4px; }
-    .sibling-action-btn { padding: 3px 8px; font-size: 0.55rem; }
+    .sibling-list { gap: 8px; }
+    .sibling-card { padding: 6px 8px; min-width: 60px; }
+    .sibling-avatar-small { width: 40px; height: 40px; font-size: 1rem; }
   }
 </style>
 </head>
@@ -427,6 +483,38 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
+<!-- Custom Modal -->
+<div class="modal-custom" id="actionModal">
+  <div class="modal-content-custom">
+    <div class="modal-header-custom">
+      <h5><i class="bi bi-grid-3x3-gap-fill me-2"></i>Select Action</h5>
+      <button class="close-modal" onclick="closeModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body-custom">
+      <div id="selectedSiblingInfo" class="selected-sibling-name text-center mb-3"></div>
+      <div class="modal-menu-item" onclick="modalAction('attendance')">
+        <i class="bi bi-calendar-check-fill"></i>
+        <span>Attendance</span>
+      </div>
+      <div class="modal-menu-item" onclick="modalAction('syllabus')">
+        <i class="bi bi-journal-bookmark-fill"></i>
+        <span>Syllabus</span>
+      </div>
+      <div class="modal-menu-item" onclick="modalAction('result')">
+        <i class="bi bi-trophy-fill"></i>
+        <span>Result</span>
+      </div>
+      <div class="modal-menu-item" onclick="modalAction('chat')">
+        <i class="bi bi-chat-dots-fill"></i>
+        <span>Chat</span>
+      </div>
+      <div class="modal-menu-item" onclick="modalAction('profile')">
+        <i class="bi bi-person-circle"></i>
+        <span>Profile</span>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="toastMsg" class="toast-custom"></div>
 
@@ -441,6 +529,7 @@ let allFees = [];
 let allExamResults = [];
 let siblingStudents = [];
 let announcements = [];
+let selectedSibling = null;
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -495,7 +584,6 @@ function renderTicker() {
   tickerContainer.innerHTML = html;
 }
 
-// Fetch sibling students
 async function loadSiblingStudents() {
   if (!currentStudent) return [];
   
@@ -516,6 +604,28 @@ async function loadSiblingStudents() {
     return siblingStudents;
   }
   return [];
+}
+
+async function recordLoginHistory(student) {
+  try {
+    let ip = "Unknown";
+    try {
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipRes.json();
+      ip = ipData.ip;
+    } catch(e) {}
+    const userAgent = navigator.userAgent;
+    let deviceType = "Unknown";
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(userAgent)) deviceType = "Mobile";
+    else if (/Tablet|iPad/i.test(userAgent)) deviceType = "Tablet";
+    else deviceType = "Desktop";
+    const loginDate = new Date().toISOString().split('T')[0];
+    await supabase1.from("student_login_history").insert({
+      student_id: student.stu_id, student_name: student.stu_name,
+      student_admission_no: student.stu_admission_no, login_time: new Date().toISOString(),
+      login_date: loginDate, ip_address: ip, user_agent: userAgent.substring(0, 255), device_type: deviceType
+    });
+  } catch(e) { console.error("Failed to record login history:", e); }
 }
 
 async function studentLogin() {
@@ -549,14 +659,17 @@ async function studentLogin() {
   localStorage.setItem('studentLoggedIn', JSON.stringify(sessionData));
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
   
+  await recordLoginHistory(currentStudent);
   await loadMasterData();
   await loadSiblingStudents();
+  selectedSibling = null;
   showDashboard();
 }
 
 function doLogout() {
   currentStudent = null;
   siblingStudents = [];
+  selectedSibling = null;
   localStorage.removeItem('studentLoggedIn');
   localStorage.removeItem('currentStudent');
   
@@ -571,6 +684,7 @@ function doLogout() {
   
   const floatingBtn = document.getElementById('floatingBackBtn');
   if (floatingBtn) floatingBtn.style.display = 'none';
+  closeModal();
   
   showToast("Logged out successfully");
 }
@@ -591,61 +705,81 @@ async function loadMasterData() {
 
 function openModuleForStudent(pageName, studentId) {
   if (!studentId) return;
-  
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
-  
   const iframeContainer = document.getElementById('iframeContainer');
   const iframe = document.getElementById('moduleIframe');
-  
   if (!iframeContainer || !iframe) return;
-  
   iframe.src = `${pageName}.html?stu_id=${studentId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true`;
   iframeContainer.style.display = 'flex';
   document.getElementById('dashboardView').style.display = 'none';
-  
   const floatingBtn = document.getElementById('floatingBackBtn');
   if (floatingBtn) floatingBtn.style.display = 'flex';
+  closeModal();
 }
 
-// Open sibling chat
-function openSiblingChat(siblingId, siblingName) {
-  if (!currentStudent) return;
-  
-  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
-  
-  const iframeContainer = document.getElementById('iframeContainer');
-  const iframe = document.getElementById('moduleIframe');
-  
-  if (!iframeContainer || !iframe) return;
-  
-  // Properly encode the sibling name
-  const encodedName = encodeURIComponent(siblingName);
-  
-  iframe.src = `student_chat.html?stu_id=${siblingId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true&sibling=true&sibling_name=${encodedName}`;
-  iframeContainer.style.display = 'flex';
-  document.getElementById('dashboardView').style.display = 'none';
-  
-  const floatingBtn = document.getElementById('floatingBackBtn');
-  if (floatingBtn) floatingBtn.style.display = 'flex';
+function selectSibling(sibling) {
+  selectedSibling = sibling;
+  showDashboard();
+  // Automatically open modal after selecting sibling
+  setTimeout(() => {
+    openModal();
+  }, 100);
 }
 
-// Function to show profile for any student
+function openModal() {
+  if (!selectedSibling) {
+    showToast("Please select a sibling first");
+    return;
+  }
+  const modal = document.getElementById('actionModal');
+  const infoDiv = document.getElementById('selectedSiblingInfo');
+  if (infoDiv) {
+    infoDiv.innerHTML = `<i class="bi bi-person-circle me-1"></i> Actions for ${escapeHtml(selectedSibling.stu_name)}`;
+  }
+  if (modal) modal.classList.add('show');
+}
+
+function closeModal() {
+  const modal = document.getElementById('actionModal');
+  if (modal) modal.classList.remove('show');
+}
+
+function modalAction(action) {
+  if (!selectedSibling) {
+    closeModal();
+    showToast("Please select a sibling first");
+    return;
+  }
+  
+  switch(action) {
+    case 'attendance':
+      openModuleForStudent('stuattendance', selectedSibling.stu_id);
+      break;
+    case 'syllabus':
+      openModuleForStudent('stusyllabus', selectedSibling.stu_id);
+      break;
+    case 'result':
+      openModuleForStudent('sturesult', selectedSibling.stu_id);
+      break;
+    case 'chat':
+      openSiblingChat(selectedSibling.stu_id, selectedSibling.stu_name);
+      break;
+    case 'profile':
+      showStudentProfileById(selectedSibling.stu_id);
+      break;
+  }
+  closeModal();
+}
+
 function showStudentProfile(student) {
   if (!student) return;
-  
   const container = document.getElementById('dashboardContainer');
   const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
   const imgUrl = getStudentImageUrl(student);
-  
   let avatarHtml = '';
-  if (imgUrl) {
-    avatarHtml = `<img src="${imgUrl}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
-  } else {
-    avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
-  }
-  
+  if (imgUrl) avatarHtml = `<img src="${imgUrl}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  else avatarHtml = `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 2rem;">${initial}</div>`;
   const isCurrent = (student.stu_id === currentStudent.stu_id);
-  
   const profileHtml = `
     <div style="background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px;">
       <div style="background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px;">
@@ -667,96 +801,68 @@ function showStudentProfile(student) {
     </div>
   `;
   container.innerHTML = profileHtml;
+  closeModal();
 }
 
-// Show profile by student ID (for siblings)
 window.showStudentProfileById = async function(studentId) {
-  const { data, error } = await supabase1
-    .from("students")
-    .select("*")
-    .eq("stu_id", studentId)
-    .single();
-  if (!error && data) {
-    showStudentProfile(data);
-  }
+  const { data, error } = await supabase1.from("students").select("*").eq("stu_id", studentId).single();
+  if (!error && data) showStudentProfile(data);
 };
 
 function showProfile() {
-  if (!currentStudent) {
-    doLogout();
-    return;
-  }
+  if (!currentStudent) { doLogout(); return; }
   showStudentProfile(currentStudent);
 }
 
 function showDashboard() {
-  if (!currentStudent) {
-    doLogout();
-    return;
-  }
+  if (!currentStudent) { doLogout(); return; }
   
   const container = document.getElementById('dashboardContainer');
   const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
   const currentImgUrl = getStudentImageUrl(currentStudent);
   
   let avatarHtml = '';
-  if (currentImgUrl) {
-    avatarHtml = `<img src="${currentImgUrl}" class="student-img" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
-  } else {
-    avatarHtml = `<div class="student-avatar">${initial}</div>`;
-  }
+  if (currentImgUrl) avatarHtml = `<img src="${currentImgUrl}" class="student-img" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
+  else avatarHtml = `<div class="student-avatar">${initial}</div>`;
   
   const totalFee = allFees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
   const paidFee = allFees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
   const dueFee = totalFee - paidFee;
   const examResultsCount = allExamResults.length;
   
-  // Build siblings/family HTML with images and chat button
-  let familyHtml = '';
+  // Build siblings list
+  let siblingsHtml = '';
   if (siblingStudents && siblingStudents.length > 0) {
-    let siblingsHtml = '';
+    let cardsHtml = '';
     for (const sibling of siblingStudents) {
       const siblingInitial = sibling.stu_name?.charAt(0).toUpperCase() || '?';
       const siblingImgUrl = getStudentImageUrl(sibling);
+      const isSelected = selectedSibling && selectedSibling.stu_id === sibling.stu_id;
+      const selectedClass = isSelected ? 'selected' : '';
       
       let siblingAvatarHtml = '';
       if (siblingImgUrl) {
-        siblingAvatarHtml = `<img src="${siblingImgUrl}" class="sibling-img" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">`;
+        siblingAvatarHtml = `<img src="${siblingImgUrl}" class="sibling-img-small" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">`;
       } else {
-        siblingAvatarHtml = `<div class="sibling-avatar" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${siblingInitial}</div>`;
+        siblingAvatarHtml = `<div class="sibling-avatar-small">${siblingInitial}</div>`;
       }
       
-      siblingsHtml += `
-        <div class="sibling-item">
+      cardsHtml += `
+        <div class="sibling-card ${selectedClass}" onclick="selectSibling(${JSON.stringify(sibling).replace(/"/g, '&quot;')})">
           ${siblingAvatarHtml}
-          <div class="sibling-info">
-            <div class="sibling-name" onclick="event.stopPropagation(); showStudentProfileById(${sibling.stu_id})">${escapeHtml(sibling.stu_name)}</div>
-            <div class="sibling-details">${escapeHtml(sibling.stu_admission_no)} | ${getClassroomName(sibling.stu_class_room_id)}</div>
-          </div>
-          <div class="sibling-actions">
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openSiblingChat(${sibling.stu_id}, '${escapeHtml(sibling.stu_name)}')" title="Chat with Sibling">
-              <i class="bi bi-chat-dots-fill"></i> Chat
-            </button>
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stuattendance', ${sibling.stu_id})" title="View Attendance">
-              <i class="bi bi-calendar-check-fill"></i> Attendance
-            </button>
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('stusyllabus', ${sibling.stu_id})" title="View Syllabus">
-              <i class="bi bi-journal-bookmark-fill"></i> Syllabus
-            </button>
-            <button class="sibling-action-btn" onclick="event.stopPropagation(); openModuleForStudent('sturesult', ${sibling.stu_id})" title="View Results">
-              <i class="bi bi-trophy-fill"></i> Result
-            </button>
-          </div>
+          <div class="sibling-card-name">${escapeHtml(sibling.stu_name.split(' ')[0])}</div>
+          <div class="sibling-card-class">${getClassroomName(sibling.stu_class_room_id)}</div>
         </div>
       `;
     }
-    familyHtml = `
+    siblingsHtml = `
       <div class="family-card">
         <div class="family-header">
-          <i class="bi bi-people-fill me-2"></i> Family Members (Siblings)
-          <small class="ms-2 opacity-75">Click to chat</small>
+          <i class="bi bi-people-fill me-2"></i> Family Members (Tap to select)
         </div>
-        ${siblingsHtml}
+        <div class="sibling-list">
+          ${cardsHtml}
+        </div>
       </div>
     `;
   }
@@ -780,7 +886,7 @@ function showDashboard() {
       </div>
     </div>
     
-    ${familyHtml}
+    ${siblingsHtml}
     
     <div class="stats-row">
       <div class="stat-card">
@@ -832,24 +938,32 @@ function showDashboard() {
 }
 
 function openModule(pageName) {
-  if (!currentStudent) {
-    doLogout();
-    return;
-  }
-  
+  if (!currentStudent) { doLogout(); return; }
   localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
-  
   const iframeContainer = document.getElementById('iframeContainer');
   const iframe = document.getElementById('moduleIframe');
-  
   if (!iframeContainer || !iframe) return;
-  
   iframe.src = `${pageName}.html?stu_id=${currentStudent.stu_id}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true`;
   iframeContainer.style.display = 'flex';
   document.getElementById('dashboardView').style.display = 'none';
-  
   const floatingBtn = document.getElementById('floatingBackBtn');
   if (floatingBtn) floatingBtn.style.display = 'flex';
+  closeModal();
+}
+
+function openSiblingChat(siblingId, siblingName) {
+  if (!currentStudent) return;
+  localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
+  const iframeContainer = document.getElementById('iframeContainer');
+  const iframe = document.getElementById('moduleIframe');
+  if (!iframeContainer || !iframe) return;
+  const encodedName = encodeURIComponent(siblingName);
+  iframe.src = `student_chat.html?stu_id=${siblingId}&viewer_id=${currentStudent.stu_id}&fromStudentPortal=true&sibling=true&sibling_name=${encodedName}`;
+  iframeContainer.style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
+  const floatingBtn = document.getElementById('floatingBackBtn');
+  if (floatingBtn) floatingBtn.style.display = 'flex';
+  closeModal();
 }
 
 function closeIframe() {
@@ -858,34 +972,25 @@ function closeIframe() {
   if (iframe) iframe.src = 'about:blank';
   if (iframeContainer) iframeContainer.style.display = 'none';
   document.getElementById('dashboardView').style.display = 'block';
-  
   const floatingBtn = document.getElementById('floatingBackBtn');
   if (floatingBtn) floatingBtn.style.display = 'none';
-  
-  if (currentStudent) {
-    loadMasterData();
-    showDashboard();
-  }
+  if (currentStudent) { loadMasterData(); showDashboard(); }
 }
 
 async function restoreSession() {
   const savedSession = localStorage.getItem('studentLoggedIn');
   const savedStudent = localStorage.getItem('currentStudent');
-  
   const urlParams = new URLSearchParams(window.location.search);
   const urlStudentId = urlParams.get('stu_id');
   
   if (urlStudentId && !currentStudent) {
-    const { data, error } = await supabase1
-      .from("students")
-      .select("*")
-      .eq("stu_id", urlStudentId)
-      .single();
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", urlStudentId).single();
     if (!error && data) {
       currentStudent = data;
       localStorage.setItem('currentStudent', JSON.stringify(currentStudent));
       await loadMasterData();
       await loadSiblingStudents();
+      selectedSibling = null;
       document.getElementById('loginView').style.display = 'none';
       document.getElementById('dashboardView').style.display = 'block';
       showDashboard();
@@ -897,46 +1002,32 @@ async function restoreSession() {
     try {
       const sessionData = JSON.parse(savedSession);
       let studentData = sessionData.student || sessionData;
-      
       if (studentData && studentData.stu_id) {
-        const { data, error } = await supabase1
-          .from("students")
-          .select("*")
-          .eq("stu_id", studentData.stu_id)
-          .single();
-        
+        const { data, error } = await supabase1.from("students").select("*").eq("stu_id", studentData.stu_id).single();
         if (!error && data) {
           currentStudent = data;
           await loadMasterData();
           await loadSiblingStudents();
+          selectedSibling = null;
           document.getElementById('loginView').style.display = 'none';
           document.getElementById('dashboardView').style.display = 'block';
           showDashboard();
           return true;
-        } else {
-          localStorage.removeItem('studentLoggedIn');
-          localStorage.removeItem('currentStudent');
-        }
+        } else { localStorage.removeItem('studentLoggedIn'); localStorage.removeItem('currentStudent'); }
       }
-    } catch(e) {
-      console.error("Session restore error:", e);
-    }
+    } catch(e) { console.error("Session restore error:", e); }
   }
   
   if (savedStudent && !currentStudent) {
     try {
       const studentData = JSON.parse(savedStudent);
       if (studentData && studentData.stu_id) {
-        const { data, error } = await supabase1
-          .from("students")
-          .select("*")
-          .eq("stu_id", studentData.stu_id)
-          .single();
-        
+        const { data, error } = await supabase1.from("students").select("*").eq("stu_id", studentData.stu_id).single();
         if (!error && data) {
           currentStudent = data;
           await loadMasterData();
           await loadSiblingStudents();
+          selectedSibling = null;
           document.getElementById('loginView').style.display = 'none';
           document.getElementById('dashboardView').style.display = 'block';
           showDashboard();
@@ -953,6 +1044,15 @@ async function restoreSession() {
   return false;
 }
 
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('actionModal');
+  const modalContent = document.querySelector('.modal-content-custom');
+  if (modal && modal.classList.contains('show') && modalContent && !modalContent.contains(e.target)) {
+    closeModal();
+  }
+});
+
 window.addEventListener('pageshow', async function(event) {
   const iframeContainer = document.getElementById('iframeContainer');
   if (iframeContainer && iframeContainer.style.display === 'flex') {
@@ -964,9 +1064,7 @@ window.addEventListener('pageshow', async function(event) {
     const floatingBtn = document.getElementById('floatingBackBtn');
     if (floatingBtn) floatingBtn.style.display = 'none';
     showDashboard();
-  } else {
-    await restoreSession();
-  }
+  } else { await restoreSession(); }
 });
 
 window.onload = function() {
@@ -974,13 +1072,11 @@ window.onload = function() {
   restoreSession().then(() => {
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) loginBtn.onclick = studentLogin;
-    
     const floatingBtn = document.getElementById('floatingBackBtn');
     if (floatingBtn) floatingBtn.onclick = closeIframe;
   });
 };
 
-// Make functions global
 window.doLogout = doLogout;
 window.openModuleForStudent = openModuleForStudent;
 window.openSiblingChat = openSiblingChat;
@@ -989,6 +1085,10 @@ window.showProfile = showProfile;
 window.showStudentProfileById = showStudentProfileById;
 window.closeIframe = closeIframe;
 window.showDashboard = showDashboard;
+window.selectSibling = selectSibling;
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.modalAction = modalAction;
 </script>
 </body>
 </html>
