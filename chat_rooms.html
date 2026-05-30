@@ -376,7 +376,6 @@
     margin-left: 8px;
   }
   
-  /* Scroll to bottom button */
   .scroll-to-bottom {
     position: absolute;
     bottom: 80px;
@@ -396,6 +395,41 @@
   }
   .scroll-to-bottom.show {
     display: flex;
+  }
+  
+  /* Loading skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+  }
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .skeleton-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef2f8;
+  }
+  .skeleton-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 16px;
+  }
+  .skeleton-text {
+    flex: 1;
+  }
+  .skeleton-title {
+    height: 16px;
+    width: 60%;
+    margin-bottom: 8px;
+  }
+  .skeleton-subtitle {
+    height: 12px;
+    width: 40%;
   }
 </style>
 </head>
@@ -455,6 +489,7 @@ let statusCleanupInterval = null;
 
 let unreadCounts = {};
 let lastReadTimestamps = {};
+let lastMessagesCache = {}; // Cache for last messages
 
 let isRefreshing = false;
 let scrollButton = null;
@@ -489,7 +524,6 @@ function showToast(msg, isErr = false) {
   setTimeout(() => { toast.style.opacity = '0'; }, 2000);
 }
 
-// Scroll to bottom of chat
 function scrollToBottom() {
   const container = document.getElementById('chatMessages');
   if (container) {
@@ -497,7 +531,6 @@ function scrollToBottom() {
   }
 }
 
-// Check scroll position and show/hide scroll button
 function checkScrollPosition() {
   const container = document.getElementById('chatMessages');
   if (!container || !scrollButton) return;
@@ -508,6 +541,25 @@ function checkScrollPosition() {
   } else {
     scrollButton.classList.add('show');
   }
+}
+
+// Show loading skeleton
+function showSkeleton() {
+  const container = document.getElementById('appContainer');
+  let skeletonHtml = '<div class="card-custom"><div class="card-header-custom"><div class="room-title"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</div><div style="width:50px;"></div></div><div style="flex:1; overflow-y:auto;">';
+  for (let i = 0; i < 5; i++) {
+    skeletonHtml += `
+      <div class="skeleton-item">
+        <div class="skeleton skeleton-icon"></div>
+        <div class="skeleton-text">
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-subtitle"></div>
+        </div>
+      </div>
+    `;
+  }
+  skeletonHtml += '</div></div>';
+  container.innerHTML = skeletonHtml;
 }
 
 async function updateUnreadCount(classId) {
@@ -526,9 +578,6 @@ async function updateUnreadCount(classId) {
     if (!error && count !== null) {
       unreadCounts[classId] = count;
     }
-  }
-  if (!currentClass) {
-    showClassesList();
   }
 }
 
@@ -561,6 +610,9 @@ function subscribeToOnlineStatus() {
           const modal = document.getElementById('studentsModal');
           if (modal && modal.classList.contains('show')) {
             showStudentsList();
+          }
+          if (!currentClass) {
+            showClassesList();
           }
         }
       }
@@ -619,9 +671,36 @@ async function loadClasses() {
   const { data } = await supabaseClient.from("class_rooms").select("*").order("class_room_serial");
   if (data) {
     allClasses = data;
-    for (const cls of allClasses) {
-      await updateUnreadCount(cls.class_room_id);
+  }
+}
+
+async function loadLastMessagesAndUnreadCounts() {
+  // Fetch all last messages in a single query
+  const classIds = allClasses.map(c => c.class_room_id);
+  
+  if (classIds.length === 0) return;
+  
+  // Get last message for each class using distinct on
+  const { data: lastMsgs, error: msgError } = await supabaseClient
+    .from("class_chat_messages")
+    .select("class_id, message, message_type, media_url, sender_type, sender_name, created_at, is_deleted")
+    .in("class_id", classIds)
+    .order("created_at", { ascending: false });
+  
+  if (!msgError && lastMsgs) {
+    // Keep only the latest message per class
+    const latestPerClass = {};
+    for (const msg of lastMsgs) {
+      if (!latestPerClass[msg.class_id]) {
+        latestPerClass[msg.class_id] = msg;
+      }
     }
+    lastMessagesCache = latestPerClass;
+  }
+  
+  // Get unread counts for all classes
+  for (const cls of allClasses) {
+    await updateUnreadCount(cls.class_room_id);
   }
 }
 
@@ -629,25 +708,30 @@ async function showClassesList() {
   if (isRefreshing || currentClass) return;
   isRefreshing = true;
   
+  // Show skeleton first
+  showSkeleton();
+  
   const container = document.getElementById('appContainer');
   
-  const { data: allStudentsData } = await supabaseClient.from("students").select("stu_id, stu_class_room_id");
-  const { data: statusData } = await supabaseClient.from("student_online_status").select("student_id, is_online");
+  // Run queries in parallel for better performance
+  const [studentsResult, statusResult] = await Promise.all([
+    supabaseClient.from("students").select("stu_id, stu_class_room_id"),
+    supabaseClient.from("student_online_status").select("student_id, is_online")
+  ]);
+  
+  const allStudentsData = studentsResult.data || [];
+  const statusData = statusResult.data || [];
   
   const onlineMap = {};
-  if (statusData) {
-    for (const s of statusData) {
-      if (s.is_online) onlineMap[s.student_id] = true;
-    }
+  for (const s of statusData) {
+    if (s.is_online) onlineMap[s.student_id] = true;
   }
   
   const classOnlineCount = {};
-  if (allStudentsData) {
-    for (const student of allStudentsData) {
-      const classId = student.stu_class_room_id;
-      if (!classOnlineCount[classId]) classOnlineCount[classId] = 0;
-      if (onlineMap[student.stu_id]) classOnlineCount[classId]++;
-    }
+  for (const student of allStudentsData) {
+    const classId = student.stu_class_room_id;
+    if (!classOnlineCount[classId]) classOnlineCount[classId] = 0;
+    if (onlineMap[student.stu_id]) classOnlineCount[classId]++;
   }
   
   let html = '';
@@ -660,21 +744,16 @@ async function showClassesList() {
       const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
       const onlineBadge = onlineCount > 0 ? `<span class="online-count"><i class="bi bi-circle-fill" style="font-size: 0.5rem; color: #10b981;"></i> ${onlineCount} online</span>` : '';
       
-      const { data: lastMsg } = await supabaseClient
-        .from("class_chat_messages")
-        .select("*")
-        .eq("class_id", cls.class_room_id)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      
+      // Get last message from cache
+      const lastMsg = lastMessagesCache[cls.class_room_id];
       let lastMsgPreview = '<i class="bi bi-chat-dots"></i> Tap to enter';
-      if (lastMsg && lastMsg[0]) {
-        const msg = lastMsg[0];
-        if (msg.is_deleted) lastMsgPreview = 'Deleted message';
-        else if (msg.message_type === 'image') lastMsgPreview = '📷 Image';
-        else if (msg.message_type === 'voice') lastMsgPreview = '🎤 Voice message';
-        else lastMsgPreview = msg.message.substring(0, 40) + (msg.message.length > 40 ? '...' : '');
-        const sender = msg.sender_type === 'admin' ? 'Admin: ' : (msg.sender_name || 'Student: ');
+      
+      if (lastMsg) {
+        if (lastMsg.is_deleted) lastMsgPreview = 'Deleted message';
+        else if (lastMsg.message_type === 'image') lastMsgPreview = '📷 Image';
+        else if (lastMsg.message_type === 'voice') lastMsgPreview = '🎤 Voice message';
+        else lastMsgPreview = lastMsg.message.substring(0, 40) + (lastMsg.message.length > 40 ? '...' : '');
+        const sender = lastMsg.sender_type === 'admin' ? 'Admin: ' : (lastMsg.sender_name || 'Student: ');
         lastMsgPreview = sender + lastMsgPreview;
       }
       
@@ -765,7 +844,9 @@ window.openChatRoom = async function(classId) {
       if (currentClass && currentClass.class_room_id === classId) {
         currentMessages.push(p.new); 
         renderMessages();
-        scrollToBottom(); // Auto scroll on new message
+        scrollToBottom();
+        // Update cache for last message
+        lastMessagesCache[classId] = p.new;
       }
     })
     .on('postgres_changes', { 
@@ -816,7 +897,6 @@ function renderMessages() {
   }
   container.innerHTML = html;
   
-  // Always scroll to bottom after rendering messages
   setTimeout(() => {
     scrollToBottom();
   }, 100);
@@ -1020,7 +1100,6 @@ function renderChatWindow() {
   renderChatWindowHeader();
   renderMessages();
   
-  // Setup scroll button and event listener
   scrollButton = document.getElementById('scrollToBottomBtn');
   const messagesContainer = document.getElementById('chatMessages');
   if (messagesContainer) {
@@ -1034,7 +1113,9 @@ function renderChatWindow() {
 }
 
 async function init() { 
+  showSkeleton();
   await loadClasses(); 
+  await loadLastMessagesAndUnreadCounts();
   await showClassesList();
   
   statusCleanupInterval = setInterval(cleanupStaleOnlineStatus, 30000);
