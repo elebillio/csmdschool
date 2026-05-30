@@ -24,6 +24,7 @@
     flex-direction: column;
     height: 100%;
     max-height: calc(100vh - 24px);
+    position: relative;
   }
   .card-header-custom {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -71,6 +72,7 @@
     overflow-y: auto;
     padding: 12px;
     background: #f8fafc;
+    scroll-behavior: smooth;
   }
   .message {
     margin-bottom: 10px;
@@ -222,6 +224,28 @@
     pointer-events: none;
     white-space: nowrap;
   }
+  
+  /* Scroll to bottom button */
+  .scroll-to-bottom {
+    position: absolute;
+    bottom: 80px;
+    right: 20px;
+    background: #1e3c72;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 100;
+  }
+  .scroll-to-bottom.show {
+    display: flex;
+  }
 </style>
 </head>
 <body>
@@ -264,6 +288,9 @@ let recordingTimer = null;
 // Online status tracking variables
 let heartbeatInterval = null;
 let currentStudentId = null;
+
+// Scroll button
+let scrollButton = null;
 
 // ========== ONLINE STATUS FUNCTIONS ==========
 async function updateOnlineStatus(isOnline) {
@@ -308,35 +335,42 @@ function stopHeartbeat() {
     }
 }
 
+// Scroll to bottom function
+function scrollToBottom() {
+    const container = document.getElementById('chatMessages');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
+
+// Check scroll position and show/hide scroll button
+function checkScrollPosition() {
+    const container = document.getElementById('chatMessages');
+    if (!container || !scrollButton) return;
+    
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    if (isNearBottom) {
+        scrollButton.classList.remove('show');
+    } else {
+        scrollButton.classList.add('show');
+    }
+}
+
 // Handle page/tab close
 window.addEventListener('beforeunload', () => {
     if (currentStudentId) {
-        // Use sendBeacon for reliable delivery during page unload
-        const statusData = JSON.stringify({
-            student_id: currentStudentId,
-            is_online: false,
-            last_seen: new Date().toISOString()
-        });
-        
-        // Try direct update (may work)
         updateOnlineStatus(false);
     }
 });
 
-// Handle page visibility change (tab minimize/restore)
+// Handle page visibility change
 document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        console.log("Tab hidden - marking as away");
-        // Optional: Don't mark offline immediately, just reduce heartbeat
-    } else {
-        console.log("Tab active - marking online");
-        if (currentStudentId) {
-            updateOnlineStatus(true);
-        }
+    if (!document.hidden && currentStudentId) {
+        updateOnlineStatus(true);
     }
 });
 
-// Handle page unload (reliable)
+// Handle page unload
 window.addEventListener('unload', () => {
     if (currentStudentId) {
         updateOnlineStatus(false);
@@ -346,7 +380,7 @@ window.addEventListener('unload', () => {
 // ========== END ONLINE STATUS FUNCTIONS ==========
 
 // Emojis list
-const emojis = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","😌","😔","😪","🤤","😴","😷","🤒","🤕","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👻","👽","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","🙈","🙉","🙊","💋","💌","💘","💝","💖","💗","💓","💞","💕","💔","❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💯","💢","💥","💫","💦","💨","💣","💬","👋","🤚","🖐️","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦵","🦶","👂","👃","🧠","🦷","🦴","👀","👅","👄","🔥","✨","⭐","✅","🎉"];
+const emojis = ["😀","😃","😄","😁","😆","😅","😂","🤣","😊","😇","🥰","😍","🤩","😘","😗","😚","😙","🥲","😋","😛","😜","🤪","😝","🤑","🤗","🤭","🤫","🤔","🤐","🤨","😐","😑","😶","😏","😒","🙄","😬","😌","😔","😪","🤤","😴","😷","🤒","🤕","🥳","😎","🤓","🧐","😕","😟","🙁","☹️","😮","😯","😲","😳","🥺","😢","😭","😱","😖","😣","😞","😓","😩","😫","🥱","😤","😡","😠","🤬","😈","👿","💀","☠️","💩","🤡","👻","👽","🤖","😺","😸","😹","😻","😼","😽","🙀","😿","😾","🙈","🙉","🙊","💋","💌","💘","💝","💖","💗","💓","💞","💕","💔","❤️","🧡","💛","💚","💙","💜","🤎","🖤","🤍","💯","💢","💥","💫","💦","💨","💣","💬","👋","🤚","🖐️","✋","🖖","👌","🤏","✌️","🤞","🤟","🤘","🤙","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦵","🦶","👂","👃","🧠","🦷","🦴","👀","👅","👄","❤️","🔥","✨","⭐","✅","🎉"];
 
 function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
 function formatTime(date) { return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
@@ -365,7 +399,6 @@ function showToast(msg, isErr = false) {
 }
 
 function goBack() {
-  // Stop heartbeat when leaving
   stopHeartbeat();
   if (currentStudentId) {
     updateOnlineStatus(false);
@@ -428,10 +461,8 @@ async function loadStudentData() {
   
   if (!currentStudent) { showToast("Session expired", true); setTimeout(goBack, 1500); return false; }
   
-  // Set student ID for online tracking
   if (currentStudent) {
     currentStudentId = currentStudent.stu_id;
-    // Start online status tracking
     await updateOnlineStatus(true);
     startHeartbeat();
   }
@@ -453,7 +484,11 @@ async function loadChatRoom(student) {
   if (messageSubscription) await supabaseClient.removeChannel(messageSubscription);
   messageSubscription = supabaseClient.channel(`class_chat_${currentClass.id}`)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_chat_messages', filter: `class_id=eq.${currentClass.class_room_id}` },
-      (p) => { currentMessages.push(p.new); renderMessages(); })
+      (p) => { 
+        currentMessages.push(p.new); 
+        renderMessages();
+        scrollToBottom(); // Auto scroll on new message
+      })
     .subscribe();
   
   const { data } = await supabaseClient.from("class_chat_messages").select("*").eq("class_id", currentClass.class_room_id).order("created_at", { ascending: true });
@@ -484,7 +519,11 @@ function renderMessages() {
     html += `<div class="message ${isSent ? 'sent' : 'received'}"><div class="message-bubble">${sender}${content}<div class="message-time">${time}</div></div></div>`;
   }
   container.innerHTML = html;
-  container.scrollTop = container.scrollHeight;
+  
+  // Scroll to bottom after rendering
+  setTimeout(() => {
+    scrollToBottom();
+  }, 100);
 }
 
 async function sendMessage() {
@@ -498,6 +537,7 @@ async function sendMessage() {
     sender_name: sName, message_type: 'text', message: msg
   });
   input.value = '';
+  scrollToBottom();
 }
 
 async function startRecording() {
@@ -525,16 +565,27 @@ async function startRecording() {
       if (btn) { btn.innerHTML = '<i class="bi bi-mic-fill"></i>'; btn.classList.remove('recording-active'); }
       if (recordingTimer) clearInterval(recordingTimer);
       showToast("Voice sent");
+      scrollToBottom();
     };
     mediaRecorder.start();
     isRecording = true;
     const btn = document.getElementById('recordBtn');
     if (btn) { btn.innerHTML = '<i class="bi bi-stop-fill"></i>'; btn.classList.add('recording-active'); }
-    setTimeout(() => { if (isRecording && mediaRecorder?.state === 'recording') stopRecording(); }, 60000);
+    recordingTimer = setTimeout(() => { if (isRecording && mediaRecorder?.state === 'recording') stopRecording(); }, 60000);
   } catch (err) { showToast("Microphone access denied", true); }
 }
-function stopRecording() { if (mediaRecorder && mediaRecorder.state === 'recording') { mediaRecorder.stop(); isRecording = false; } if (recordingTimer) clearInterval(recordingTimer); }
-function toggleRecording() { isRecording ? stopRecording() : startRecording(); }
+
+function stopRecording() { 
+  if (mediaRecorder && mediaRecorder.state === 'recording') { 
+    mediaRecorder.stop(); 
+    isRecording = false; 
+  } 
+  if (recordingTimer) clearInterval(recordingTimer); 
+}
+
+function toggleRecording() { 
+  isRecording ? stopRecording() : startRecording(); 
+}
 
 window.uploadImage = async function() {
   if (!currentClass) return;
@@ -556,11 +607,15 @@ window.uploadImage = async function() {
       sender_name: sName, message_type: 'image', media_url: urlData.publicUrl
     });
     showToast("Image sent");
+    scrollToBottom();
   };
   input.click();
 };
 
-window.showImagePreview = function(url) { document.getElementById('previewImage').src = url; new bootstrap.Modal(document.getElementById('imagePreviewModal')).show(); };
+window.showImagePreview = function(url) { 
+  document.getElementById('previewImage').src = url; 
+  new bootstrap.Modal(document.getElementById('imagePreviewModal')).show(); 
+};
 
 function renderChatWindow(student) {
   const container = document.getElementById('appContainer');
@@ -571,9 +626,44 @@ function renderChatWindow(student) {
     header = `Chat with ${escapeHtml(siblingName)} (${escapeHtml(className)})`;
     info = `<i class="bi bi-people-fill me-1"></i> Viewing ${escapeHtml(siblingName)}'s class`;
   }
-  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><div class="room-title"><i class="bi bi-chat-dots-fill"></i><span>${escapeHtml(header)}</span><span class="online-status-badge"><i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Online</span></div>${isSiblingView ? '<span class="sibling-view-badge"><i class="bi bi-eye-fill"></i> Viewing</span>' : ''}</div><div class="class-info">${info}</div><div class="chat-messages" id="chatMessages"></div><div class="chat-input-area"><button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button><div id="emojiDropdown" class="emoji-dropdown"></div><button class="chat-btn" onclick="uploadImage()">📸</button><button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button><input type="text" id="chatInput" class="chat-input" placeholder="Message..." onkeypress="if(event.key==='Enter') sendMessage()"><button class="chat-btn send-btn" onclick="sendMessage()">Send</button></div></div>`;
+  container.innerHTML = `<div class="card-custom">
+    <div class="card-header-custom">
+      <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+      <div class="room-title">
+        <i class="bi bi-chat-dots-fill"></i>
+        <span>${escapeHtml(header)}</span>
+        <span class="online-status-badge"><i class="bi bi-circle-fill" style="font-size: 0.5rem;"></i> Online</span>
+      </div>
+      ${isSiblingView ? '<span class="sibling-view-badge"><i class="bi bi-eye-fill"></i> Viewing</span>' : ''}
+    </div>
+    <div class="class-info">${info}</div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-area">
+      <button class="chat-btn" id="emojiBtn" onclick="toggleEmojiPicker()">😊</button>
+      <div id="emojiDropdown" class="emoji-dropdown"></div>
+      <button class="chat-btn" onclick="uploadImage()">📸</button>
+      <button class="chat-btn" id="recordBtn" onclick="toggleRecording()"><i class="bi bi-mic-fill"></i></button>
+      <input type="text" id="chatInput" class="chat-input" placeholder="Message..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button class="chat-btn send-btn" onclick="sendMessage()">Send</button>
+    </div>
+    <button class="scroll-to-bottom" id="scrollToBottomBtn" onclick="scrollToBottom()">
+      <i class="bi bi-arrow-down"></i>
+    </button>
+  </div>`;
+  
   renderMessages();
-  setTimeout(() => document.getElementById('chatInput')?.focus(), 100);
+  
+  // Setup scroll button and event listener
+  scrollButton = document.getElementById('scrollToBottomBtn');
+  const messagesContainer = document.getElementById('chatMessages');
+  if (messagesContainer) {
+    messagesContainer.addEventListener('scroll', checkScrollPosition);
+  }
+  
+  setTimeout(() => {
+    document.getElementById('chatInput')?.focus();
+    scrollToBottom();
+  }, 100);
 }
 
 function renderNoChatRoom(student) {
@@ -595,13 +685,28 @@ window.toggleEmojiPicker = function() {
     dd.style.display = 'block';
   } else dd.style.display = 'none';
 };
-window.insertEmoji = function(e) { const input = document.getElementById('chatInput'); if (input) { input.value += e; input.focus(); } document.getElementById('emojiDropdown').style.display = 'none'; };
-document.addEventListener('click', function(e) { const dd = document.getElementById('emojiDropdown'); const btn = document.getElementById('emojiBtn'); if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) dd.style.display = 'none'; });
+
+window.insertEmoji = function(e) { 
+  const input = document.getElementById('chatInput'); 
+  if (input) { 
+    input.value += e; 
+    input.focus(); 
+  } 
+  document.getElementById('emojiDropdown').style.display = 'none'; 
+};
+
+document.addEventListener('click', function(e) { 
+  const dd = document.getElementById('emojiDropdown'); 
+  const btn = document.getElementById('emojiBtn'); 
+  if (dd && btn && !dd.contains(e.target) && !btn.contains(e.target)) 
+    dd.style.display = 'none'; 
+});
 
 async function init() { 
   await loadStudentData();
 }
 
+// Expose functions globally
 window.goBack = goBack;
 window.sendMessage = sendMessage;
 window.uploadImage = uploadImage;
@@ -609,6 +714,7 @@ window.toggleRecording = toggleRecording;
 window.toggleEmojiPicker = toggleEmojiPicker;
 window.insertEmoji = insertEmoji;
 window.showImagePreview = showImagePreview;
+window.scrollToBottom = scrollToBottom;
 
 init();
 </script>
