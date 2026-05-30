@@ -188,6 +188,7 @@
   .module-icon.notification { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
   .module-icon.result { background: linear-gradient(135deg, #8B5CF6, #6D28D9); }
   .module-icon.exam { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+  .module-icon.history { background: linear-gradient(135deg, #f59e0b, #ef4444); }
   .module-info { flex: 1; }
   .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; color: #0f172a; }
   .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
@@ -437,14 +438,26 @@
     </div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
+  
   <div class="module-card" id="chatRoomsModule">
-  <div class="module-icon" style="background: linear-gradient(135deg, #00b4d8, #0077b6);"><i class="bi bi-chat-dots-fill"></i></div>
-  <div class="module-info">
-    <h3>Chat Rooms</h3>
-    <p>Class-wise chat rooms | Real-time messaging</p>
+    <div class="module-icon" style="background: linear-gradient(135deg, #00b4d8, #0077b6);"><i class="bi bi-chat-dots-fill"></i></div>
+    <div class="module-info">
+      <h3>Chat Rooms</h3>
+      <p>Class-wise chat rooms | Real-time messaging</p>
+    </div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
-  <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
-</div>
+  
+  <!-- NEW: Login History Module -->
+  <div class="module-card" id="loginHistoryModule">
+    <div class="module-icon history"><i class="bi bi-clock-history"></i></div>
+    <div class="module-info">
+      <h3>Login History</h3>
+      <p>View student login records | Track activity</p>
+    </div>
+    <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
+  </div>
+  
   <!-- Date Time -->
   <div class="datetime" id="dateTimeDisplay"></div>
 </div>
@@ -963,6 +976,7 @@ document.getElementById('syllabusModule')?.addEventListener('click', () => openM
 document.getElementById('examModule')?.addEventListener('click', () => openModule('examination', 'Examination Result', 'bi bi-trophy-fill'));
 document.getElementById('notificationModule')?.addEventListener('click', openNotificationModal);
 document.getElementById('chatRoomsModule')?.addEventListener('click', () => openModule('chat_rooms', 'Chat Rooms', 'bi bi-chat-dots-fill'));
+document.getElementById('loginHistoryModule')?.addEventListener('click', () => openModule('login_history', 'Login History', 'bi bi-clock-history'));
 document.getElementById('studentSearchInput')?.addEventListener('input', () => renderStudentListInModal());
 document.getElementById('statStudents')?.addEventListener('click', () => openModule('students', 'Student Management', 'bi bi-people-fill'));
 document.getElementById('statAttendance')?.addEventListener('click', () => openModule('attendance', 'Attendance Management', 'bi bi-calendar-check-fill'));
