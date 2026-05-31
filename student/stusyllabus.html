@@ -76,14 +76,6 @@
     display: inline-block;
     margin-right: 6px;
   }
-  .badge-datesheet-count {
-    font-size: 0.6rem;
-    background: #dbeafe;
-    color: #1e40af;
-    padding: 2px 8px;
-    border-radius: 30px;
-    display: inline-block;
-  }
   .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
   .exam-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
   .exam-group-content { overflow: hidden; transition: max-height 0.3s ease; }
@@ -101,9 +93,6 @@
   .subject-item:active { transform: scale(0.99); background: #f1f5f9; }
   .subject-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
   .badge-syllabus { background: #d1fae5; color: #065f46; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 4px; }
-  .badge-no-syllabus { background: #fee2e2; color: #991b1b; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 4px; }
-  .badge-datesheet { background: #dbeafe; color: #1e40af; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 4px; }
-  .badge-no-datesheet { background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 4px; }
   .badge-marks { background: #fef9c3; color: #854d0e; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; display: inline-flex; align-items: center; gap: 4px; }
   .syllabus-preview { font-size: 0.7rem; color: #475569; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e2e8f0; line-height: 1.4; }
   
@@ -166,7 +155,6 @@ function getStudentImageUrl(student) {
   return null;
 }
 
-// Back button function that works in both iframe and standalone mode
 function goBack() {
   if (window.parent && window.parent !== window) {
     if (typeof window.parent.closeIframe === 'function') {
@@ -180,25 +168,19 @@ function goBack() {
 }
 
 async function loadData() {
-  // Get URL parameters for sibling viewing
   const urlParams = new URLSearchParams(window.location.search);
   const targetStudentId = urlParams.get('stu_id');
   const viewerId = urlParams.get('viewer_id');
   
-  // Load viewer student (logged-in user)
   if (viewerId && viewerId !== 'null') {
     const { data, error } = await supabase1.from("students").select("*").eq("stu_id", viewerId).single();
-    if (!error && data) {
-      viewerStudent = data;
-    }
+    if (!error && data) viewerStudent = data;
   }
   
   if (!viewerStudent) {
     const saved = localStorage.getItem('currentStudent');
     if (saved) {
-      try {
-        viewerStudent = JSON.parse(saved);
-      } catch(e) {}
+      try { viewerStudent = JSON.parse(saved); } catch(e) {}
     }
   }
   
@@ -212,14 +194,10 @@ async function loadData() {
     }
   }
   
-  // Load target student (the one whose data we want to view - could be sibling)
   if (targetStudentId && targetStudentId !== 'null') {
     const { data, error } = await supabase1.from("students").select("*").eq("stu_id", targetStudentId).single();
-    if (!error && data) {
-      currentStudent = data;
-    } else {
-      currentStudent = viewerStudent;
-    }
+    if (!error && data) currentStudent = data;
+    else currentStudent = viewerStudent;
   } else {
     currentStudent = viewerStudent;
   }
@@ -237,7 +215,6 @@ async function loadData() {
     return;
   }
   
-  // Load all required data for the target student's class
   const [examTypes, classrooms, dateSheets, syllabus, subjects] = await Promise.all([
     supabase1.from("exam_type").select("*"),
     supabase1.from("class_rooms").select("*"),
@@ -252,8 +229,6 @@ async function loadData() {
   if(syllabus.data) allSyllabus = syllabus.data;
   if(subjects.data) allSubjects = subjects.data;
   
-  console.log("Loading syllabus for student:", currentStudent.stu_name, "Class:", currentStudent.stu_class_room_id);
-  
   renderSyllabusPage();
 }
 
@@ -265,7 +240,6 @@ function renderSyllabusPage() {
   else if(currentTab === 2) tabTitle = '✈️ Vocation Work';
   else tabTitle = '📅 Annual Work';
   
-  // Get student image
   const imgUrl = getStudentImageUrl(currentStudent);
   const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
   
@@ -277,7 +251,6 @@ function renderSyllabusPage() {
     avatarHtml = `<div class="avatar-small">${initial}</div>`;
   }
   
-  // Show which student's data is being viewed
   const viewingNote = (viewerStudent && currentStudent.stu_id !== viewerStudent.stu_id) 
     ? `<div class="alert alert-info py-1 px-3 mb-2 rounded-pill text-center" style="font-size:0.7rem; background:#dbeafe; color:#1e40af; border:none;">
         <i class="bi bi-eye-fill me-1"></i> Viewing: ${escapeHtml(currentStudent.stu_name)} (${escapeHtml(currentStudent.stu_admission_no)})
@@ -319,11 +292,28 @@ async function renderExamGroups() {
   if(!container) return;
   
   let filtered = allExamTypes.filter(et => et.term_conditions_id === currentTab);
-  if(filtered.length === 0) {
+  
+  // Filter only exam types that have at least one syllabus
+  const examTypesWithSyllabus = [];
+  for(let et of filtered) {
+    let hasSyllabus = false;
+    for(let sub of allSubjects) {
+      const syllabusExists = allSyllabus.some(s => s.exam_type_id === et.exam_type_id && s.syllabus_sub_id === sub.sub_id);
+      if(syllabusExists) {
+        hasSyllabus = true;
+        break;
+      }
+    }
+    if(hasSyllabus) {
+      examTypesWithSyllabus.push(et);
+    }
+  }
+  
+  if(examTypesWithSyllabus.length === 0) {
     let emptyMessage = '';
-    if(currentTab === 1) emptyMessage = 'No Home Work syllabus found';
-    else if(currentTab === 2) emptyMessage = 'No Vocation Work syllabus found';
-    else emptyMessage = 'No Annual Work syllabus found';
+    if(currentTab === 1) emptyMessage = 'No Home Work syllabus available';
+    else if(currentTab === 2) emptyMessage = 'No Vocation Work syllabus available';
+    else emptyMessage = 'No Annual Work syllabus available';
     container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">${emptyMessage}</p><small class="text-muted">Syllabus will appear here once uploaded</small></div>`;
     document.getElementById('expandCollapseBar').style.display = 'none';
     return;
@@ -336,18 +326,12 @@ async function renderExamGroups() {
   `;
   
   let html = '';
-  for(let et of filtered) {
+  for(let et of examTypesWithSyllabus) {
     let isExpanded = expandedExamGroups[et.exam_type_id] === true;
     
     const classSubjects = allSubjects.filter(s => s.sub_classroom_id === currentStudent.stu_class_room_id);
-    const totalSubjects = classSubjects.length;
     
-    let dateSheetCount = 0;
-    for(let sub of classSubjects) {
-      const hasDateSheet = allDateSheets.some(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
-      if(hasDateSheet) dateSheetCount++;
-    }
-    
+    // Count only subjects that have syllabus
     let syllabusCount = 0;
     for(let sub of classSubjects) {
       const hasSyllabus = allSyllabus.some(s => s.exam_type_id === et.exam_type_id && s.syllabus_sub_id === sub.sub_id);
@@ -362,8 +346,7 @@ async function renderExamGroups() {
         </div>
         <div class="text-end">
           <div>
-            <span class="badge-syllabus-count"><i class="bi bi-journal-bookmark-fill"></i> 📖 ${syllabusCount}/${totalSubjects}</span>
-            <span class="badge-datesheet-count"><i class="bi bi-calendar-check-fill"></i> 📅 ${dateSheetCount}/${totalSubjects}</span>
+            <span class="badge-syllabus-count"><i class="bi bi-journal-bookmark-fill"></i> 📖 ${syllabusCount} subjects</span>
           </div>
           <i class="bi bi-chevron-down toggle-icon mt-1"></i>
         </div>
@@ -375,7 +358,7 @@ async function renderExamGroups() {
   }
   container.innerHTML = html;
   
-  for(let et of filtered) {
+  for(let et of examTypesWithSyllabus) {
     if(expandedExamGroups[et.exam_type_id] === true) {
       await renderSubjectsForExam(et.exam_type_id);
     }
@@ -396,20 +379,24 @@ async function renderSubjectsForExam(examTypeId) {
   
   const classSubjects = allSubjects.filter(s => s.sub_classroom_id === currentStudent.stu_class_room_id);
   
-  if(classSubjects.length === 0) {
-    container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>No subjects found for your class</p></div>';
+  // Filter only subjects that have syllabus for this exam type
+  const subjectsWithSyllabus = [];
+  for(let sub of classSubjects) {
+    const hasSyllabus = allSyllabus.some(s => s.exam_type_id === examTypeId && s.syllabus_sub_id === sub.sub_id);
+    if(hasSyllabus) {
+      subjectsWithSyllabus.push(sub);
+    }
+  }
+  
+  if(subjectsWithSyllabus.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>No syllabus available for this exam</p></div>';
     return;
   }
   
   let subjectsHtml = '';
   
-  for(let sub of classSubjects) {
-    const dateSheet = allDateSheets.find(ds => ds.exam_date_sheet_exam_type_id === examTypeId && ds.exam_date_sheet_sub_id === sub.sub_id);
-    const hasDateSheet = dateSheet ? true : false;
-    const dateSheetDate = dateSheet ? dateSheet.exam_date_sheet_day : null;
-    
+  for(let sub of subjectsWithSyllabus) {
     const syllabus = allSyllabus.find(sy => sy.exam_type_id === examTypeId && sy.syllabus_sub_id === sub.sub_id);
-    const hasSyllabus = syllabus ? true : false;
     const syllabusText = syllabus ? syllabus.syllabus_text : null;
     
     let bookName = "Subject";
@@ -422,39 +409,28 @@ async function renderSubjectsForExam(examTypeId) {
     
     const marks = sub.sub_remarks || 0;
     const marksDisplay = marks > 0 ? `⭐ ${marks} Marks` : '';
-    const syllabusPreview = hasSyllabus && syllabusText ? syllabusText.substring(0, 100) : '';
+    const syllabusPreview = syllabusText ? syllabusText.substring(0, 100) : '';
     
-    subjectsHtml += `<div class="subject-item" onclick='showSubjectDetail("${escapeHtml(bookName)}", ${hasSyllabus ? JSON.stringify(escapeHtml(syllabusText || '')) : '""'}, "${dateSheetDate || ''}", ${marks})'>
+    subjectsHtml += `<div class="subject-item" onclick='showSubjectDetail("${escapeHtml(bookName)}", ${JSON.stringify(escapeHtml(syllabusText || ''))}, ${marks})'>
       <div class="subject-name">
         <span>📖 ${escapeHtml(bookName)}</span>
         ${marksDisplay ? `<span class="badge-marks">${marksDisplay}</span>` : ''}
       </div>
       <div class="subject-badges">
-        ${hasSyllabus ? 
-          '<span class="badge-syllabus"><i class="bi bi-check-circle-fill"></i> Syllabus Available</span>' : 
-          '<span class="badge-no-syllabus"><i class="bi bi-plus-circle"></i> No Syllabus</span>'
-        }
-        ${hasDateSheet ? 
-          '<span class="badge-datesheet"><i class="bi bi-calendar-check-fill"></i> Date: ' + dateSheetDate + '</span>' : 
-          '<span class="badge-no-datesheet"><i class="bi bi-calendar-plus"></i> No Date Sheet</span>'
-        }
+        <span class="badge-syllabus"><i class="bi bi-check-circle-fill"></i> Syllabus Available</span>
       </div>
-      ${hasSyllabus && syllabusText ? 
+      ${syllabusText ? 
         `<div class="syllabus-preview">📝 ${escapeHtml(syllabusPreview)}${syllabusText.length > 100 ? '...' : ''}</div>` : 
         '<div class="syllabus-preview text-muted">📝 No syllabus uploaded yet</div>'
       }
     </div>`;
   }
   
-  if(subjectsHtml === '') {
-    subjectsHtml = '<div class="empty-state"><i class="bi bi-inbox"></i><p>No subjects found</p></div>';
-  }
-  
   cachedSubjects[cacheKey] = subjectsHtml;
   container.innerHTML = subjectsHtml;
 }
 
-function showSubjectDetail(subjectName, syllabusText, dateSheetDate, marks) {
+function showSubjectDetail(subjectName, syllabusText, marks) {
   let cleanSyllabus = syllabusText;
   if (typeof syllabusText === 'string') {
     cleanSyllabus = syllabusText;
@@ -474,10 +450,6 @@ function showSubjectDetail(subjectName, syllabusText, dateSheetDate, marks) {
             <div class="info-row">
               <div class="info-label"><i class="bi bi-trophy-fill me-1"></i> Total Marks</div>
               <div class="info-value fw-bold text-primary">${marks > 0 ? marks : 'Not specified'}</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label"><i class="bi bi-calendar-event-fill me-1"></i> Exam Date</div>
-              <div class="info-value">${dateSheetDate || 'Not scheduled yet'}</div>
             </div>
             <div class="info-row">
               <div class="info-label"><i class="bi bi-journal-bookmark-fill me-1"></i> Syllabus</div>
@@ -515,26 +487,26 @@ function toggleExamGroup(examTypeId) {
 }
 
 function expandAllGroups() {
-  for(let examType of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
-    if(!expandedExamGroups[examType.exam_type_id]) {
-      expandedExamGroups[examType.exam_type_id] = true;
-      const content = document.getElementById(`exam-group-content-${examType.exam_type_id}`);
-      const header = document.querySelector(`.exam-group[data-exam-id="${examType.exam_type_id}"] .exam-group-header`);
+  for(let et of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
+    if(!expandedExamGroups[et.exam_type_id]) {
+      expandedExamGroups[et.exam_type_id] = true;
+      const content = document.getElementById(`exam-group-content-${et.exam_type_id}`);
+      const header = document.querySelector(`.exam-group[data-exam-id="${et.exam_type_id}"] .exam-group-header`);
       if(content) {
         content.classList.remove('collapsed');
         header?.classList.remove('collapsed');
-        renderSubjectsForExam(examType.exam_type_id);
+        renderSubjectsForExam(et.exam_type_id);
       }
     }
   }
 }
 
 function collapseAllGroups() {
-  for(let examType of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
-    if(expandedExamGroups[examType.exam_type_id]) {
-      expandedExamGroups[examType.exam_type_id] = false;
-      const content = document.getElementById(`exam-group-content-${examType.exam_type_id}`);
-      const header = document.querySelector(`.exam-group[data-exam-id="${examType.exam_type_id}"] .exam-group-header`);
+  for(let et of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
+    if(expandedExamGroups[et.exam_type_id]) {
+      expandedExamGroups[et.exam_type_id] = false;
+      const content = document.getElementById(`exam-group-content-${et.exam_type_id}`);
+      const header = document.querySelector(`.exam-group[data-exam-id="${et.exam_type_id}"] .exam-group-header`);
       if(content) {
         content.classList.add('collapsed');
         header?.classList.add('collapsed');
