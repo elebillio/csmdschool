@@ -41,9 +41,68 @@
   .tab-btn { flex: 1; padding: 10px 0; border: none; border-radius: 40px; font-weight: 600; font-size: 0.75rem; background: transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
   .tab-btn.active { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
   
-  .expand-collapse-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
-  .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.2s; }
-  .expand-collapse-btn:hover { background: #e2e8f0; }
+  /* Group Toggle Bar */
+  .group-toggle-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 60px;
+    justify-content: space-between;
+  }
+  .group-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  .group-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 40px;
+    padding: 5px 16px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+  }
+  .group-btn.active {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-color: transparent;
+    color: white;
+  }
+  .group-btn i {
+    font-size: 0.8rem;
+  }
+  .expand-buttons {
+    display: flex;
+    gap: 6px;
+  }
+  .expand-collapse-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 40px;
+    padding: 5px 16px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    transition: all 0.2s;
+  }
+  .expand-collapse-btn:hover, .group-btn:hover {
+    background: #f1f5f9;
+  }
+  .group-btn.active:hover {
+    background: linear-gradient(135deg, #163a66, #1e4880);
+  }
   
   .exam-group { margin-bottom: 12px; border-radius: 16px; background: white; border: 1px solid #eef2f8; overflow: hidden; }
   .exam-group-header {
@@ -138,6 +197,7 @@ let allDateSheets = [];
 let allSyllabus = [];
 let expandedExamGroups = {};
 let cachedSubjects = {};
+let currentGroupBy = 'examtype'; // 'examtype' or 'subject'
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -175,6 +235,78 @@ function goBack() {
     }
   } else {
     window.location.href = 'index.html';
+  }
+}
+
+// ==================== GROUPING FUNCTIONS ====================
+function setGroupBy(type) {
+  currentGroupBy = type;
+  
+  const examTypeBtn = document.getElementById('groupByExamTypeBtn');
+  const subjectBtn = document.getElementById('groupBySubjectBtn');
+  
+  if (type === 'examtype') {
+    examTypeBtn.classList.add('active');
+    subjectBtn.classList.remove('active');
+  } else {
+    subjectBtn.classList.add('active');
+    examTypeBtn.classList.remove('active');
+  }
+  
+  renderExamGroups();
+}
+
+// Get groups based on selection
+function getGroups() {
+  if (currentGroupBy === 'examtype') {
+    // Group by Exam Type
+    const groups = {};
+    for(let et of allExamTypes) {
+      if(et.term_conditions_id === currentTab) {
+        groups[et.exam_type_id] = {
+          title: et.exam_type1,
+          start_date: et.exam_type_start_date,
+          end_date: et.exam_type_end_date,
+          items: []
+        };
+      }
+    }
+    return groups;
+  } else {
+    // Group by Subject
+    const groups = {};
+    for(let sub of allSubjects) {
+      const subName = sub.subject_books?.subject_books_name || sub.sub_name || 'Unknown';
+      groups[sub.sub_id] = {
+        title: subName,
+        start_date: null,
+        end_date: null,
+        items: []
+      };
+    }
+    return groups;
+  }
+}
+
+// Add content to groups
+function addToGroups(groups, examType, subject, dateSheet, syllabus) {
+  if (currentGroupBy === 'examtype') {
+    if (groups[examType.exam_type_id]) {
+      groups[examType.exam_type_id].items.push({
+        subject: subject,
+        dateSheet: dateSheet,
+        syllabus: syllabus
+      });
+    }
+  } else {
+    // Group by Subject
+    if (groups[subject.sub_id]) {
+      groups[subject.sub_id].items.push({
+        examType: examType,
+        dateSheet: dateSheet,
+        syllabus: syllabus
+      });
+    }
   }
 }
 
@@ -289,7 +421,27 @@ function renderSyllabusPage() {
           <button class="tab-btn ${currentTab === 2 ? 'active' : ''}" onclick="switchTab(2)">✈️ Vocation Work</button>
           <button class="tab-btn ${currentTab === 3 ? 'active' : ''}" onclick="switchTab(3)">📅 Annual Work</button>
         </div>
-        <div class="expand-collapse-bar" id="expandCollapseBar"></div>
+        
+        <!-- Group Toggle Bar -->
+        <div class="group-toggle-bar">
+          <div class="group-buttons">
+            <button class="group-btn active" id="groupByExamTypeBtn" onclick="setGroupBy('examtype')">
+              <i class="bi bi-grid-3x3-gap-fill"></i> Type
+            </button>
+            <button class="group-btn" id="groupBySubjectBtn" onclick="setGroupBy('subject')">
+              <i class="bi bi-book-fill"></i> Subject
+            </button>
+          </div>
+          <div class="expand-buttons">
+            <button class="expand-collapse-btn" onclick="expandAllGroups()">
+              <i class="bi bi-arrows-expand"></i> Expand All
+            </button>
+            <button class="expand-collapse-btn" onclick="collapseAllGroups()">
+              <i class="bi bi-arrows-collapse"></i> Collapse All
+            </button>
+          </div>
+        </div>
+        
         <div id="examGroupsContainer"></div>
       </div>
     </div>
@@ -302,133 +454,165 @@ async function renderExamGroups() {
   const container = document.getElementById('examGroupsContainer');
   if(!container) return;
   
-  let filtered = allExamTypes.filter(et => et.term_conditions_id === currentTab);
+  // Get filtered exam types
+  let filteredExamTypes = allExamTypes.filter(et => et.term_conditions_id === currentTab);
   
-  // ONLY CHANGE: Filter out exam types that have NO syllabus AND NO date sheet
-  const examTypesWithContent = [];
-  for(let et of filtered) {
-    let hasContent = false;
-    for(let sub of allSubjects) {
-      const hasSyllabus = allSyllabus.some(s => s.exam_type_id === et.exam_type_id && s.syllabus_sub_id === sub.sub_id);
-      const hasDateSheet = allDateSheets.some(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
-      if(hasSyllabus || hasDateSheet) {
-        hasContent = true;
-        break;
+  // Create groups based on selection
+  let groups = {};
+  
+  if (currentGroupBy === 'examtype') {
+    // Initialize groups by exam type
+    for(let et of filteredExamTypes) {
+      groups[et.exam_type_id] = {
+        id: et.exam_type_id,
+        title: et.exam_type1,
+        start_date: et.exam_type_start_date,
+        end_date: et.exam_type_end_date,
+        items: []
+      };
+    }
+    
+    // Add subjects to exam type groups
+    for(let et of filteredExamTypes) {
+      for(let sub of allSubjects) {
+        const dateSheet = allDateSheets.find(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
+        const syllabus = allSyllabus.find(sy => sy.exam_type_id === et.exam_type_id && sy.syllabus_sub_id === sub.sub_id);
+        
+        if (dateSheet || syllabus) {
+          groups[et.exam_type_id].items.push({
+            id: sub.sub_id,
+            name: sub.subject_books?.subject_books_name || sub.sub_name || 'Unknown',
+            dateSheet: dateSheet,
+            syllabus: syllabus,
+            marks: sub.sub_remarks || 0
+          });
+        }
       }
     }
-    if(hasContent) {
-      examTypesWithContent.push(et);
+  } else {
+    // Group by Subject
+    for(let sub of allSubjects) {
+      const subName = sub.subject_books?.subject_books_name || sub.sub_name || 'Unknown';
+      groups[sub.sub_id] = {
+        id: sub.sub_id,
+        title: subName,
+        start_date: null,
+        end_date: null,
+        items: []
+      };
+    }
+    
+    // Add exam types to subject groups
+    for(let sub of allSubjects) {
+      for(let et of filteredExamTypes) {
+        const dateSheet = allDateSheets.find(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
+        const syllabus = allSyllabus.find(sy => sy.exam_type_id === et.exam_type_id && sy.syllabus_sub_id === sub.sub_id);
+        
+        if (dateSheet || syllabus) {
+          groups[sub.sub_id].items.push({
+            id: et.exam_type_id,
+            name: et.exam_type1,
+            dateSheet: dateSheet,
+            syllabus: syllabus,
+            start_date: et.exam_type_start_date,
+            end_date: et.exam_type_end_date,
+            marks: sub.sub_remarks || 0
+          });
+        }
+      }
     }
   }
   
-  if(examTypesWithContent.length === 0) {
+  // Remove empty groups
+  const nonEmptyGroups = {};
+  for(let key in groups) {
+    if(groups[key].items.length > 0) {
+      nonEmptyGroups[key] = groups[key];
+    }
+  }
+  
+  const groupKeys = Object.keys(nonEmptyGroups);
+  if(groupKeys.length === 0) {
     let emptyMessage = '';
     if(currentTab === 1) emptyMessage = 'No Home Work syllabus or date sheet found';
     else if(currentTab === 2) emptyMessage = 'No Vocation Work syllabus or date sheet found';
     else emptyMessage = 'No Annual Work syllabus or date sheet found';
     container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">${emptyMessage}</p><small class="text-muted">Content will appear here once uploaded</small></div>`;
-    document.getElementById('expandCollapseBar').style.display = 'none';
     return;
   }
   
-  document.getElementById('expandCollapseBar').style.display = 'flex';
-  document.getElementById('expandCollapseBar').innerHTML = `
-    <button class="expand-collapse-btn" onclick="expandAllGroups()"><i class="bi bi-arrows-expand"></i> Expand All</button>
-    <button class="expand-collapse-btn" onclick="collapseAllGroups()"><i class="bi bi-arrows-collapse"></i> Collapse All</button>
-  `;
-  
   let html = '';
-  for(let et of examTypesWithContent) {
-    let isExpanded = expandedExamGroups[et.exam_type_id] === true;
+  for(let key of groupKeys) {
+    const group = nonEmptyGroups[key];
+    const isExpanded = expandedExamGroups[group.id] === true;
+    const totalItems = group.items.length;
     
-    const classSubjects = allSubjects.filter(s => s.sub_classroom_id === currentStudent.stu_class_room_id);
-    const totalSubjects = classSubjects.length;
-    
-    let dateSheetCount = 0;
-    for(let sub of classSubjects) {
-      const hasDateSheet = allDateSheets.some(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
-      if(hasDateSheet) dateSheetCount++;
+    let itemsWithSyllabus = 0;
+    let itemsWithDateSheet = 0;
+    for(let item of group.items) {
+      if(item.syllabus) itemsWithSyllabus++;
+      if(item.dateSheet) itemsWithDateSheet++;
     }
     
-    let syllabusCount = 0;
-    for(let sub of classSubjects) {
-      const hasSyllabus = allSyllabus.some(s => s.exam_type_id === et.exam_type_id && s.syllabus_sub_id === sub.sub_id);
-      if(hasSyllabus) syllabusCount++;
+    let dateDisplay = '';
+    if(group.start_date || group.end_date) {
+      dateDisplay = `<div class="small text-muted mt-1">${group.start_date || ''} ${group.end_date ? 'to ' + group.end_date : ''}</div>`;
     }
     
-    html += `<div class="exam-group" data-exam-id="${et.exam_type_id}">
-      <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${et.exam_type_id}')">
+    html += `<div class="exam-group" data-group-id="${group.id}">
+      <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${group.id}')">
         <div>
-          <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(et.exam_type1)}</div>
-          <div class="small text-muted mt-1">${et.exam_type_start_date || ''} ${et.exam_type_end_date ? 'to ' + et.exam_type_end_date : ''}</div>
+          <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(group.title)}</div>
+          ${dateDisplay}
         </div>
         <div class="text-end">
           <div>
-            <span class="badge-syllabus-count"><i class="bi bi-journal-bookmark-fill"></i> 📖 ${syllabusCount}/${totalSubjects}</span>
-            <span class="badge-datesheet-count"><i class="bi bi-calendar-check-fill"></i> 📅 ${dateSheetCount}/${totalSubjects}</span>
+            <span class="badge-syllabus-count"><i class="bi bi-journal-bookmark-fill"></i> 📖 ${itemsWithSyllabus}/${totalItems}</span>
+            <span class="badge-datesheet-count"><i class="bi bi-calendar-check-fill"></i> 📅 ${itemsWithDateSheet}/${totalItems}</span>
           </div>
           <i class="bi bi-chevron-down toggle-icon mt-1"></i>
         </div>
       </div>
-      <div class="exam-group-content ${isExpanded ? '' : 'collapsed'}" id="exam-group-content-${et.exam_type_id}">
-        <div id="subjectsContainer-${et.exam_type_id}" class="p-2"><div class="text-center py-3"><span class="loading-spinner"></span> Loading subjects...</div></div>
+      <div class="exam-group-content ${isExpanded ? '' : 'collapsed'}" id="exam-group-content-${group.id}">
+        <div id="subjectsContainer-${group.id}" class="p-2"><div class="text-center py-3"><span class="loading-spinner"></span> Loading content...</div></div>
       </div>
     </div>`;
   }
   container.innerHTML = html;
   
-  for(let et of examTypesWithContent) {
-    if(expandedExamGroups[et.exam_type_id] === true) {
-      await renderSubjectsForExam(et.exam_type_id);
+  for(let key of groupKeys) {
+    if(expandedExamGroups[nonEmptyGroups[key].id] === true) {
+      await renderGroupContent(nonEmptyGroups[key]);
     }
   }
 }
 
-async function renderSubjectsForExam(examTypeId) {
-  const container = document.getElementById(`subjectsContainer-${examTypeId}`);
+async function renderGroupContent(group) {
+  const container = document.getElementById(`subjectsContainer-${group.id}`);
   if(!container) return;
   
-  const cacheKey = `${examTypeId}_${currentStudent.stu_class_room_id}_${currentTab}`;
+  const cacheKey = `${currentGroupBy}_${group.id}_${currentTab}`;
   if (cachedSubjects[cacheKey]) {
     container.innerHTML = cachedSubjects[cacheKey];
     return;
   }
   
-  container.innerHTML = `<div class="text-center py-3"><span class="loading-spinner"></span> Loading subjects...</div>`;
+  container.innerHTML = `<div class="text-center py-3"><span class="loading-spinner"></span> Loading content...</div>`;
   
-  const classSubjects = allSubjects.filter(s => s.sub_classroom_id === currentStudent.stu_class_room_id);
+  let itemsHtml = '';
   
-  if(classSubjects.length === 0) {
-    container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>No subjects found for your class</p></div>';
-    return;
-  }
-  
-  let subjectsHtml = '';
-  
-  for(let sub of classSubjects) {
-    const dateSheet = allDateSheets.find(ds => ds.exam_date_sheet_exam_type_id === examTypeId && ds.exam_date_sheet_sub_id === sub.sub_id);
-    const hasDateSheet = dateSheet ? true : false;
-    const dateSheetDate = dateSheet ? dateSheet.exam_date_sheet_day : null;
-    
-    const syllabus = allSyllabus.find(sy => sy.exam_type_id === examTypeId && sy.syllabus_sub_id === sub.sub_id);
-    const hasSyllabus = syllabus ? true : false;
-    const syllabusText = syllabus ? syllabus.syllabus_text : null;
-    
-    let bookName = "Subject";
-    if (sub.sub_subject_book_id) {
-      const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", sub.sub_subject_book_id).single();
-      if(bookData) bookName = bookData.subject_books_name;
-    } else if (sub.sub_name) {
-      bookName = sub.sub_name;
-    }
-    
-    const marks = sub.sub_remarks || 0;
+  for(let item of group.items) {
+    const hasSyllabus = item.syllabus ? true : false;
+    const syllabusText = item.syllabus ? item.syllabus.syllabus_text : null;
+    const hasDateSheet = item.dateSheet ? true : false;
+    const dateSheetDate = item.dateSheet ? item.dateSheet.exam_date_sheet_day : null;
+    const marks = item.marks || 0;
     const marksDisplay = marks > 0 ? `⭐ ${marks} Marks` : '';
     const syllabusPreview = hasSyllabus && syllabusText ? syllabusText.substring(0, 100) : '';
     
-    subjectsHtml += `<div class="subject-item" onclick='showSubjectDetail("${escapeHtml(bookName)}", ${hasSyllabus ? JSON.stringify(escapeHtml(syllabusText || '')) : '""'}, "${dateSheetDate || ''}", ${marks})'>
+    itemsHtml += `<div class="subject-item" onclick='showSubjectDetail("${escapeHtml(item.name)}", ${hasSyllabus ? JSON.stringify(escapeHtml(syllabusText || '')) : '""'}, "${dateSheetDate || ''}", ${marks})'>
       <div class="subject-name">
-        <span>📖 ${escapeHtml(bookName)}</span>
+        <span>📖 ${escapeHtml(item.name)}</span>
         ${marksDisplay ? `<span class="badge-marks">${marksDisplay}</span>` : ''}
       </div>
       <div class="subject-badges">
@@ -448,12 +632,8 @@ async function renderSubjectsForExam(examTypeId) {
     </div>`;
   }
   
-  if(subjectsHtml === '') {
-    subjectsHtml = '<div class="empty-state"><i class="bi bi-inbox"></i><p>No subjects found</p></div>';
-  }
-  
-  cachedSubjects[cacheKey] = subjectsHtml;
-  container.innerHTML = subjectsHtml;
+  cachedSubjects[cacheKey] = itemsHtml;
+  container.innerHTML = itemsHtml;
 }
 
 function showSubjectDetail(subjectName, syllabusText, dateSheetDate, marks) {
@@ -500,15 +680,21 @@ function showSubjectDetail(subjectName, syllabusText, dateSheetDate, marks) {
   new bootstrap.Modal(document.getElementById('subjectModal')).show();
 }
 
-function toggleExamGroup(examTypeId) {
-  expandedExamGroups[examTypeId] = !expandedExamGroups[examTypeId];
-  const content = document.getElementById(`exam-group-content-${examTypeId}`);
-  const header = document.querySelector(`.exam-group[data-exam-id="${examTypeId}"] .exam-group-header`);
+function toggleExamGroup(groupId) {
+  expandedExamGroups[groupId] = !expandedExamGroups[groupId];
+  const content = document.getElementById(`exam-group-content-${groupId}`);
+  const header = document.querySelector(`.exam-group[data-group-id="${groupId}"] .exam-group-header`);
   if(content) {
-    if(expandedExamGroups[examTypeId]) {
+    if(expandedExamGroups[groupId]) {
       content.classList.remove('collapsed');
       header?.classList.remove('collapsed');
-      renderSubjectsForExam(examTypeId);
+      // Find and render the group content
+      for(let key in groups) {
+        if(groups[key].id == groupId) {
+          renderGroupContent(groups[key]);
+          break;
+        }
+      }
     } else {
       content.classList.add('collapsed');
       header?.classList.add('collapsed');
@@ -516,31 +702,166 @@ function toggleExamGroup(examTypeId) {
   }
 }
 
+let groups = {};
+
 function expandAllGroups() {
-  for(let examType of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
-    if(!expandedExamGroups[examType.exam_type_id]) {
-      expandedExamGroups[examType.exam_type_id] = true;
-      const content = document.getElementById(`exam-group-content-${examType.exam_type_id}`);
-      const header = document.querySelector(`.exam-group[data-exam-id="${examType.exam_type_id}"] .exam-group-header`);
+  for(let key in groups) {
+    if(!expandedExamGroups[groups[key].id]) {
+      expandedExamGroups[groups[key].id] = true;
+      const content = document.getElementById(`exam-group-content-${groups[key].id}`);
+      const header = document.querySelector(`.exam-group[data-group-id="${groups[key].id}"] .exam-group-header`);
       if(content) {
         content.classList.remove('collapsed');
         header?.classList.remove('collapsed');
-        renderSubjectsForExam(examType.exam_type_id);
+        renderGroupContent(groups[key]);
       }
     }
   }
 }
 
 function collapseAllGroups() {
-  for(let examType of allExamTypes.filter(et => et.term_conditions_id === currentTab)) {
-    if(expandedExamGroups[examType.exam_type_id]) {
-      expandedExamGroups[examType.exam_type_id] = false;
-      const content = document.getElementById(`exam-group-content-${examType.exam_type_id}`);
-      const header = document.querySelector(`.exam-group[data-exam-id="${examType.exam_type_id}"] .exam-group-header`);
+  for(let key in groups) {
+    if(expandedExamGroups[groups[key].id]) {
+      expandedExamGroups[groups[key].id] = false;
+      const content = document.getElementById(`exam-group-content-${groups[key].id}`);
+      const header = document.querySelector(`.exam-group[data-group-id="${groups[key].id}"] .exam-group-header`);
       if(content) {
         content.classList.add('collapsed');
         header?.classList.add('collapsed');
       }
+    }
+  }
+}
+
+// Update renderExamGroups to store groups reference
+async function renderExamGroups() {
+  const container = document.getElementById('examGroupsContainer');
+  if(!container) return;
+  
+  let filteredExamTypes = allExamTypes.filter(et => et.term_conditions_id === currentTab);
+  
+  groups = {};
+  
+  if (currentGroupBy === 'examtype') {
+    for(let et of filteredExamTypes) {
+      groups[et.exam_type_id] = {
+        id: et.exam_type_id,
+        title: et.exam_type1,
+        start_date: et.exam_type_start_date,
+        end_date: et.exam_type_end_date,
+        items: []
+      };
+    }
+    
+    for(let et of filteredExamTypes) {
+      for(let sub of allSubjects) {
+        const dateSheet = allDateSheets.find(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
+        const syllabus = allSyllabus.find(sy => sy.exam_type_id === et.exam_type_id && sy.syllabus_sub_id === sub.sub_id);
+        
+        if (dateSheet || syllabus) {
+          groups[et.exam_type_id].items.push({
+            id: sub.sub_id,
+            name: sub.subject_books?.subject_books_name || sub.sub_name || 'Unknown',
+            dateSheet: dateSheet,
+            syllabus: syllabus,
+            marks: sub.sub_remarks || 0
+          });
+        }
+      }
+    }
+  } else {
+    for(let sub of allSubjects) {
+      const subName = sub.subject_books?.subject_books_name || sub.sub_name || 'Unknown';
+      groups[sub.sub_id] = {
+        id: sub.sub_id,
+        title: subName,
+        start_date: null,
+        end_date: null,
+        items: []
+      };
+    }
+    
+    for(let sub of allSubjects) {
+      for(let et of filteredExamTypes) {
+        const dateSheet = allDateSheets.find(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id && ds.exam_date_sheet_sub_id === sub.sub_id);
+        const syllabus = allSyllabus.find(sy => sy.exam_type_id === et.exam_type_id && sy.syllabus_sub_id === sub.sub_id);
+        
+        if (dateSheet || syllabus) {
+          groups[sub.sub_id].items.push({
+            id: et.exam_type_id,
+            name: et.exam_type1,
+            dateSheet: dateSheet,
+            syllabus: syllabus,
+            start_date: et.exam_type_start_date,
+            end_date: et.exam_type_end_date,
+            marks: sub.sub_remarks || 0
+          });
+        }
+      }
+    }
+  }
+  
+  const nonEmptyGroups = {};
+  for(let key in groups) {
+    if(groups[key].items.length > 0) {
+      nonEmptyGroups[key] = groups[key];
+    }
+  }
+  
+  groups = nonEmptyGroups;
+  
+  const groupKeys = Object.keys(groups);
+  if(groupKeys.length === 0) {
+    let emptyMessage = '';
+    if(currentTab === 1) emptyMessage = 'No Home Work syllabus or date sheet found';
+    else if(currentTab === 2) emptyMessage = 'No Vocation Work syllabus or date sheet found';
+    else emptyMessage = 'No Annual Work syllabus or date sheet found';
+    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">${emptyMessage}</p><small class="text-muted">Content will appear here once uploaded</small></div>`;
+    return;
+  }
+  
+  let html = '';
+  for(let key of groupKeys) {
+    const group = groups[key];
+    const isExpanded = expandedExamGroups[group.id] === true;
+    const totalItems = group.items.length;
+    
+    let itemsWithSyllabus = 0;
+    let itemsWithDateSheet = 0;
+    for(let item of group.items) {
+      if(item.syllabus) itemsWithSyllabus++;
+      if(item.dateSheet) itemsWithDateSheet++;
+    }
+    
+    let dateDisplay = '';
+    if(group.start_date || group.end_date) {
+      dateDisplay = `<div class="small text-muted mt-1">${group.start_date || ''} ${group.end_date ? 'to ' + group.end_date : ''}</div>`;
+    }
+    
+    html += `<div class="exam-group" data-group-id="${group.id}">
+      <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${group.id}')">
+        <div>
+          <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(group.title)}</div>
+          ${dateDisplay}
+        </div>
+        <div class="text-end">
+          <div>
+            <span class="badge-syllabus-count"><i class="bi bi-journal-bookmark-fill"></i> 📖 ${itemsWithSyllabus}/${totalItems}</span>
+            <span class="badge-datesheet-count"><i class="bi bi-calendar-check-fill"></i> 📅 ${itemsWithDateSheet}/${totalItems}</span>
+          </div>
+          <i class="bi bi-chevron-down toggle-icon mt-1"></i>
+        </div>
+      </div>
+      <div class="exam-group-content ${isExpanded ? '' : 'collapsed'}" id="exam-group-content-${group.id}">
+        <div id="subjectsContainer-${group.id}" class="p-2"><div class="text-center py-3"><span class="loading-spinner"></span> Loading content...</div></div>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+  
+  for(let key of groupKeys) {
+    if(expandedExamGroups[groups[key].id] === true) {
+      await renderGroupContent(groups[key]);
     }
   }
 }
@@ -572,6 +893,7 @@ window.toggleExamGroup = toggleExamGroup;
 window.expandAllGroups = expandAllGroups;
 window.collapseAllGroups = collapseAllGroups;
 window.showSubjectDetail = showSubjectDetail;
+window.setGroupBy = setGroupBy;
 </script>
 </body>
 </html>
