@@ -15,59 +15,38 @@
   body { background: #f0f4f8; padding: 0; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; padding: 16px; }
   
-  .card-custom {
-    background: white;
-    border-radius: 28px;
-    overflow: hidden;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  /* Detail Header Style */
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 20px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+    border-radius: 28px 28px 0 0;
   }
-  .card-header-custom {
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    padding: 16px 20px;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .back-btn {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    border-radius: 30px;
-    padding: 5px 12px;
-    color: white;
-    font-size: 0.7rem;
-    cursor: pointer;
-  }
-  
-  .history-item {
-    padding: 12px 16px;
-    border-bottom: 1px solid #eef2f8;
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
     transition: background 0.2s;
   }
-  .history-item:hover { background: #f8fafc; }
-  .student-name {
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #1e293b;
-  }
-  .student-details {
-    font-size: 0.65rem;
-    color: #64748b;
-  }
-  .login-time {
-    font-size: 0.7rem;
-    color: #10b981;
-    font-weight: 500;
-  }
-  .device-badge {
-    background: #f1f5f9;
-    padding: 2px 8px;
-    border-radius: 30px;
-    font-size: 0.6rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .card-custom {
+    background: white;
+    border-radius: 0 0 28px 28px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04);
   }
   
   .filter-bar {
@@ -116,11 +95,58 @@
     color: #64748b;
   }
   
+  .history-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #eef2f8;
+    transition: background 0.2s;
+  }
+  .history-item:hover { background: #f8fafc; }
+  .student-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e293b;
+  }
+  .student-details {
+    font-size: 0.65rem;
+    color: #64748b;
+  }
+  .login-time {
+    font-size: 0.7rem;
+    color: #10b981;
+    font-weight: 500;
+  }
+  .device-badge {
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 30px;
+    font-size: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
   .empty-state {
     text-align: center;
     padding: 40px 20px;
     color: #94a3b8;
   }
+  
+  .toast-custom {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast-custom.show { opacity: 1; }
   
   @media (max-width: 550px) {
     .filter-bar { flex-direction: column; }
@@ -131,6 +157,7 @@
 <body>
 
 <div class="app-container" id="appContainer"></div>
+<div id="toastMsg" class="toast-custom"></div>
 
 <script>
 const SUPABASE_URL = "https://tqcfcztyvmedmuhohpps.supabase.co";
@@ -145,6 +172,13 @@ let dateFilter = "";
 // Pakistan timezone offset (UTC+5)
 const PAKISTAN_TZ = 'Asia/Karachi';
 
+function showToast(message) {
+  const toast = document.getElementById('toastMsg');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
 function escapeHtml(str) {
   if (!str) return '';
   return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
@@ -155,7 +189,7 @@ function convertToPakistanTime(utcDateStr) {
   if (!utcDateStr) return null;
   try {
     const utcDate = new Date(utcDateStr);
-    // Pakistan is UTC+5 (no daylight saving in this context)
+    // Pakistan is UTC+5
     const pakistanTime = new Date(utcDate.getTime() + (5 * 60 * 60 * 1000));
     return pakistanTime;
   } catch(e) {
@@ -168,7 +202,6 @@ function formatDateTime(dateStr) {
   if (!dateStr) return '—';
   try {
     const pakTime = convertToPakistanTime(dateStr);
-    // Format: 31 May 2025, 01:49 AM
     return pakTime.toLocaleString('en-PK', { 
       day: '2-digit', 
       month: 'short', 
@@ -186,7 +219,6 @@ function formatDateOnly(dateStr) {
   if (!dateStr) return '—';
   try {
     const pakTime = convertToPakistanTime(dateStr);
-    // Format: 2025-05-31
     return pakTime.toISOString().split('T')[0];
   } catch(e) { 
     return dateStr; 
@@ -197,38 +229,10 @@ function formatDateForDisplay(dateStr) {
   if (!dateStr) return '—';
   try {
     const pakTime = convertToPakistanTime(dateStr);
-    // Format: 31 May 2025
     return pakTime.toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch(e) { 
     return dateStr; 
   }
-}
-
-function showToast(message) {
-  let toast = document.getElementById('customToast');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'customToast';
-    toast.style.cssText = `
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      z-index: 9999;
-      opacity: 0;
-      transition: opacity 0.3s;
-      pointer-events: none;
-    `;
-    document.body.appendChild(toast);
-  }
-  toast.textContent = message;
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 2000);
 }
 
 function goBack() {
@@ -343,17 +347,19 @@ function renderPage() {
   
   let dateOptions = '<option value="">All Dates (PKT)</option>';
   for (const date of uniqueDates) {
-    // Format date for display: 31 May 2025
     const displayDate = new Date(date + 'T12:00:00').toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' });
     dateOptions += `<option value="${date}">${displayDate}</option>`;
   }
   
   const html = `
+    <!-- Header with Back Button -->
+    <div class="detail-header">
+      <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+      <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Login History (Pakistan Time)</h5>
+      <div style="width: 70px;"></div>
+    </div>
+    
     <div class="card-custom">
-      <div class="card-header-custom">
-        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Login History (Pakistan Time)</h5>
-        <div style="width: 60px;"></div>
-      </div>
       <div class="filter-bar">
         <input type="text" id="searchInput" class="filter-input" placeholder="🔍 Search by name or admission..." onkeyup="searchHistory()">
         <select id="dateSelect" class="filter-input date-filter" onchange="filterByDate()">

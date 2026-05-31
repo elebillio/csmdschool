@@ -15,7 +15,33 @@
     body { background: #f1f5f9; padding: 0; margin: 0; }
     .app-container { max-width: 550px; margin: 0 auto; padding: 12px; padding-bottom: 80px; }
 
-    .list-card { background: white; border-radius: 24px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 16px; }
+    /* Detail Header Style */
+    .detail-header { 
+      background: linear-gradient(135deg, #1e3c72, #2a5298); 
+      padding: 20px 16px; 
+      color: white; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      flex-wrap: wrap; 
+      border-radius: 28px 28px 0 0;
+    }
+    .back-btn { 
+      background: rgba(255,255,255,0.2); 
+      border: none; 
+      border-radius: 30px; 
+      padding: 6px 14px; 
+      color: white; 
+      font-size: 0.75rem; 
+      cursor: pointer; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 5px;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .list-card { background: white; border-radius: 0 0 28px 28px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 16px; }
 
     .tabs-container { display: flex; gap: 5px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 50px; }
     .tab-btn { flex: 1; padding: 10px 0; border: none; border-radius: 40px; font-weight: 600; font-size: 0.75rem; background: transparent; color: #64748b; transition: all 0.2s; cursor: pointer; }
@@ -132,6 +158,13 @@
 
 <div id="mainView">
   <div class="app-container">
+    <!-- Header with Back Button -->
+    <div class="detail-header">
+      <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+      <h5 class="mb-0">📚 Syllabus & Date Sheet</h5>
+      <div style="width: 70px;"></div>
+    </div>
+
     <div class="list-card">
       <button class="add-exam-btn" onclick="openAddExamModal()"><i class="bi bi-plus-circle me-1"></i> Add New Exam Type</button>
 
@@ -334,6 +367,18 @@
     toast.textContent = message;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  function goBack() {
+    if (window.parent && window.parent !== window) {
+      if (typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+      } else {
+        window.parent.location.href = 'index.html';
+      }
+    } else {
+      window.location.href = 'index.html';
+    }
   }
 
   function clearCache() {
@@ -732,7 +777,6 @@
       if(syllabusCount === 0) { waBtn.classList.add('disabled'); waBtn.setAttribute('disabled', 'disabled'); }
       else { waBtn.classList.remove('disabled'); waBtn.removeAttribute('disabled'); }
     }
-    // Update cache
     cachedClassStats[`${examTypeId}_${classId}`] = { syllabusCount, totalSubjects: subjects.length };
   }
 
@@ -782,7 +826,6 @@
       return;
     }
 
-    // Check cache for class stats
     let classStats = {};
     let needFetch = [];
 
@@ -795,7 +838,6 @@
       }
     }
 
-    // Fetch only uncached data in parallel
     if (needFetch.length > 0) {
       let batchPromises = [];
       for(let cls of needFetch) {
@@ -836,7 +878,6 @@
 
     container.innerHTML = html;
 
-    // Load only expanded groups' subjects
     for(let cls of allClasses) {
       if(expandedClassGroups[`${examTypeId}_${cls.class_room_id}`] === true) {
         await loadSubjectsForClassGroup(examTypeId, cls.class_room_id);
@@ -844,7 +885,6 @@
     }
   }
 
-  // FIXED: Using data attributes instead of inline onclick to prevent PSU error
   async function loadSubjectsForClassGroup(examTypeId, classId) {
     const subjectsContainer = document.getElementById(`subjectsList-${examTypeId}-${classId}`);
     if(!subjectsContainer) return;
@@ -878,7 +918,6 @@
       let dateDisplay = hasDateSheet ? sub.dateSheetDate : '';
       let marksDisplay = sub.marks && sub.marks > 0 ? `⭐ ${sub.marks} Marks` : '';
 
-      // Use data attributes instead of inline onclick to avoid parsing issues with hyphens in IDs
       html += `<div class="subject-item" 
         data-exam-type-id="${examTypeId}" 
         data-subject-id="${sub.sub_id}" 
@@ -909,28 +948,21 @@
 
     cachedSubjects[cacheKey] = html;
     subjectsContainer.innerHTML = html;
-    
-    // Attach click handlers to all subject items
     attachSubjectClickHandlers(subjectsContainer);
   }
 
-  // Attach event listeners to subject items
   function attachSubjectClickHandlers(container) {
     const subjectItems = container.querySelectorAll('.subject-item');
     subjectItems.forEach(item => {
-      // Remove any existing listener to avoid duplicates
       item.removeEventListener('click', subjectClickHandler);
       item.addEventListener('click', subjectClickHandler);
     });
   }
 
-  // Event handler for subject clicks
   function subjectClickHandler(event) {
-    // Don't trigger if clicking on buttons inside the subject item
     if(event.target.closest('.edit-exam-btn') || event.target.closest('.delete-exam-btn')) {
       return;
     }
-    
     const item = event.currentTarget;
     const examTypeId = item.dataset.examTypeId;
     const subjectId = item.dataset.subjectId;
@@ -1164,7 +1196,6 @@
     }
 
     clearCache();
-    // Clear the specific subject cache for this exam type and class
     delete cachedSubjects[`${examTypeId}_${classId}`];
     
     alert("Syllabus, Date Sheet & Marks Saved Successfully!");

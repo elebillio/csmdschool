@@ -15,20 +15,33 @@
   body { background: #f1f5f9; padding: 0; margin: 0; }
   .app-container { max-width: 100%; padding: 12px; padding-bottom: 80px; }
   
-  .header { 
+  /* Detail Header Style */
+  .detail-header { 
     background: linear-gradient(135deg, #1e3c72, #2a5298); 
-    color: white; 
     padding: 20px 16px; 
-    border-radius: 0 0 28px 28px; 
-    margin-bottom: 16px; 
-    margin-left: -12px;
-    margin-right: -12px;
-    width: calc(100% + 24px);
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+    border-radius: 28px 28px 0 0;
   }
-  .header h2 { margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
-  .header p { margin: 5px 0 0; opacity: 0.8; font-size: 0.7rem; }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
   
-  .list-card { background: white; border-radius: 24px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; }
+  .list-card { background: white; border-radius: 0 0 28px 28px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 16px; }
   .search-box { background: #f8fafc; border-radius: 40px; padding: 8px 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
   .search-box input { border: none; background: transparent; flex: 1; outline: none; font-size: 0.85rem; }
   
@@ -76,8 +89,7 @@
   .student-meta { font-size: 0.65rem; color: #475569; }
   
   /* Detail Card */
-  .detail-card { background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-  .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px 16px; color: white; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .detail-card { background: white; border-radius: 28px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
   .detail-avatar-lg { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid white; background: #e2e8f0; }
   .info-grid { padding: 16px; background: #ffffff; }
   .info-row { display: flex; padding: 10px 0; border-bottom: 1px solid #eef2f8; align-items: flex-start; gap: 12px; }
@@ -121,22 +133,43 @@
   .fab-add:active { transform: scale(0.92); }
   .desktop-add-btn { display: none; }
   
+  .toast-custom {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast-custom.show { opacity: 1; }
+  
   @media (min-width: 640px) {
     .fab-add { display: none; }
     .desktop-add-btn { display: block; }
     .app-container { max-width: 550px; margin: 0 auto; padding: 16px; }
-    .header { margin-left: 0; margin-right: 0; width: 100%; }
   }
 </style>
 </head>
 <body>
 
 <div class="app-container">
- 
+  <!-- Header with Back Button -->
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+    <h5 class="mb-0">👥 Student Management</h5>
+    <div style="width: 70px;"></div>
+  </div>
   
   <div class="list-card">
     <div class="d-flex justify-content-between align-items-center mb-3">
-     <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+      <div></div>
       <h5 class="fw-bold mb-0" style="font-size: 1rem;"><i class="bi bi-people-fill me-2 text-primary"></i>Student Directory</h5>
       <button class="btn btn-primary rounded-pill btn-sm desktop-add-btn" id="addStudentBtnDesktop"><i class="bi bi-plus-lg"></i> Add</button>
     </div>
@@ -249,6 +282,8 @@
   </div>
 </div>
 
+<div id="toastMsg" class="toast-custom"></div>
+
 <script>
 const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
 const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
@@ -258,6 +293,25 @@ let allStudents = [], allClassrooms = [], allSessions = [], allStatuses = [];
 let currentStudent = null;
 let groupStates = {};
 let groupViewEnabled = true;
+
+function showToast(message) {
+  const toast = document.getElementById('toastMsg');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
+}
 
 function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); }
 
@@ -572,7 +626,7 @@ async function saveStudent() {
         } 
     }
     
-    if (!data.stu_name || !data.stu_admission_no) { alert("Name and Admission No required!"); return; }
+    if (!data.stu_name || !data.stu_admission_no) { showToast("Name and Admission No required!"); return; }
     
     let result; 
     if (stu_id) {
@@ -581,8 +635,8 @@ async function saveStudent() {
         result = await supabase1.from("students").insert([data]);
     }
     
-    if (result.error) { alert("Error: " + result.error.message); return; }
-    alert(stu_id ? "Student Updated!" : "Student Added!");
+    if (result.error) { showToast("Error: " + result.error.message); return; }
+    showToast(stu_id ? "Student Updated!" : "Student Added!");
     bootstrap.Modal.getInstance(document.getElementById("studentModal")).hide();
     await loadStudents();
     backToStudentList();
@@ -605,8 +659,8 @@ async function deleteCurrentStudent() {
     if (!currentStudent) return;
     if (!confirm(`Delete ${currentStudent.stu_name}?`)) return;
     const { error } = await supabase1.from("students").delete().eq("stu_id", currentStudent.stu_id);
-    if (error) { alert(error.message); return; }
-    alert("Student Deleted!");
+    if (error) { showToast(error.message); return; }
+    showToast("Student Deleted!");
     await loadStudents();
     backToStudentList();
 }
@@ -635,6 +689,7 @@ document.getElementById('editStudentBtn')?.addEventListener('click', editCurrent
 document.getElementById('deleteStudentBtn')?.addEventListener('click', deleteCurrentStudent);
 
 window.toggleGroup = toggleGroup;
+window.goBack = goBack;
 
 init();
 </script>

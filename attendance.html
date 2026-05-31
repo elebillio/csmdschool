@@ -15,7 +15,33 @@
   body { background: #f1f5f9; padding: 16px; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; }
   
-  .list-card { background: white; border-radius: 28px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
+  /* Detail Header Style */
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 20px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+    border-radius: 28px 28px 0 0;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .list-card { background: white; border-radius: 0 0 28px 28px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
   .search-box { background: #f8fafc; border-radius: 48px; padding: 6px 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
   .search-box input { border: none; background: transparent; flex: 1; outline: none; font-size: 0.8rem; }
   
@@ -96,11 +122,35 @@
   .report-filter-btn { padding: 6px 16px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; border: none; background: #e2e8f0; color: #475569; transition: 0.2s; }
   .report-filter-btn.active { background: #1e3c72; color: white; }
   .month-nav { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+  
+  .toast-custom {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.8rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast-custom.show { opacity: 1; }
 </style>
 </head>
 <body>
 
 <div class="app-container">
+  <!-- Header with Back Button -->
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+    <h5 class="mb-0">📅 Attendance Management</h5>
+    <div style="width: 70px;"></div>
+  </div>
+  
   <!-- Attendance Main Card -->
   <div class="list-card">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -211,6 +261,8 @@
   </div>
 </div>
 
+<div id="toastMsg" class="toast-custom"></div>
+
 <script>
 // ==================== SUPABASE CONFIG ====================
 const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
@@ -226,6 +278,25 @@ let currentAttendanceDate = new Date();
 let selectedClassroomId = null;
 let groupViewEnabled = true;
 let groupStates = {};
+
+function showToast(message) {
+  const toast = document.getElementById('toastMsg');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
+}
 
 // Status Configuration
 const statusConfig = { 
@@ -281,7 +352,6 @@ async function getNextAttendanceId() {
         
         const nextNumber = maxNumber + 1;
         const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
-        console.log("Generated new ID:", newId);
         return newId;
         
     } catch (err) {
@@ -515,7 +585,6 @@ async function saveAttendance() {
                 const result = await supabase1.from("students_attendence").update({ stu_attendence_att_status_id: record.stu_attendence_att_status_id }).eq("stu_attendence_id", existing.stu_attendence_id); 
                 if (!result.error) successCount++; else failCount++; 
             } else { 
-                // Use AAT-XXXXXX format for new records
                 const newId = await getNextAttendanceId();
                 const result = await supabase1.from("students_attendence").insert([{ stu_attendence_id: newId, stu_id: record.stu_id, stu_attendence_att_status_id: record.stu_attendence_att_status_id, stu_attendence_date: dateStr, session_id: 1 }]); 
                 if (!result.error) successCount++; else failCount++; 
@@ -530,7 +599,7 @@ async function saveAttendance() {
     
     progressBar.style.width = '100%';
     progressText.innerText = `✅ Saved ${successCount} records!`;
-    alert(`Save complete!\nSuccess: ${successCount}\nFailed: ${failCount}`);
+    showToast(`Saved ${successCount} records!`);
     
     saveBtn.disabled = false;
     saveBtn.innerHTML = '<i class="bi bi-save"></i> Save Attendance (Current Class)';
@@ -731,6 +800,7 @@ window.updateAttendanceStatus = updateAttendanceStatus;
 window.markGroupAll = markGroupAll;
 window.toggleGroupCollapse = toggleGroupCollapse;
 window.openReportModal = openReportModal;
+window.goBack = goBack;
 
 // Start the application
 init();

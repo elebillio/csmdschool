@@ -13,9 +13,43 @@
 
 <style>
   * { font-family: system-ui, sans-serif; }
-  body { background: #f1f5f9; padding: 12px; margin: 0; }
-  .app-container { max-width: 650px; margin: 0 auto; }
-  .card-custom { background: white; border-radius: 24px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  body { background: #f1f5f9; padding: 0; margin: 0; }
+  .app-container { max-width: 650px; margin: 0 auto; padding: 12px; }
+  
+ /* Detail Header Style */
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 20px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+    border-radius: 28px 28px 0 0;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+
+  
+  .card-custom { 
+    background: white; 
+    border-radius: 0 0 28px 28px; 
+    padding: 20px; 
+    margin-bottom: 16px; 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04); 
+  }
   .form-label-custom { font-size: 0.75rem; font-weight: 700; color: #1e3c72; margin-bottom: 5px; display: block; }
   .form-select-custom { border-radius: 40px; padding: 12px 16px; font-size: 0.85rem; border: 1px solid #e2e8f0; background: #f8fafc; width: 100%; }
   .tabs-container { display: flex; gap: 8px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 50px; }
@@ -24,80 +58,57 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
   
- /* Expand Collapse Bar with Group Buttons */
-.expand-collapse-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 10px;
-  background: #f8fafc;
-  padding: 8px 12px;
-  border-radius: 60px;
-}
-
-.group-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.group-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 40px;
-  padding: 5px 16px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  /* Same height as expand buttons */
-  height: 32px;
-}
-
-.group-btn.active {
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  border-color: transparent;
-  color: white;
-}
-
-.group-btn i {
-  font-size: 0.8rem;
-}
-
-.expand-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.expand-collapse-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 40px;
-  padding: 5px 16px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #475569;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-  /* Same height as group buttons */
-  height: 32px;
-}
-
-.expand-collapse-btn:hover, .group-btn:hover {
-  background: #f1f5f9;
-}
-
-.group-btn.active:hover {
-  background: linear-gradient(135deg, #163a66, #1e4880);
-}
+  .expand-collapse-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 60px;
+  }
+  .group-buttons { display: flex; gap: 8px; }
+  .group-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 40px;
+    padding: 5px 16px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+  }
+  .group-btn.active {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-color: transparent;
+    color: white;
+  }
+  .group-btn i { font-size: 0.8rem; }
+  .expand-buttons { display: flex; gap: 6px; }
+  .expand-collapse-btn {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 40px;
+    padding: 5px 16px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    height: 32px;
+  }
+  .expand-collapse-btn:hover, .group-btn:hover { background: #f1f5f9; }
+  .group-btn.active:hover { background: linear-gradient(135deg, #163a66, #1e4880); }
   
   .group-header {
     background: #eef2ff;
@@ -146,14 +157,8 @@
     align-items: center;
     justify-content: center; color: white; font-weight: bold;
   }
-  .student-img {
-    width: 40px; height: 40px; border-radius: 50%;
-    object-fit: cover;
-  }
-  .marks-input {
-    width: 80px; padding: 6px 10px; border-radius: 20px;
-    border: 1px solid #e2e8f0; text-align: center;
-  }
+  .student-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+  .marks-input { width: 80px; padding: 6px 10px; border-radius: 20px; border: 1px solid #e2e8f0; text-align: center; }
   
   .class-header {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
@@ -240,31 +245,12 @@
     object-fit: cover;
     flex-shrink: 0;
   }
-  .student-result-info {
-    flex: 1;
-  }
-  .student-result-name {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #0f172a;
-  }
-  .student-result-details {
-    font-size: 0.65rem;
-    color: #64748b;
-    margin-top: 2px;
-  }
-  .student-result-marks {
-    text-align: right;
-  }
-  .marks-obtained {
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #1e3c72;
-  }
-  .marks-percentage {
-    font-size: 0.65rem;
-    color: #64748b;
-  }
+  .student-result-info { flex: 1; }
+  .student-result-name { font-weight: 700; font-size: 0.95rem; color: #0f172a; }
+  .student-result-details { font-size: 0.65rem; color: #64748b; margin-top: 2px; }
+  .student-result-marks { text-align: right; }
+  .marks-obtained { font-weight: 700; font-size: 0.9rem; color: #1e3c72; }
+  .marks-percentage { font-size: 0.65rem; color: #64748b; }
   .not-entered { color: #94a3b8; font-size: 0.7rem; }
   
   .detail-card {
@@ -284,9 +270,7 @@
     align-items: center;
   }
   .student-detail-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
+    width: 70px; height: 70px; border-radius: 50%;
     background: linear-gradient(135deg, #667eea, #764ba2);
     display: flex;
     align-items: center;
@@ -297,31 +281,15 @@
     flex-shrink: 0;
   }
   .student-detail-img {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
+    width: 70px; height: 70px; border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
     border: 3px solid white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
-  .student-detail-info {
-    flex: 1;
-  }
-  .student-detail-name {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #1e3c72;
-    margin-bottom: 8px;
-  }
-  .student-detail-meta {
-    font-size: 0.75rem;
-    color: #475569;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+  .student-detail-info { flex: 1; }
+  .student-detail-name { font-size: 1.2rem; font-weight: 700; color: #1e3c72; margin-bottom: 8px; }
+  .student-detail-meta { font-size: 0.75rem; color: #475569; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
   .class-highlight {
     background: #1e3c72;
     color: white;
@@ -338,14 +306,8 @@
     padding: 12px 20px;
     border-bottom: 1px solid #eef2f8;
   }
-  .subject-name {
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #1e293b;
-  }
-  .subject-marks {
-    font-size: 0.85rem;
-  }
+  .subject-name { font-weight: 600; font-size: 0.85rem; color: #1e293b; }
+  .subject-marks { font-size: 0.85rem; }
   .subject-grade {
     font-size: 0.7rem;
     padding: 2px 10px;
@@ -454,7 +416,7 @@
   .progress-text { font-size: 0.7rem; font-weight: 500; margin-top: 8px; text-align: center; color: #475569; }
   
   .fixed-back-btn { position: sticky; top: 0; z-index: 100; padding: 8px 0 4px 0; margin-top: -8px; margin-bottom: 8px; background: transparent; }
-  .back-btn { background: transparent; border: none; padding: 6px 0; font-size: 0.85rem; font-weight: 600; color: #1e3c72; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+ 
   
   .class-filter-row {
     background: white;
@@ -546,8 +508,14 @@
 <body>
 
 <div class="app-container">
+  <!-- Header with Back Button -->
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+    <h5 class="mb-0">🏆 Examination Management</h5>
+    <div style="width: 70px;"></div>
+  </div>
+  
   <div class="card-custom">
-    <h5 class="fw-bold mb-3"><i class="bi bi-trophy-fill me-2 text-warning"></i>Examination Management</h5>
     <div class="mb-4">
       <label class="form-label-custom">Select Exam Type</label>
       <select id="examTypeSelect" class="form-select-custom">
@@ -560,25 +528,24 @@
     </div>
     
     <div id="tab1" class="tab-content active">
-      <!-- Expand/Collapse Bar with Group Buttons -->
-     <div class="expand-collapse-bar" id="expandCollapseBar">
-  <div class="group-buttons">
-    <button class="group-btn active" id="groupByClassBtn" onclick="setGroupBy('class')">
-      <i class="bi bi-building"></i> Group by Class
-    </button>
-    <button class="group-btn" id="groupByDateBtn" onclick="setGroupBy('date')">
-      <i class="bi bi-calendar"></i> Group by Date
-    </button>
-  </div>
-  <div class="expand-buttons">
-    <button class="expand-collapse-btn" onclick="expandAllGroups()">
-      <i class="bi bi-arrows-expand"></i> Expand All
-    </button>
-    <button class="expand-collapse-btn" onclick="collapseAllGroups()">
-      <i class="bi bi-arrows-collapse"></i> Collapse All
-    </button>
-  </div>
-</div>
+      <div class="expand-collapse-bar" id="expandCollapseBar">
+        <div class="group-buttons">
+          <button class="group-btn active" id="groupByClassBtn" onclick="setGroupBy('class')">
+            <i class="bi bi-building"></i> Group by Class
+          </button>
+          <button class="group-btn" id="groupByDateBtn" onclick="setGroupBy('date')">
+            <i class="bi bi-calendar"></i> Group by Date
+          </button>
+        </div>
+        <div class="expand-buttons">
+          <button class="expand-collapse-btn" onclick="expandAllGroups()">
+            <i class="bi bi-arrows-expand"></i> Expand All
+          </button>
+          <button class="expand-collapse-btn" onclick="collapseAllGroups()">
+            <i class="bi bi-arrows-collapse"></i> Collapse All
+          </button>
+        </div>
+      </div>
       <div id="dateSheetMainView">
         <div id="subjectList"><div class="empty-state">First select an exam type</div></div>
       </div>
@@ -660,6 +627,18 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
 }
 
 // ==================== EXAM ID GENERATOR ====================
@@ -898,7 +877,6 @@ function getSubjectsGrouped(examTypeId) {
 // ==================== RENDER FUNCTIONS ====================
 async function renderSubjectsList() {
   const subjectContainer = document.getElementById('subjectList');
-  const expandCollapseBar = document.getElementById('expandCollapseBar');
   if(!selectedExamTypeId) { 
     subjectContainer.innerHTML = `<div class="empty-state">First select an exam type</div>`; 
     return; 
@@ -1070,7 +1048,12 @@ async function saveAllStudentMarks() {
         exam_absentees: 0 
       }]);
     }
-    if(result.error) { failed++; } else { saved++; }
+    if(result.error) { 
+      console.error("Save error:", result.error);
+      failed++; 
+    } else { 
+      saved++; 
+    }
     const percent = Math.round(((i + 1) / totalStudents) * 100);
     progressBar.style.width = `${percent}%`;
     progressText.innerText = `${i+1}/${totalStudents} (✅${saved} ⚠️${failed})`;
@@ -1382,6 +1365,7 @@ window.shareResultToWhatsAppImage = shareResultToWhatsAppImage;
 window.showTopStudentDetail = showTopStudentDetail;
 window.closeTopStudentModal = closeTopStudentModal;
 window.setGroupBy = setGroupBy;
+window.goBack = goBack;
 
 // Event Listeners
 document.getElementById('examTypeSelect').addEventListener('change', async () => { 

@@ -177,7 +177,7 @@
     border-radius: 40px;
   }
   
-  /* Iframe Container */
+  /* Iframe Container - NO HEADER */
   .iframe-container {
     position: fixed;
     top: 42px;
@@ -189,27 +189,29 @@
     display: none;
     flex-direction: column;
   }
-  .iframe-header {
+  iframe { width: 100%; height: 100%; border: none; display: block; }
+  
+  /* Back button floating */
+  .iframe-back-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     color: white;
-    padding: 12px 16px;
+    border: none;
+    border-radius: 50px;
+    padding: 12px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 1001;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-    flex-shrink: 0;
+    gap: 8px;
+    transition: all 0.2s;
   }
-  .iframe-header h3 { margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-  .close-iframe {
-    background: rgba(255,255,255,0.2);
-    border: none;
-    border-radius: 40px;
-    padding: 5px 14px;
-    color: white;
-    font-size: 0.7rem;
-    cursor: pointer;
-  }
-  iframe { width: 100%; flex: 1; border: none; display: block; }
+  .iframe-back-btn:active { transform: scale(0.96); }
   
   .attendance-summary { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 6px; border-top: 1px solid #eef2f8; }
   .attendance-summary span { font-size: 0.55rem; }
@@ -254,6 +256,7 @@
     .ticker-wrapper-full { margin-left: 85px; }
     body { padding-top: 38px; }
     .iframe-container { top: 38px; height: calc(100% - 38px); }
+    .iframe-back-btn { bottom: 15px; right: 15px; padding: 10px 16px; font-size: 0.75rem; }
   }
 </style>
 </head>
@@ -394,14 +397,12 @@
   <div class="datetime" id="dateTimeDisplay"></div>
 </div>
 
-<!-- Iframe Container -->
+<!-- Iframe Container - No Header, only iframe -->
 <div class="iframe-container" id="iframeContainer">
-  <div class="iframe-header">
-    <h3 id="iframeTitle"><i class="bi bi-people-fill"></i> Student Management</h3>
-    <button class="close-iframe" onclick="closeIframe()"><i class="bi bi-arrow-left"></i> Back</button>
-  </div>
   <iframe id="moduleIframe" src=""></iframe>
 </div>
+
+
 
 <!-- Edit Announcement Modal -->
 <div class="modal fade" id="editAnnouncementModal" tabindex="-1">
@@ -597,20 +598,6 @@ function renderTicker() {
   tickerContainer.innerHTML = html;
 }
 
-function getIconEmoji(icon) {
-  const map = { 
-    'bi-calendar-event': '📅', 
-    'bi-trophy': '🏆', 
-    'bi-cash-stack': '💰', 
-    'bi-person-plus': '👤', 
-    'bi-journal-bookmark-fill': '📚', 
-    'bi-calendar-check': '📅', 
-    'bi-emoji-smile': '😊', 
-    'bi-megaphone-fill': '📢' 
-  };
-  return map[icon] || '📢';
-}
-
 function refreshModalContent() {
   const container = document.getElementById('announcementList');
   if(!container) return;
@@ -635,7 +622,6 @@ function refreshModalContent() {
 }
 
 function updateIconPreview(index) {
-  const iconSelect = document.getElementById(`ann_icon_${index}`);
   // Just for combo box - no preview needed now
 }
 
@@ -675,34 +661,17 @@ async function saveAnnouncements() {
 
 // ==================== MODULE FUNCTIONS ====================
 function openModule(moduleName) {
-  const titles = { 
-    students: 'Student Management', 
-    attendance: 'Attendance Management', 
-    fee: 'Fee Management', 
-    syllabus: 'Syllabus Management', 
-    examination: 'Examination Result', 
-    chat_rooms: 'Chat Rooms', 
-    login_history: 'Login History' 
-  };
-  const icons = {
-    students: 'bi-people-fill',
-    attendance: 'bi-calendar-check-fill',
-    fee: 'bi-cash-stack',
-    syllabus: 'bi-journal-bookmark-fill',
-    examination: 'bi-trophy-fill',
-    chat_rooms: 'bi-chat-dots-fill',
-    login_history: 'bi-clock-history'
-  };
-  document.getElementById('iframeTitle').innerHTML = `<i class="${icons[moduleName]}"></i> ${titles[moduleName] || moduleName}`;
   document.getElementById('moduleIframe').src = moduleName + '.html';
   document.getElementById('iframeContainer').style.display = 'flex';
   document.getElementById('dashboardView').style.display = 'none';
+  document.getElementById('iframeBackBtn').style.display = 'flex';
 }
 
 function closeIframe() {
   document.getElementById('moduleIframe').src = 'about:blank';
   document.getElementById('iframeContainer').style.display = 'none';
   document.getElementById('dashboardView').style.display = 'block';
+  document.getElementById('iframeBackBtn').style.display = 'none';
   loadDashboardStats();
 }
 

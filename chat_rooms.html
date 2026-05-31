@@ -26,17 +26,58 @@
     padding: 12px; 
   }
   
+  /* Detail Header Style - FIXED CORNERS */
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 16px 20px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    gap: 12px; 
+    flex-wrap: wrap; 
+    border-radius: 28px 28px 0 0;
+    margin: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white;
+    font-size: 0.75rem; 
+    font-weight: 600;
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .back-btn:hover { 
+     background: rgba(255,255,255,0.3); 
+    transform: scale(0.98);
+  }
+  .back-btn i {
+    font-size: 0.8rem;
+  }
+  
+  /* CARD CUSTOM - FIXED: No white background showing at corners */
   .card-custom {
-    background: white;
-    border-radius: 24px;
+    background: transparent;
+    border-radius: 28px;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     display: flex;
     flex-direction: column;
     height: calc(100vh - 24px);
     max-height: 750px;
   }
-  .card-header-custom {
+  
+  /* Inner content containers need white background */
+  .chat-header-custom {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     padding: 12px 16px;
     color: white;
@@ -45,7 +86,7 @@
     justify-content: space-between;
     flex-shrink: 0;
   }
-  .back-btn, .clear-all-btn, .select-mode-btn, .students-btn {
+  .clear-all-btn, .select-mode-btn, .students-btn {
     background: rgba(255,255,255,0.15);
     border: none;
     border-radius: 20px;
@@ -58,7 +99,7 @@
     align-items: center;
     gap: 4px;
   }
-  .back-btn:hover, .clear-all-btn:hover, .select-mode-btn:hover, .students-btn:hover {
+  .clear-all-btn:hover, .select-mode-btn:hover, .students-btn:hover {
     background: rgba(255,255,255,0.25);
   }
   .clear-all-btn:hover { background: rgba(220, 38, 38, 0.8); }
@@ -107,6 +148,7 @@
     cursor: pointer;
     transition: background 0.2s;
     position: relative;
+    background: white;
   }
   .list-item:active { background: #f8fafc; }
   .list-icon {
@@ -308,6 +350,7 @@
     gap: 10px;
     padding: 10px 12px;
     border-bottom: 1px solid #eef2f8;
+    background: white;
   }
   .student-avatar-small {
     width: 36px;
@@ -349,6 +392,7 @@
     text-align: center;
     padding: 40px 20px;
     color: #94a3b8;
+    background: white;
   }
   
   #customToast {
@@ -413,6 +457,7 @@
     gap: 12px;
     padding: 12px 16px;
     border-bottom: 1px solid #eef2f8;
+    background: white;
   }
   .skeleton-icon {
     width: 44px;
@@ -430,6 +475,11 @@
   .skeleton-subtitle {
     height: 12px;
     width: 40%;
+  }
+  
+  /* Fix for the list container background */
+  .list-container {
+    background: white;
   }
 </style>
 </head>
@@ -489,7 +539,7 @@ let statusCleanupInterval = null;
 
 let unreadCounts = {};
 let lastReadTimestamps = {};
-let lastMessagesCache = {}; // Cache for last messages
+let lastMessagesCache = {};
 
 let isRefreshing = false;
 let scrollButton = null;
@@ -524,6 +574,18 @@ function showToast(msg, isErr = false) {
   setTimeout(() => { toast.style.opacity = '0'; }, 2000);
 }
 
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+
 function scrollToBottom() {
   const container = document.getElementById('chatMessages');
   if (container) {
@@ -543,10 +605,9 @@ function checkScrollPosition() {
   }
 }
 
-// Show loading skeleton
 function showSkeleton() {
   const container = document.getElementById('appContainer');
-  let skeletonHtml = '<div class="card-custom"><div class="card-header-custom"><div class="room-title"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</div><div style="width:50px;"></div></div><div style="flex:1; overflow-y:auto;">';
+  let skeletonHtml = '<div class="card-custom"><div class="detail-header"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><h5 class="mb-0"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</h5><div style="width:70px;"></div></div><div class="list-container" style="flex:1; overflow-y:auto;">';
   for (let i = 0; i < 5; i++) {
     skeletonHtml += `
       <div class="skeleton-item">
@@ -645,18 +706,6 @@ async function loadOnlineStatus() {
   }
 }
 
-function goBack() {
-  if (messageSubscription) {
-    supabaseClient.removeChannel(messageSubscription);
-    messageSubscription = null;
-  }
-  currentClass = null; 
-  currentMessages = []; 
-  selectMode = false; 
-  selectedMessages.clear();
-  showClassesList();
-}
-
 async function clearAllMessages() {
   if (!currentClass) { showToast("No chat room open", true); return; }
   const classId = currentClass.class_room_id;
@@ -675,12 +724,10 @@ async function loadClasses() {
 }
 
 async function loadLastMessagesAndUnreadCounts() {
-  // Fetch all last messages in a single query
   const classIds = allClasses.map(c => c.class_room_id);
   
   if (classIds.length === 0) return;
   
-  // Get last message for each class using distinct on
   const { data: lastMsgs, error: msgError } = await supabaseClient
     .from("class_chat_messages")
     .select("class_id, message, message_type, media_url, sender_type, sender_name, created_at, is_deleted")
@@ -688,7 +735,6 @@ async function loadLastMessagesAndUnreadCounts() {
     .order("created_at", { ascending: false });
   
   if (!msgError && lastMsgs) {
-    // Keep only the latest message per class
     const latestPerClass = {};
     for (const msg of lastMsgs) {
       if (!latestPerClass[msg.class_id]) {
@@ -698,7 +744,6 @@ async function loadLastMessagesAndUnreadCounts() {
     lastMessagesCache = latestPerClass;
   }
   
-  // Get unread counts for all classes
   for (const cls of allClasses) {
     await updateUnreadCount(cls.class_room_id);
   }
@@ -708,12 +753,10 @@ async function showClassesList() {
   if (isRefreshing || currentClass) return;
   isRefreshing = true;
   
-  // Show skeleton first
   showSkeleton();
   
   const container = document.getElementById('appContainer');
   
-  // Run queries in parallel for better performance
   const [studentsResult, statusResult] = await Promise.all([
     supabaseClient.from("students").select("stu_id, stu_class_room_id"),
     supabaseClient.from("student_online_status").select("student_id, is_online")
@@ -744,7 +787,6 @@ async function showClassesList() {
       const unreadBadge = unreadCount > 0 ? `<span class="unread-badge">${unreadCount > 99 ? '99+' : unreadCount}</span>` : '';
       const onlineBadge = onlineCount > 0 ? `<span class="online-count"><i class="bi bi-circle-fill" style="font-size: 0.5rem; color: #10b981;"></i> ${onlineCount} online</span>` : '';
       
-      // Get last message from cache
       const lastMsg = lastMessagesCache[cls.class_room_id];
       let lastMsgPreview = '<i class="bi bi-chat-dots"></i> Tap to enter';
       
@@ -770,7 +812,7 @@ async function showClassesList() {
       </div>`;
     }
   }
-  container.innerHTML = `<div class="card-custom"><div class="card-header-custom"><div class="room-title"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</div><div style="width:50px;"></div></div><div style="flex:1; overflow-y:auto;">${html}</div></div>`;
+  container.innerHTML = `<div class="card-custom"><div class="detail-header"><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><h5 class="mb-0"><i class="bi bi-chat-dots-fill"></i> Chat Rooms</h5><div style="width:70px;"></div></div><div class="list-container" style="flex:1; overflow-y:auto;">${html}</div></div>`;
   isRefreshing = false;
 }
 
@@ -845,7 +887,6 @@ window.openChatRoom = async function(classId) {
         currentMessages.push(p.new); 
         renderMessages();
         scrollToBottom();
-        // Update cache for last message
         lastMessagesCache[classId] = p.new;
       }
     })
@@ -1075,13 +1116,18 @@ function renderChatWindowHeader() {
       if (studentOnlineStatus[student.stu_id] === true) onlineCount++;
     }
     const onlineBadge = onlineCount > 0 ? `<span class="online-count ms-2"><i class="bi bi-circle-fill" style="font-size: 0.5rem; color: #10b981;"></i> ${onlineCount} online</span>` : '';
-    hc.innerHTML = `<div class="card-header-custom"><div><button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button><span class="ms-2 fw-medium">${escapeHtml(currentClass?.class_room_no || 'Chat')}</span>${onlineBadge}</div><div class="d-flex gap-1"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i> Clear</button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Sel</button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i></button></div></div>`;
+    hc.innerHTML = `<div class="chat-header-custom"><div><span class="ms-2 fw-medium">${escapeHtml(currentClass?.class_room_no || 'Chat')}</span>${onlineBadge}</div><div class="d-flex gap-1"><button class="clear-all-btn" onclick="clearAllMessages()"><i class="bi bi-trash3"></i> Clear</button><button class="select-mode-btn" onclick="toggleSelectMode()"><i class="bi bi-check2-square"></i> Sel</button><button class="students-btn" onclick="showStudentsList()"><i class="bi bi-people-fill"></i></button></div></div>`;
   }
 }
 
 function renderChatWindow() {
   const container = document.getElementById('appContainer');
   container.innerHTML = `<div class="card-custom" style="position: relative;">
+    <div class="detail-header">
+      <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+      <h5 class="mb-0"><i class="bi bi-chat-dots-fill"></i> ${escapeHtml(currentClass?.class_room_no || 'Chat')}</h5>
+      <div style="width:70px;"></div>
+    </div>
     <div id="chatHeaderContainer"></div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-area">
