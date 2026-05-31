@@ -575,6 +575,23 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
+// ==================== EXAM ID GENERATOR ====================
+async function generateExamId() {
+  const { data } = await supabase1
+    .from("examinations")
+    .select("exam_id")
+    .order("exam_id", { ascending: false })
+    .limit(1);
+  
+  let lastId = 0;
+  if (data && data.length > 0 && data[0].exam_id) {
+    const match = data[0].exam_id.match(/\d+/);
+    if (match) lastId = parseInt(match[0]);
+  }
+  const newNum = lastId + 1;
+  return `AEX-${String(newNum).padStart(6, '0')}`;
+}
+
 function isValidWhatsAppNumber(mobile) {
   if(!mobile || mobile === 'No mobile' || mobile === '') return false;
   let clean = mobile.replace(/[\s\-]/g, '');
@@ -885,7 +902,15 @@ async function saveAllStudentMarks() {
     if(existing) {
       result = await supabase1.from("examinations").update({ exam_sub_marks_obtain: obtainedStr, exam_exam_result_condition_id: conditionId }).eq("stu_id", student.stu_id).eq("exam_exam_date_sheet_id", selectedSubject.date_sheet_id);
     } else {
-      result = await supabase1.from("examinations").insert([{ stu_id: student.stu_id, exam_exam_date_sheet_id: selectedSubject.date_sheet_id, exam_sub_marks_obtain: obtainedStr, exam_exam_result_condition_id: conditionId, exam_absentees: 0 }]);
+      const examId = await generateExamId();
+      result = await supabase1.from("examinations").insert([{ 
+        exam_id: examId,
+        stu_id: student.stu_id, 
+        exam_exam_date_sheet_id: selectedSubject.date_sheet_id, 
+        exam_sub_marks_obtain: obtainedStr, 
+        exam_exam_result_condition_id: conditionId, 
+        exam_absentees: 0 
+      }]);
     }
     if(result.error) { failed++; } else { saved++; }
     const percent = Math.round(((i + 1) / totalStudents) * 100);
@@ -1049,7 +1074,7 @@ async function renderStudentsResultList() {
   container.innerHTML = html; 
 }
 
-// FIXED: viewStudentResult with SINGLE image (no double picture)
+// viewStudentResult with SINGLE image
 async function viewStudentResult(studentId) {
   const s = allStudents.find(x=>x.stu_id===studentId);
   const sheets = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === selectedExamTypeId);
@@ -1092,7 +1117,6 @@ async function viewStudentResult(studentId) {
   const perc = totalM > 0 ? (totalO / totalM) * 100 : 0;
   const totalG = getGradeText(getConditionIdFromPercentage(perc));
   
-  // FIXED: Only ONE thing shows - EITHER image OR fallback, NEVER both
   const initial = s.stu_name?.charAt(0).toUpperCase() || '?';
   let avatarHtml = '';
   
@@ -1101,12 +1125,10 @@ async function viewStudentResult(studentId) {
     if (!imageSrc.startsWith('data:image')) { 
       imageSrc = 'data:image/jpeg;base64,' + imageSrc; 
     }
-    // Only image - if fails, it becomes fallback via onerror
     avatarHtml = `<img src="${imageSrc}" class="student-detail-img" 
       style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
       onerror="this.onerror=null; this.style.display='none'; this.outerHTML='<div class=\\'student-detail-avatar\\' style=\\'width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.8rem;\\'>${initial}</div>';">`;
   } else {
-    // Only fallback avatar - no image
     avatarHtml = `<div class="student-detail-avatar" style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.8rem;">${initial}</div>`;
   }
   
