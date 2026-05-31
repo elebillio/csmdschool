@@ -443,7 +443,7 @@
   <div class="ticker-inner">
     <div class="ticker-label-full"><i class="bi bi-megaphone-fill"></i> NOTICE</div>
     <div class="ticker-wrapper-full">
-      <div class="ticker-full" id="tickerText"></div>
+      <div class="ticker-full" id="tickerText">Loading announcements...</div>
     </div>
   </div>
 </div>
@@ -559,28 +559,62 @@ function getStudentImageUrl(student) {
   return null;
 }
 
-function loadAnnouncements() {
-  const saved = localStorage.getItem('schoolAnnouncements');
-  if (saved) {
-    try { announcements = JSON.parse(saved); } catch(e) { announcements = []; }
+// ==================== ANNOUNCEMENTS FROM DATABASE ====================
+async function loadAnnouncementsFromDB() {
+  try {
+    const { data, error } = await supabase1
+      .from("announcements")
+      .select("*")
+      .order("id", { ascending: true });
+    
+    if (error) {
+      console.error("Error loading from DB:", error);
+      setDefaultAnnouncements();
+      renderTicker();
+      return;
+    }
+    
+    if (data && data.length > 0) {
+      announcements = data.map(a => ({
+        id: a.id,
+        icon: a.icon || "bi-megaphone-fill",
+        text: a.message
+      }));
+    } else {
+      setDefaultAnnouncements();
+    }
+    renderTicker();
+  } catch (error) {
+    console.error("Error loading announcements:", error);
+    setDefaultAnnouncements();
+    renderTicker();
   }
-  if (!announcements.length) {
-    announcements = [
-      { icon: "bi-calendar-event", text: "📢 Annual Examination 2025 will start from 1st June 2025" },
-      { icon: "bi-trophy", text: "🎉 Summer Vacation from 15th June to 31st July 2025" },
-      { icon: "bi-cash-stack", text: "💰 Fee submission deadline: 10th of every month" }
-    ];
-  }
-  renderTicker();
+}
+
+function setDefaultAnnouncements() {
+  announcements = [
+    { id: null, icon: "bi-calendar-event", text: "Annual Examination 2025 will start from 1st June 2025" },
+    { id: null, icon: "bi-trophy", text: "Summer Vacation from 15th June to 31st July 2025" },
+    { id: null, icon: "bi-cash-stack", text: "Fee submission deadline: 10th of every month" },
+    { id: null, icon: "bi-person-plus", text: "New Admissions open for Session 2025-2026" },
+    { id: null, icon: "bi-journal-bookmark-fill", text: "Syllabus for Mid-Term Exam has been uploaded" },
+    { id: null, icon: "bi-calendar-check", text: "Parent-Teacher Meeting on 25th May 2025" }
+  ];
 }
 
 function renderTicker() {
   const tickerContainer = document.getElementById('tickerText');
   if (!tickerContainer) return;
+  
+  if (announcements.length === 0) {
+    tickerContainer.innerHTML = '<span>No announcements available</span>';
+    return;
+  }
+  
+  const allAnnouncements = [...announcements, ...announcements];
   let html = '';
-  const looped = [...announcements, ...announcements];
-  for (const ann of looped) {
-    html += `<span><i class="bi ${ann.icon}"></i> ${ann.text}</span>`;
+  for (const ann of allAnnouncements) {
+    html += `<span><i class="bi ${ann.icon}"></i> ${escapeHtml(ann.text)}</span>`;
   }
   tickerContainer.innerHTML = html;
 }
@@ -598,7 +632,7 @@ async function updateOnlineStatus(isOnline) {
     if (existing) {
       await supabase1
         .from("student_online_status")
-        .update({ is_online: isOnline, last_seen: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({ is_online: isOnline, last_seen: new Date().toISOString() })
         .eq("student_id", currentStudent.stu_id);
     } else {
       await supabase1
@@ -610,7 +644,6 @@ async function updateOnlineStatus(isOnline) {
 
 function startOnlineHeartbeat() {
   if (onlineHeartbeatInterval) clearInterval(onlineHeartbeatInterval);
-  // Update status every 30 seconds
   onlineHeartbeatInterval = setInterval(async () => {
     if (currentStudent) {
       await updateOnlineStatus(true);
@@ -704,7 +737,6 @@ async function studentLogin() {
 }
 
 function doLogout() {
-  // Set offline status before logout
   if (currentStudent) {
     updateOnlineStatus(false);
   }
@@ -1116,13 +1148,12 @@ window.addEventListener('pageshow', async function(event) {
     const floatingBtn = document.getElementById('floatingBackBtn');
     if (floatingBtn) floatingBtn.style.display = 'none';
     showDashboard();
-    // Update online status when page becomes visible again
     updateOnlineStatus(true);
   } else { await restoreSession(); }
 });
 
 window.onload = function() {
-  loadAnnouncements();
+  loadAnnouncementsFromDB();
   restoreSession().then(() => {
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) loginBtn.onclick = studentLogin;
@@ -1145,4 +1176,4 @@ window.closeModal = closeModal;
 window.modalAction = modalAction;
 </script>
 </body>
-</html> 
+</html>
