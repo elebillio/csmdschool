@@ -11,10 +11,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
-  body { background: #f0f4f8; padding: 0; margin: 0; }
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f0f4f8; }
   
-  /* Fixed Full Width Ticker at Top - CHOTI HEIGHT */
+  /* Ticker Styles */
   .ticker-container-full {
     position: fixed;
     top: 0;
@@ -25,11 +25,7 @@
     z-index: 9999;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   }
-  .ticker-inner {
-    max-width: 550px;
-    margin: 0 auto;
-    position: relative;
-  }
+  .ticker-inner { max-width: 550px; margin: 0 auto; position: relative; }
   .ticker-label-full {
     position: absolute;
     left: 0;
@@ -45,10 +41,6 @@
     align-items: center;
     gap: 4px;
     z-index: 2;
-    letter-spacing: 0.5px;
-  }
-  .ticker-label-full i {
-    font-size: 0.7rem;
   }
   .ticker-wrapper-full {
     margin-left: 95px;
@@ -68,19 +60,12 @@
     font-size: 0.7rem;
     font-weight: 500;
   }
-  .ticker-full span i {
-    margin-right: 5px;
-    font-size: 0.7rem;
-  }
-  .ticker-full:hover {
-    animation-play-state: paused;
-  }
+  .ticker-full span i { margin-right: 5px; }
+  .ticker-full:hover { animation-play-state: paused; }
   @keyframes tickerScroll {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
-  
-  /* Edit Announcement Button */
   .edit-announcement-btn {
     position: absolute;
     right: 8px;
@@ -94,23 +79,11 @@
     color: white;
     cursor: pointer;
     z-index: 3;
-    transition: background 0.2s;
-  }
-  .edit-announcement-btn i {
-    font-size: 0.6rem;
-  }
-  .edit-announcement-btn:hover {
-    background: rgba(255,255,255,0.3);
   }
   
-  /* Add padding to body to prevent content hiding under fixed ticker */
-  body {
-    padding-top: 42px;
-  }
-  
+  body { padding-top: 42px; }
   .dashboard-container { max-width: 550px; margin: 0 auto; padding: 20px 16px; min-height: 100vh; }
   
-  /* Header Styles */
   .header { 
     background: linear-gradient(135deg, #1e3c72, #2a5298); 
     color: white; 
@@ -122,20 +95,9 @@
     position: relative;
     overflow: hidden;
   }
-  .header::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -20%;
-    width: 200px;
-    height: 200px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50%;
-  }
   .header h1 { margin: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .header p { margin: 6px 0 0; opacity: 0.85; font-size: 0.7rem; }
   
-  /* Stats Cards */
   .stats-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
   .stat-card { 
     background: white; 
@@ -145,18 +107,15 @@
     flex: 1;
     min-width: 90px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.04);
-    transition: all 0.2s;
     cursor: pointer;
     border: 1px solid #eef2f8;
   }
   .stat-card:active { transform: scale(0.98); }
   .stat-card i { font-size: 1.5rem; margin-bottom: 6px; }
   .stat-card h3 { font-size: 1.2rem; font-weight: 800; margin: 0; color: #1e293b; }
-  .stat-card p { margin: 4px 0 0; font-size: 0.6rem; color: #64748b; font-weight: 500; }
-  
+  .stat-card p { margin: 4px 0 0; font-size: 0.6rem; color: #64748b; }
   .fee-stats-row { display: flex; gap: 12px; margin-bottom: 20px; }
   
-  /* Module Cards */
   .module-card {
     background: white;
     border-radius: 20px;
@@ -186,16 +145,14 @@
   .module-icon.fee { background: linear-gradient(135deg, #f093fb, #f5576c); }
   .module-icon.syllabus { background: linear-gradient(135deg, #f59e0b, #ef4444); }
   .module-icon.notification { background: linear-gradient(135deg, #ff6b6b, #ee5a24); }
-  .module-icon.result { background: linear-gradient(135deg, #8B5CF6, #6D28D9); }
   .module-icon.exam { background: linear-gradient(135deg, #06b6d4, #0891b2); }
   .module-icon.history { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+  .module-icon.chat { background: linear-gradient(135deg, #00b4d8, #0077b6); }
   .module-info { flex: 1; }
   .module-info h3 { margin: 0; font-size: 0.9rem; font-weight: 700; color: #0f172a; }
   .module-info p { margin: 3px 0 0; font-size: 0.6rem; color: #64748b; }
   .module-arrow { color: #94a3b8; font-size: 1rem; transition: transform 0.2s; }
-  .module-card:active .module-arrow { transform: translateX(4px); }
   
-  /* Welcome Banner */
   .welcome-banner {
     background: linear-gradient(135deg, #fef3c7, #fde68a);
     border-radius: 20px;
@@ -210,7 +167,6 @@
   .welcome-banner div h4 { margin: 0; font-size: 0.85rem; font-weight: 700; color: #92400e; }
   .welcome-banner div p { margin: 3px 0 0; font-size: 0.6rem; color: #b45309; }
   
-  /* Date Time */
   .datetime { 
     text-align: center; 
     font-size: 0.6rem; 
@@ -219,7 +175,6 @@
     padding: 10px;
     background: white;
     border-radius: 40px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
   }
   
   /* Iframe Container */
@@ -244,7 +199,7 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.1);
     flex-shrink: 0;
   }
-  .iframe-header h3 { margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .iframe-header h3 { margin: 0; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
   .close-iframe {
     background: rgba(255,255,255,0.2);
     border: none;
@@ -253,14 +208,8 @@
     color: white;
     font-size: 0.7rem;
     cursor: pointer;
-    transition: background 0.2s;
   }
-  iframe { 
-    width: 100%; 
-    flex: 1; 
-    border: none;
-    display: block;
-  }
+  iframe { width: 100%; flex: 1; border: none; display: block; }
   
   .attendance-summary { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 6px; border-top: 1px solid #eef2f8; }
   .attendance-summary span { font-size: 0.55rem; }
@@ -281,65 +230,53 @@
   .student-badge { background: #25D366; color: white; padding: 3px 10px; border-radius: 30px; font-size: 0.65rem; font-weight: 600; }
   
   .announcement-list { max-height: 400px; overflow-y: auto; }
-  .announcement-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #eef2f8; }
-  .announcement-text { flex: 1; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.75rem; }
+  .announcement-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #eef2f8; background: white; margin-bottom: 5px; border-radius: 12px; }
+  .announcement-text { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.8rem; }
+  
+  #customToast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
   
   @media (max-width: 640px) {
-    .ticker-label-full {
-      padding: 3px 10px;
-      font-size: 0.55rem;
-    }
-    .ticker-wrapper-full {
-      margin-left: 85px;
-      padding: 5px 0;
-    }
-    .ticker-full span {
-      font-size: 0.65rem;
-      margin-right: 30px;
-    }
-    body {
-      padding-top: 38px;
-    }
-    .iframe-container {
-      top: 38px;
-      height: calc(100% - 38px);
-    }
-    .edit-announcement-btn {
-      right: 4px;
-      padding: 2px 6px;
-      font-size: 0.5rem;
-    }
+    .ticker-label-full { padding: 3px 10px; font-size: 0.55rem; }
+    .ticker-wrapper-full { margin-left: 85px; }
+    body { padding-top: 38px; }
+    .iframe-container { top: 38px; height: calc(100% - 38px); }
   }
 </style>
 </head>
 <body>
 
-<!-- Fixed Full Width Ticker at Top - Choti Height -->
+<!-- Ticker -->
 <div class="ticker-container-full">
   <div class="ticker-inner">
-    <div class="ticker-label-full">
-      <i class="bi bi-megaphone-fill"></i> NEWS
-    </div>
+    <div class="ticker-label-full"><i class="bi bi-megaphone-fill"></i> NEWS</div>
     <div class="ticker-wrapper-full">
-      <div class="ticker-full" id="tickerText">
-        <!-- Announcements will be dynamically loaded here -->
-      </div>
+      <div class="ticker-full" id="tickerText">Loading announcements...</div>
     </div>
-    <button class="edit-announcement-btn" onclick="openEditAnnouncementModal()">
-      <i class="bi bi-pencil"></i> Edit
-    </button>
+    <button class="edit-announcement-btn" onclick="openEditAnnouncementModal()"><i class="bi bi-pencil"></i> Edit</button>
   </div>
 </div>
 
+<!-- Dashboard View -->
 <div class="dashboard-container" id="dashboardView">
-  
-  <!-- Header -->
   <div class="header">
     <h1><i class="bi bi-backpack4-fill"></i> School Manager</h1>
     <p>Complete School Management System</p>
   </div>
   
-  <!-- Welcome Banner -->
   <div class="welcome-banner">
     <i class="bi bi-emoji-smile"></i>
     <div>
@@ -348,7 +285,6 @@
     </div>
   </div>
   
-  <!-- Stats Row 1 -->
   <div class="stats-row">
     <div class="stat-card" id="statStudents">
       <i class="bi bi-people-fill text-primary"></i>
@@ -362,7 +298,6 @@
     </div>
   </div>
   
-  <!-- Stats Row 2 -->
   <div class="stats-row">
     <div class="stat-card" id="statAttendance">
       <i class="bi bi-calendar-check-fill text-success"></i>
@@ -380,7 +315,6 @@
     </div>
   </div>
   
-  <!-- Fee Stats Row -->
   <div class="fee-stats-row">
     <div class="stat-card" id="statTotalFee">
       <i class="bi bi-cash-stack text-warning"></i>
@@ -400,37 +334,37 @@
   </div>
   
   <!-- Modules -->
-  <div class="module-card" id="studentsModule">
+  <div class="module-card" onclick="openModule('students')">
     <div class="module-icon students"><i class="bi bi-people-fill"></i></div>
     <div class="module-info"><h3>Student Management</h3><p>Add, edit, delete students | View profiles</p></div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <div class="module-card" id="attendanceModule">
+  <div class="module-card" onclick="openModule('attendance')">
     <div class="module-icon attendance"><i class="bi bi-calendar-check-fill"></i></div>
     <div class="module-info"><h3>Attendance Management</h3><p>Mark daily attendance | View reports</p></div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <div class="module-card" id="feeModule">
+  <div class="module-card" onclick="openModule('fee')">
     <div class="module-icon fee"><i class="bi bi-cash-stack"></i></div>
     <div class="module-info"><h3>Fee Management</h3><p>Manage fee records | Track payments</p></div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <div class="module-card" id="syllabusModule">
+  <div class="module-card" onclick="openModule('syllabus')">
     <div class="module-icon syllabus"><i class="bi bi-journal-bookmark-fill"></i></div>
     <div class="module-info"><h3>Syllabus Management</h3><p>Home Work | Vocation Work | Annual Work</p></div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <div class="module-card" id="examModule">
+  <div class="module-card" onclick="openModule('examination')">
     <div class="module-icon exam"><i class="bi bi-trophy-fill"></i></div>
     <div class="module-info"><h3>Examination Result</h3><p>Enter marks | Generate result cards</p></div>
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <div class="module-card" id="notificationModule">
+  <div class="module-card" onclick="openNotificationModal()">
     <div class="module-icon notification"><i class="bi bi-megaphone-fill"></i></div>
     <div class="module-info">
       <h3>Student Notifications</h3>
@@ -439,8 +373,8 @@
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <div class="module-card" id="chatRoomsModule">
-    <div class="module-icon" style="background: linear-gradient(135deg, #00b4d8, #0077b6);"><i class="bi bi-chat-dots-fill"></i></div>
+  <div class="module-card" onclick="openModule('chat_rooms')">
+    <div class="module-icon chat"><i class="bi bi-chat-dots-fill"></i></div>
     <div class="module-info">
       <h3>Chat Rooms</h3>
       <p>Class-wise chat rooms | Real-time messaging</p>
@@ -448,8 +382,7 @@
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <!-- NEW: Login History Module -->
-  <div class="module-card" id="loginHistoryModule">
+  <div class="module-card" onclick="openModule('login_history')">
     <div class="module-icon history"><i class="bi bi-clock-history"></i></div>
     <div class="module-info">
       <h3>Login History</h3>
@@ -458,178 +391,233 @@
     <div class="module-arrow"><i class="bi bi-chevron-right"></i></div>
   </div>
   
-  <!-- Date Time -->
   <div class="datetime" id="dateTimeDisplay"></div>
-</div>
-
-<!-- Edit Announcement Modal -->
-<div class="modal fade" id="editAnnouncementModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white py-2">
-        <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2"></i>Edit Announcements</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-3">
-        <div class="alert alert-info alert-sm p-2 mb-3" style="font-size:0.7rem;">
-          <i class="bi bi-info-circle"></i> Add or edit announcements below.
-        </div>
-        <div id="announcementList" class="announcement-list"></div>
-        <button class="btn btn-outline-primary btn-sm w-100 mt-3" onclick="addNewAnnouncement()">
-          <i class="bi bi-plus-circle"></i> Add New
-        </button>
-      </div>
-      <div class="modal-footer py-2">
-        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="saveAnnouncements()">Save</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Iframe Container -->
 <div class="iframe-container" id="iframeContainer">
   <div class="iframe-header">
     <h3 id="iframeTitle"><i class="bi bi-people-fill"></i> Student Management</h3>
-    <button class="close-iframe" onclick="closeIframe()"><i class="bi bi-arrow-left"></i> Back</button>
+    <button class="close-iframe" onclick="closeIframe()"><i class="bi bi-arrow-left"></i> Back to Dashboard</button>
   </div>
   <iframe id="moduleIframe" src=""></iframe>
+</div>
+
+<!-- Edit Announcement Modal -->
+<div class="modal fade" id="editAnnouncementModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2"></i>Edit Announcements</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-3">
+        <div id="announcementList"></div>
+        <button class="btn btn-outline-primary btn-sm w-100 mt-3" onclick="addNewAnnouncement()">
+          <i class="bi bi-plus-circle"></i> Add New
+        </button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveAnnouncements()">Save All</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Notification Modal -->
 <div class="modal fade" id="notificationModal" tabindex="-1">
   <div class="modal-dialog notification-modal">
     <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; padding: 12px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white;">
         <h5 class="modal-title"><i class="bi bi-megaphone-fill me-2"></i>Write Notification</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-3">
-        <div class="mb-2">
-          <label class="form-label fw-bold small">📋 Quick Templates</label>
-          <div class="quick-templates">
-            <span class="template-chip" onclick="setTemplate('absent')">❌ Absent</span>
-            <span class="template-chip" onclick="setTemplate('bag')">🎒 New Bag</span>
-            <span class="template-chip" onclick="setTemplate('hair')">✂️ Hair</span>
-            <span class="template-chip" onclick="setTemplate('shoe')">👞 Shoe</span>
-            <span class="template-chip" onclick="setTemplate('uniform')">👔 Uniform</span>
-            <span class="template-chip" onclick="setTemplate('books')">📚 Books</span>
-            <span class="template-chip" onclick="setTemplate('fee')">💰 Fee Due</span>
-            <span class="template-chip" onclick="setTemplate('exam')">📝 Exam</span>
-          </div>
+      <div class="modal-body">
+        <div class="quick-templates">
+          <span class="template-chip" onclick="setTemplate('absent')">❌ Absent</span>
+          <span class="template-chip" onclick="setTemplate('bag')">🎒 New Bag</span>
+          <span class="template-chip" onclick="setTemplate('hair')">✂️ Hair</span>
+          <span class="template-chip" onclick="setTemplate('uniform')">👔 Uniform</span>
+          <span class="template-chip" onclick="setTemplate('fee')">💰 Fee Due</span>
+          <span class="template-chip" onclick="setTemplate('exam')">📝 Exam</span>
         </div>
-        <div class="mb-2">
-          <label class="form-label fw-bold small">✏️ Message</label>
-          <textarea id="notificationMessage" class="form-control" rows="4" placeholder="Type your message here..."></textarea>
-        </div>
+        <textarea id="notificationMessage" class="form-control mt-2" rows="4" placeholder="Type your message here..."></textarea>
       </div>
-      <div class="modal-footer py-2">
+      <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="goToStudentSelection()" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); border: none;">
-          Next <i class="bi bi-arrow-right"></i>
-        </button>
+        <button class="btn btn-primary btn-sm" onclick="goToStudentSelection()">Next <i class="bi bi-arrow-right"></i></button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Student List Modal -->
+<!-- Student Selection Modal -->
 <div class="modal fade" id="studentListModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-scrollable notification-modal">
     <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(135deg,#11998e,#38ef7d); color: white; padding: 12px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #11998e, #38ef7d); color: white;">
         <h5 class="modal-title"><i class="bi bi-people-fill me-2"></i>Select Students</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-3">
-        <div class="alert alert-warning alert-sm p-2 mb-2" style="font-size:0.7rem; background:#fef3c7;">
-          <strong><i class="bi bi-chat-text"></i> Preview:</strong>
-          <div id="messagePreview" class="mt-1 small"></div>
-        </div>
-        
-        <div class="class-selector">
-          <label class="form-label fw-bold small">📚 Filter by Class</label>
-          <select id="classSelectStudents" class="form-select form-select-sm" onchange="loadStudentsForSelection()">
-            <option value="">-- All Classes --</option>
-          </select>
-        </div>
-        
-        <div class="mb-2">
-          <label class="form-label fw-bold small">🔍 Search</label>
-          <input type="text" id="studentSearchInput" class="search-input-fast mb-2" placeholder="Search by name, admission, father...">
-          <div class="selection-bar" style="margin-bottom: 6px; padding: 8px;">
-            <div class="select-all-wrapper" onclick="toggleSelectAllStudents()" style="cursor: pointer;">
-              <div id="selectAllCheckbox" class="student-checkbox-custom"></div>
-              <span class="ms-2 small">Select All</span>
-            </div>
-            <div class="student-badge" id="selectedCount">0 selected</div>
+      <div class="modal-body">
+        <div class="alert alert-warning p-2 small">Preview: <span id="messagePreview"></span></div>
+        <select id="classFilter" class="form-select form-select-sm mb-2" onchange="loadStudents()">
+          <option value="">-- All Classes --</option>
+        </select>
+        <input type="text" id="searchStudent" class="form-control form-control-sm mb-2" placeholder="Search..." onkeyup="renderStudentList()">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="form-check">
+            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()">
+            <label class="form-check-label small">Select All</label>
           </div>
-          <div id="studentList" class="student-list-modal-container" style="max-height: 280px; overflow-y: auto; border: 1px solid #eef2f8; border-radius: 12px;"></div>
+          <span class="badge bg-success" id="selectedCount">0 selected</span>
         </div>
-        
-        <div class="notification-stats" id="notificationStats" style="display: none;">
-          <div class="d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-whatsapp text-success"></i> Will send to:</span>
-            <span class="student-badge" id="notifyCount">0</span>
-          </div>
-        </div>
+        <div id="studentListContainer" style="max-height: 300px; overflow-y: auto;"></div>
       </div>
-      <div class="modal-footer py-2">
-        <button class="btn btn-secondary btn-sm" onclick="goBackToMessage()"><i class="bi bi-arrow-left"></i> Back</button>
-        <button class="btn btn-primary btn-sm" id="sendNotificationBtn" onclick="sendNotification()" style="background: linear-gradient(135deg, #25D366, #128C7E); border: none;" disabled>
-          <i class="bi bi-whatsapp"></i> Send
-        </button>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" onclick="goBackToMessage()">Back</button>
+        <button class="btn btn-success btn-sm" id="sendBtn" onclick="sendNotifications()" disabled>Send WhatsApp</button>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
-const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
-const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+const supabase1 = window.supabase.createClient(
+  "https://tqcfcztyvmedmuhohpps.supabase.co",
+  "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH"
+);
 
+// ==================== GLOBAL VARIABLES ====================
 let allStudents = [];
 let allClasses = [];
 let selectedStudentIds = new Set();
 let currentFilteredStudents = [];
-let currentClassId = null;
 let pendingMessage = "";
+let currentClassId = null;
 
-// ==================== ANNOUNCEMENTS ====================
-let announcements = [
-  { icon: "bi-calendar-event", text: "📢 Annual Examination 2025 will start from 1st June 2025" },
-  { icon: "bi-trophy", text: "🎉 Summer Vacation from 15th June to 31st July 2025" },
-  { icon: "bi-cash-stack", text: "💰 Fee submission deadline: 10th of every month" },
-  { icon: "bi-person-plus", text: "🏫 New Admissions open for Session 2025-2026" },
-  { icon: "bi-journal-bookmark-fill", text: "📚 Syllabus for Mid-Term Exam has been uploaded" },
-  { icon: "bi-calendar-check", text: "📅 Parent-Teacher Meeting on 25th May 2025" }
-];
+// ==================== ANNOUNCEMENTS FROM DATABASE ====================
+let announcements = [];
+let currentModal = null;
 
-function loadAnnouncements() {
-  const saved = localStorage.getItem('schoolAnnouncements');
-  if(saved) { try { announcements = JSON.parse(saved); } catch(e) {} }
-  renderTicker();
+async function loadAnnouncementsFromDB() {
+  try {
+    const { data, error } = await supabase1
+      .from("announcements")
+      .select("*")
+      .order("id", { ascending: true });
+    
+    if (error) {
+      console.error("Error loading from DB:", error);
+      setDefaultAnnouncements();
+      renderTicker();
+      return;
+    }
+    
+    if (data && data.length > 0) {
+      announcements = data.map(a => ({
+        id: a.id,
+        icon: a.icon || "bi-megaphone-fill",
+        text: a.message
+      }));
+    } else {
+      setDefaultAnnouncements();
+    }
+    renderTicker();
+  } catch (error) {
+    console.error("Error loading announcements:", error);
+    setDefaultAnnouncements();
+    renderTicker();
+  }
+}
+
+function setDefaultAnnouncements() {
+  announcements = [
+    { id: null, icon: "bi-calendar-event", text: "Annual Examination 2025 will start from 1st June 2025" },
+    { id: null, icon: "bi-trophy", text: "Summer Vacation from 15th June to 31st July 2025" },
+    { id: null, icon: "bi-cash-stack", text: "Fee submission deadline: 10th of every month" },
+    { id: null, icon: "bi-person-plus", text: "New Admissions open for Session 2025-2026" },
+    { id: null, icon: "bi-journal-bookmark-fill", text: "Syllabus for Mid-Term Exam has been uploaded" },
+    { id: null, icon: "bi-calendar-check", text: "Parent-Teacher Meeting on 25th May 2025" }
+  ];
+}
+
+async function saveAnnouncementsToDB() {
+  try {
+    const { error: deleteError } = await supabase1
+      .from("announcements")
+      .delete()
+      .neq("id", 0);
+    
+    if (deleteError) {
+      console.error("Delete error:", deleteError);
+      showToast("Error deleting: " + deleteError.message, true);
+      return false;
+    }
+    
+    for (const ann of announcements) {
+      const { error: insertError } = await supabase1
+        .from("announcements")
+        .insert({
+          icon: ann.icon,
+          message: ann.text
+        });
+      
+      if (insertError) {
+        console.error("Insert error:", insertError);
+        showToast("Error saving: " + insertError.message, true);
+        return false;
+      }
+    }
+    
+    showToast("Announcements saved to database!");
+    return true;
+  } catch (error) {
+    console.error("Error saving announcements:", error);
+    showToast("Error: " + error.message, true);
+    return false;
+  }
 }
 
 function renderTicker() {
   const tickerContainer = document.getElementById('tickerText');
   if(!tickerContainer) return;
-  let html = '';
+  
+  if (announcements.length === 0) {
+    tickerContainer.innerHTML = '<span>No announcements available</span>';
+    return;
+  }
+  
   const allAnnouncements = [...announcements, ...announcements];
+  let html = '';
   for(const ann of allAnnouncements) {
-    html += `<span><i class="bi ${ann.icon}"></i> ${ann.text}</span>`;
+    html += `<span><i class="bi ${ann.icon}"></i> ${escapeHtml(ann.text)}</span>`;
   }
   tickerContainer.innerHTML = html;
 }
 
-function openEditAnnouncementModal() {
+function getIconEmoji(icon) {
+  const map = { 
+    'bi-calendar-event': '📅', 
+    'bi-trophy': '🏆', 
+    'bi-cash-stack': '💰', 
+    'bi-person-plus': '👤', 
+    'bi-journal-bookmark-fill': '📚', 
+    'bi-calendar-check': '📅', 
+    'bi-emoji-smile': '😊', 
+    'bi-megaphone-fill': '📢' 
+  };
+  return map[icon] || '📢';
+}
+
+function refreshModalContent() {
   const container = document.getElementById('announcementList');
   if(!container) return;
   let html = '';
   for(let i = 0; i < announcements.length; i++) {
     html += `<div class="announcement-item">
-        <select class="form-select form-select-sm" style="width: 45px;" id="ann_icon_${i}">
+        <select class="form-select form-select-sm" style="width: 60px;" id="ann_icon_${i}" onchange="updateIconPreview(${i})">
           <option value="bi-calendar-event" ${announcements[i].icon === 'bi-calendar-event' ? 'selected' : ''}>📅</option>
           <option value="bi-trophy" ${announcements[i].icon === 'bi-trophy' ? 'selected' : ''}>🏆</option>
           <option value="bi-cash-stack" ${announcements[i].icon === 'bi-cash-stack' ? 'selected' : ''}>💰</option>
@@ -644,20 +632,34 @@ function openEditAnnouncementModal() {
       </div>`;
   }
   container.innerHTML = html;
-  new bootstrap.Modal(document.getElementById('editAnnouncementModal')).show();
+}
+
+function updateIconPreview(index) {
+  const iconSelect = document.getElementById(`ann_icon_${index}`);
+  // Just for combo box - no preview needed now
+}
+
+function openEditAnnouncementModal() {
+  if (currentModal && currentModal._isShown) {
+    refreshModalContent();
+    return;
+  }
+  refreshModalContent();
+  currentModal = new bootstrap.Modal(document.getElementById('editAnnouncementModal'));
+  currentModal.show();
 }
 
 function addNewAnnouncement() {
-  announcements.push({ icon: "bi-megaphone-fill", text: "📢 New announcement here" });
-  openEditAnnouncementModal();
+  announcements.push({ id: null, icon: "bi-megaphone-fill", text: "New announcement here" });
+  refreshModalContent();
 }
 
 function removeAnnouncement(index) {
   announcements.splice(index, 1);
-  openEditAnnouncementModal();
+  refreshModalContent();
 }
 
-function saveAnnouncements() {
+async function saveAnnouncements() {
   for(let i = 0; i < announcements.length; i++) {
     const iconSelect = document.getElementById(`ann_icon_${i}`);
     const textInput = document.getElementById(`ann_text_${i}`);
@@ -666,33 +668,45 @@ function saveAnnouncements() {
       announcements[i].text = textInput.value;
     }
   }
-  localStorage.setItem('schoolAnnouncements', JSON.stringify(announcements));
-  renderTicker();
-  bootstrap.Modal.getInstance(document.getElementById('editAnnouncementModal')).hide();
+  await saveAnnouncementsToDB();
+  if (currentModal) currentModal.hide();
+  await loadAnnouncementsFromDB();
 }
 
-// ==================== DASHBOARD FUNCTIONS ====================
-function formatDate(d) {
-  let y = d.getFullYear();
-  let m = String(d.getMonth() + 1).padStart(2, '0');
-  let day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+// ==================== MODULE FUNCTIONS ====================
+function openModule(moduleName) {
+  const titles = { 
+    students: 'Student Management', 
+    attendance: 'Attendance Management', 
+    fee: 'Fee Management', 
+    syllabus: 'Syllabus Management', 
+    examination: 'Examination Result', 
+    chat_rooms: 'Chat Rooms', 
+    login_history: 'Login History' 
+  };
+  const icons = {
+    students: 'bi-people-fill',
+    attendance: 'bi-calendar-check-fill',
+    fee: 'bi-cash-stack',
+    syllabus: 'bi-journal-bookmark-fill',
+    examination: 'bi-trophy-fill',
+    chat_rooms: 'bi-chat-dots-fill',
+    login_history: 'bi-clock-history'
+  };
+  document.getElementById('iframeTitle').innerHTML = `<i class="${icons[moduleName]}"></i> ${titles[moduleName] || moduleName}`;
+  document.getElementById('moduleIframe').src = moduleName + '.html';
+  document.getElementById('iframeContainer').style.display = 'flex';
+  document.getElementById('dashboardView').style.display = 'none';
 }
 
-function isValidWhatsAppNumber(mobile) {
-  if(!mobile || mobile === 'No mobile' || mobile === '') return false;
-  let clean = mobile.replace(/[\s\-]/g, '');
-  if(clean.length >= 10 && clean.length <= 13) {
-    if(clean.match(/^(03|3|92)\d{9,10}$/)) return true;
-  }
-  return false;
+function closeIframe() {
+  document.getElementById('moduleIframe').src = 'about:blank';
+  document.getElementById('iframeContainer').style.display = 'none';
+  document.getElementById('dashboardView').style.display = 'block';
+  loadDashboardStats();
 }
 
-function escapeHtml(str) {
-  if(!str) return '';
-  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;'));
-}
-
+// ==================== DASHBOARD STATS ====================
 async function loadDashboardStats() {
   try {
     const { count: studentsCount } = await supabase1.from("students").select("*", { count: "exact", head: true });
@@ -701,15 +715,17 @@ async function loadDashboardStats() {
     const { data: classes } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
     if(classes) {
       allClasses = classes;
-      const classSelect = document.getElementById('classSelectStudents');
-      classSelect.innerHTML = '<option value="">-- All Classes --</option>';
-      for(const c of allClasses) {
-        classSelect.innerHTML += `<option value="${c.class_room_id}">${c.class_room_no}</option>`;
+      const classFilter = document.getElementById('classFilter');
+      if(classFilter) {
+        classFilter.innerHTML = '<option value="">-- All Classes --</option>';
+        for(const c of allClasses) {
+          classFilter.innerHTML += `<option value="${c.class_room_id}">${c.class_room_no}</option>`;
+        }
       }
     }
     document.getElementById('totalClasses').innerText = allClasses.length || 0;
     
-    const todayStr = formatDate(new Date());
+    const todayStr = new Date().toISOString().split('T')[0];
     const { data: todayAttendance } = await supabase1.from("students_attendence").select("*").eq("stu_attendence_date", todayStr);
     let present = 0, absent = 0, leave = 0;
     const leaveStatusIds = [3, 4, 5, 6, 7, 8];
@@ -730,7 +746,7 @@ async function loadDashboardStats() {
     
     const { data: fees } = await supabase1.from("student_pay_scale").select("*");
     let totalCollected = 0, totalPending = 0, todayCollectionAmount = 0;
-    const todayDateStr = formatDate(new Date());
+    const todayDateStr = todayStr;
     if (fees) {
       for (const f of fees) {
         totalCollected += Number(f.stu_paid) || 0;
@@ -746,127 +762,32 @@ async function loadDashboardStats() {
   } catch(e) { console.log("Error:", e); }
 }
 
-async function loadAllStudentsForSelection() {
-  let query = supabase1.from("students").select("stu_id, stu_name, stu_admission_no, stu_father, stu_mobile1, stu_mobile2").order("stu_name");
-  if(currentClassId) { query = query.eq("stu_class_room_id", currentClassId); }
-  const { data } = await query;
-  if(data) { allStudents = data; }
-  return allStudents;
-}
-
-async function loadStudentsForSelection() {
-  currentClassId = document.getElementById('classSelectStudents').value;
-  if(currentClassId === "") currentClassId = null;
-  await loadAllStudentsForSelection();
-  selectedStudentIds.clear();
-  document.getElementById('selectedCount').innerHTML = '0 selected';
-  renderStudentListInModal();
-  updateSendButton();
-}
-
-function renderStudentListInModal() {
-  const container = document.getElementById('studentList');
-  if(!container) return;
-  const searchTerm = document.getElementById('studentSearchInput')?.value.toLowerCase() || '';
-  let filtered = allStudents;
-  if(searchTerm) {
-    filtered = allStudents.filter(s => s.stu_name?.toLowerCase().includes(searchTerm) || s.stu_admission_no?.toLowerCase().includes(searchTerm) || s.stu_father?.toLowerCase().includes(searchTerm));
-  }
-  currentFilteredStudents = filtered;
-  if(filtered.length === 0) { container.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bi bi-inbox"></i><br>No students found</div>'; updateSelectAllCheckbox(); updateSendButton(); return; }
-  let html = '';
-  for(const s of filtered) {
-    const mobile = s.stu_mobile1 || s.stu_mobile2;
-    const isValid = isValidWhatsAppNumber(mobile);
-    const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
-    const isSelected = selectedStudentIds.has(s.stu_id);
-    html += `<div class="student-item ${isSelected ? 'selected' : ''}" onclick="toggleStudentSelection(${s.stu_id})">
-      <div class="student-checkbox-wrapper" onclick="event.stopPropagation(); toggleStudentSelection(${s.stu_id})">
-        <div class="student-checkbox-custom ${isSelected ? 'checked' : ''}">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>
-      </div>
-      <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; flex-shrink: 0;">${initial}</div>
-      <div style="flex:1;">
-        <div style="font-weight:600; font-size:0.85rem;">${escapeHtml(s.stu_name)}</div>
-        <div style="font-size:0.6rem; color:#64748b;">${escapeHtml(s.stu_admission_no)} | ${escapeHtml(s.stu_father)}</div>
-        <div style="font-size:0.55rem; ${isValid ? 'color:#059669' : 'color:#ef4444'}"><i class="bi ${isValid ? 'bi-whatsapp' : 'bi-exclamation-triangle'}"></i> ${mobile || 'No mobile'}</div>
-      </div>
-    </div>`;
-  }
-  container.innerHTML = html;
-  updateSelectAllCheckbox();
-  updateSendButton();
-}
-
-function toggleStudentSelection(studentId) {
-  if(selectedStudentIds.has(studentId)) { selectedStudentIds.delete(studentId); } 
-  else { selectedStudentIds.add(studentId); }
-  updateSelectAllCheckbox();
-  renderStudentListInModal();
-  updateSendButton();
-}
-
-function toggleSelectAllStudents() {
-  const isAllSelected = currentFilteredStudents.length > 0 && currentFilteredStudents.every(s => selectedStudentIds.has(s.stu_id));
-  if(isAllSelected) { currentFilteredStudents.forEach(s => selectedStudentIds.delete(s.stu_id)); } 
-  else { currentFilteredStudents.forEach(s => selectedStudentIds.add(s.stu_id)); }
-  updateSelectAllCheckbox();
-  renderStudentListInModal();
-  updateSendButton();
-}
-
-function updateSelectAllCheckbox() {
-  const checkbox = document.getElementById('selectAllCheckbox');
-  if(!checkbox) return;
-  const isAllSelected = currentFilteredStudents.length > 0 && currentFilteredStudents.every(s => selectedStudentIds.has(s.stu_id));
-  if(isAllSelected && currentFilteredStudents.length > 0) {
-    checkbox.classList.add('checked');
-    checkbox.innerHTML = '<i class="bi bi-check-lg"></i>';
-  } else {
-    checkbox.classList.remove('checked');
-    checkbox.innerHTML = '';
-  }
-}
-
-function updateSendButton() {
-  let validCount = 0;
-  for(const id of selectedStudentIds) {
-    const student = allStudents.find(s => s.stu_id === id);
-    if(student && isValidWhatsAppNumber(student.stu_mobile1 || student.stu_mobile2)) validCount++;
-  }
-  if(validCount > 0 && pendingMessage.trim() !== "") {
-    document.getElementById('notificationStats').style.display = 'block';
-    document.getElementById('notifyCount').innerText = validCount;
-    document.getElementById('sendNotificationBtn').disabled = false;
-  } else {
-    document.getElementById('notificationStats').style.display = 'none';
-    document.getElementById('sendNotificationBtn').disabled = true;
-  }
-  document.getElementById('selectedCount').innerHTML = `${selectedStudentIds.size} selected`;
+// ==================== NOTIFICATION FUNCTIONS ====================
+function openNotificationModal() {
+  pendingMessage = "";
+  document.getElementById('notificationMessage').value = '';
+  new bootstrap.Modal(document.getElementById('notificationModal')).show();
 }
 
 function setTemplate(type) {
-  const schoolName = 'The Leads High School (Dinga)';
-  let template = '';
-  switch(type) {
-    case 'absent': template = `❌ *ABSENT NOTICE*\n\nDear Parent,\n\nYour child was marked absent today. Please ensure regular attendance.\n\nRegards,\n${schoolName}`; break;
-    case 'bag': template = `🎒 *NOTICE*\n\nDear Student,\n\nPlease purchase a new school bag.\n\nRegards,\n${schoolName}`; break;
-    case 'hair': template = `✂️ *NOTICE*\n\nDear Student,\n\nPlease get a proper haircut as per school dress code.\n\nRegards,\n${schoolName}`; break;
-    case 'shoe': template = `👞 *NOTICE*\n\nDear Student,\n\nPlease polish your shoes properly.\n\nRegards,\n${schoolName}`; break;
-    case 'uniform': template = `👔 *NOTICE*\n\nDear Student,\n\nPlease purchase new uniform.\n\nRegards,\n${schoolName}`; break;
-    case 'books': template = `📚 *NOTICE*\n\nDear Student,\n\nYou are missing some books. Please bring all required books.\n\nRegards,\n${schoolName}`; break;
-    case 'fee': template = `💰 *FEE REMINDER*\n\nDear Parent,\n\nThe monthly fee is due by 10th.\n\nRegards,\n${schoolName}`; break;
-    case 'exam': template = `📝 *EXAM ALERT*\n\nDear Student,\n\nAnnual examinations will start from 1st of next month.\n\nRegards,\n${schoolName}`; break;
-  }
-  document.getElementById('notificationMessage').value = template;
+  const templates = { 
+    absent: '❌ Your child was absent today.', 
+    bag: '🎒 Please purchase new bag.', 
+    hair: '✂️ Get proper haircut.', 
+    uniform: '👔 Purchase new uniform.', 
+    fee: '💰 Fee due by 10th.', 
+    exam: '📝 Exams starting soon.' 
+  };
+  document.getElementById('notificationMessage').value = templates[type] || '';
 }
 
-function goToStudentSelection() {
-  const message = document.getElementById('notificationMessage').value.trim();
-  if(!message) { alert("Please write a message first"); return; }
-  pendingMessage = message;
-  document.getElementById('messagePreview').innerHTML = pendingMessage.replace(/\n/g, '<br>');
+async function goToStudentSelection() {
+  pendingMessage = document.getElementById('notificationMessage').value.trim();
+  if (!pendingMessage) { alert("Please write a message first"); return; }
+  document.getElementById('messagePreview').innerHTML = pendingMessage;
+  await loadStudents();
   bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
-  loadStudentsForSelection().then(() => { new bootstrap.Modal(document.getElementById('studentListModal')).show(); });
+  new bootstrap.Modal(document.getElementById('studentListModal')).show();
 }
 
 function goBackToMessage() {
@@ -874,133 +795,120 @@ function goBackToMessage() {
   new bootstrap.Modal(document.getElementById('notificationModal')).show();
 }
 
-// FIXED: sendNotification with direct WhatsApp using window.location.href
-async function sendNotification() {
-  if(pendingMessage.trim() === "") { alert("No message"); return; }
-  const targetStudents = allStudents.filter(s => selectedStudentIds.has(s.stu_id));
-  const validStudents = targetStudents.filter(s => isValidWhatsAppNumber(s.stu_mobile1 || s.stu_mobile2));
-  if(validStudents.length === 0) { alert("No students with valid WhatsApp numbers selected"); return; }
-  
-  const schoolName = 'The Leads High School (Dinga)';
-  const fullMessage = `${pendingMessage}\n\n📱 ${schoolName}`;
-  
-  // For single student - direct WhatsApp
-  if(validStudents.length === 1) {
-    const student = validStudents[0];
-    let mobile = student.stu_mobile1 || student.stu_mobile2;
-    let cleanMobile = mobile.replace(/[\s\-]/g, '');
-    if(cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
-    if(!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
-    const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(fullMessage)}`;
-    
-    // Use Android interface if available
-    if (window.Android && window.Android.shareToWhatsApp) {
-      window.Android.shareToWhatsApp(cleanMobile, fullMessage);
-    } else {
-      window.location.href = whatsappUrl;
-    }
-    
-    bootstrap.Modal.getInstance(document.getElementById('studentListModal')).hide();
-    selectedStudentIds.clear();
-    pendingMessage = "";
-    document.getElementById('notificationMessage').value = '';
-    document.getElementById('studentSearchInput').value = '';
-    return;
-  }
-  
-  // For multiple students - show list
-  let studentListHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-  for(const s of validStudents) {
-    let mobile = s.stu_mobile1 || s.stu_mobile2;
-    let cleanMobile = mobile.replace(/[\s\-]/g, '');
-    if(cleanMobile.startsWith('0')) cleanMobile = cleanMobile.substring(1);
-    if(!cleanMobile.startsWith('92')) cleanMobile = '92' + cleanMobile;
-    const initial = s.stu_name ? s.stu_name.charAt(0).toUpperCase() : '?';
-    const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodeURIComponent(fullMessage)}`;
-    studentListHtml += `<div style="padding: 8px 10px; border-bottom: 1px solid #eef2f8; display: flex; align-items: center; gap: 10px;">
-      <div style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; flex-shrink: 0;">${initial}</div>
-      <div style="flex:1;"><div style="font-weight:600; font-size:0.8rem;">${escapeHtml(s.stu_name)}</div><div style="font-size:0.6rem; color:#64748b;">${escapeHtml(s.stu_admission_no)}</div></div>
-      <a href="${whatsappUrl}" target="_blank" class="btn btn-success btn-sm rounded-pill" style="background:#25D366; border:none; padding:4px 12px;"><i class="bi bi-whatsapp"></i> Send</a>
+async function loadStudents() {
+  let query = supabase1.from("students").select("*").order("stu_name");
+  if (currentClassId) query = query.eq("stu_class_room_id", currentClassId);
+  const { data } = await query;
+  allStudents = data || [];
+  renderStudentList();
+}
+
+function renderStudentList() {
+  const search = document.getElementById('searchStudent')?.value.toLowerCase() || '';
+  let filtered = allStudents.filter(s => s.stu_name?.toLowerCase().includes(search) || s.stu_admission_no?.toLowerCase().includes(search));
+  currentFilteredStudents = filtered;
+  let html = '';
+  for (let s of filtered) {
+    const isSelected = selectedStudentIds.has(s.stu_id);
+    html += `<div class="student-item" onclick="toggleStudent(${s.stu_id})">
+      <div class="student-checkbox-custom ${isSelected ? 'checked' : ''}">${isSelected ? '<i class="bi bi-check-lg"></i>' : ''}</div>
+      <div><strong>${escapeHtml(s.stu_name)}</strong><br><small>${escapeHtml(s.stu_admission_no)}</small></div>
     </div>`;
   }
-  studentListHtml += '</div>';
+  document.getElementById('studentListContainer').innerHTML = html;
+  document.getElementById('selectedCount').innerHTML = `${selectedStudentIds.size} selected`;
+  document.getElementById('sendBtn').disabled = selectedStudentIds.size === 0;
+  updateSelectAllCheckbox();
+}
+
+function toggleStudent(id) {
+  if (selectedStudentIds.has(id)) selectedStudentIds.delete(id);
+  else selectedStudentIds.add(id);
+  renderStudentList();
+}
+
+function toggleSelectAll() {
+  const checked = document.getElementById('selectAllCheckbox').checked;
+  if (checked) currentFilteredStudents.forEach(s => selectedStudentIds.add(s.stu_id));
+  else currentFilteredStudents.forEach(s => selectedStudentIds.delete(s.stu_id));
+  renderStudentList();
+}
+
+function updateSelectAllCheckbox() {
+  const allSelected = currentFilteredStudents.length > 0 && currentFilteredStudents.every(s => selectedStudentIds.has(s.stu_id));
+  document.getElementById('selectAllCheckbox').checked = allSelected;
+}
+
+async function sendNotifications() {
+  const targetStudents = allStudents.filter(s => selectedStudentIds.has(s.stu_id));
+  const message = `${pendingMessage}\n\n📱 The Leads High School (Dinga)`;
   
-  const shareModalHtml = `<div class="modal fade" id="shareModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header" style="background: linear-gradient(135deg, #25D366, #128C7E); color: white; padding: 10px;"><h5 class="modal-title"><i class="bi bi-whatsapp me-2"></i>Send via WhatsApp</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="p-2 bg-light border-bottom small">Click "Send" next to each student</div>${studentListHtml}</div><div class="modal-footer py-2"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button></div></div></div></div>`;
-  const existing = document.getElementById('shareModal');
-  if(existing) existing.remove();
-  document.body.insertAdjacentHTML('beforeend', shareModalHtml);
-  new bootstrap.Modal(document.getElementById('shareModal')).show();
+  for (let s of targetStudents) {
+    let mobile = s.stu_mobile1 || s.stu_mobile2;
+    if (mobile) {
+      let clean = mobile.replace(/[\s\-]/g, '');
+      if (clean.startsWith('0')) clean = clean.substring(1);
+      if (!clean.startsWith('92')) clean = '92' + clean;
+      window.open(`https://wa.me/${clean}?text=${encodeURIComponent(message)}`, '_blank');
+    }
+  }
   bootstrap.Modal.getInstance(document.getElementById('studentListModal')).hide();
   selectedStudentIds.clear();
-  pendingMessage = "";
-  document.getElementById('notificationMessage').value = '';
-  document.getElementById('studentSearchInput').value = '';
+  showToast(`Sending to ${targetStudents.length} students`);
 }
 
-function openModule(moduleName, title, icon) {
-  const iframeContainer = document.getElementById('iframeContainer');
-  const iframe = document.getElementById('moduleIframe');
-  const iframeTitle = document.getElementById('iframeTitle');
-  iframeTitle.innerHTML = '<i class="' + icon + '"></i> ' + title;
-  iframe.src = moduleName + '.html';
-  iframeContainer.style.display = 'flex';
-  document.getElementById('dashboardView').style.display = 'none';
-}
+// ==================== UTILITIES ====================
+function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
 
-function closeIframe() {
-  const iframeContainer = document.getElementById('iframeContainer');
-  const iframe = document.getElementById('moduleIframe');
-  iframe.src = 'about:blank';
-  iframeContainer.style.display = 'none';
-  document.getElementById('dashboardView').style.display = 'block';
-  loadDashboardStats();
-}
-
-function openNotificationModal() {
-  pendingMessage = "";
-  document.getElementById('notificationMessage').value = '';
-  new bootstrap.Modal(document.getElementById('notificationModal')).show();
+function showToast(message, isError = false) {
+  let toast = document.getElementById('customToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'customToast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.background = isError ? '#ef4444' : '#333';
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 function updateDateTime() {
   const now = new Date();
-  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('dateTimeDisplay').innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + now.toLocaleDateString('en-PK', options) + ' | <i class="bi bi-clock"></i> ' + now.toLocaleTimeString();
+  document.getElementById('dateTimeDisplay').innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + now.toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' | <i class="bi bi-clock"></i> ' + now.toLocaleTimeString();
 }
 
 // Event Listeners
-document.getElementById('studentsModule')?.addEventListener('click', () => openModule('students', 'Student Management', 'bi bi-people-fill'));
-document.getElementById('attendanceModule')?.addEventListener('click', () => openModule('attendance', 'Attendance Management', 'bi bi-calendar-check-fill'));
-document.getElementById('feeModule')?.addEventListener('click', () => openModule('fee', 'Fee Management', 'bi bi-cash-stack'));
-document.getElementById('syllabusModule')?.addEventListener('click', () => openModule('syllabus', 'Syllabus Management', 'bi bi-journal-bookmark-fill'));
-document.getElementById('examModule')?.addEventListener('click', () => openModule('examination', 'Examination Result', 'bi bi-trophy-fill'));
-document.getElementById('notificationModule')?.addEventListener('click', openNotificationModal);
-document.getElementById('chatRoomsModule')?.addEventListener('click', () => openModule('chat_rooms', 'Chat Rooms', 'bi bi-chat-dots-fill'));
-document.getElementById('loginHistoryModule')?.addEventListener('click', () => openModule('login_history', 'Login History', 'bi bi-clock-history'));
-document.getElementById('studentSearchInput')?.addEventListener('input', () => renderStudentListInModal());
-document.getElementById('statStudents')?.addEventListener('click', () => openModule('students', 'Student Management', 'bi bi-people-fill'));
-document.getElementById('statAttendance')?.addEventListener('click', () => openModule('attendance', 'Attendance Management', 'bi bi-calendar-check-fill'));
-document.getElementById('statTotalFee')?.addEventListener('click', () => openModule('fee', 'Fee Management', 'bi bi-cash-stack'));
+document.getElementById('classFilter')?.addEventListener('change', (e) => {
+  currentClassId = e.target.value || null;
+  loadStudents();
+});
+document.getElementById('searchStudent')?.addEventListener('input', () => renderStudentList());
+document.getElementById('statStudents')?.addEventListener('click', () => openModule('students'));
+document.getElementById('statAttendance')?.addEventListener('click', () => openModule('attendance'));
+document.getElementById('statTotalFee')?.addEventListener('click', () => openModule('fee'));
 
 // Make functions global
+window.openModule = openModule;
+window.closeIframe = closeIframe;
 window.openEditAnnouncementModal = openEditAnnouncementModal;
 window.addNewAnnouncement = addNewAnnouncement;
 window.removeAnnouncement = removeAnnouncement;
 window.saveAnnouncements = saveAnnouncements;
+window.updateIconPreview = updateIconPreview;
+window.openNotificationModal = openNotificationModal;
 window.setTemplate = setTemplate;
 window.goToStudentSelection = goToStudentSelection;
 window.goBackToMessage = goBackToMessage;
-window.sendNotification = sendNotification;
-window.toggleStudentSelection = toggleStudentSelection;
-window.toggleSelectAllStudents = toggleSelectAllStudents;
-window.openModule = openModule;
-window.closeIframe = closeIframe;
-window.openNotificationModal = openNotificationModal;
+window.toggleStudent = toggleStudent;
+window.toggleSelectAll = toggleSelectAll;
+window.sendNotifications = sendNotifications;
+window.loadStudents = loadStudents;
 
 // Initialize
 setInterval(updateDateTime, 1000);
 updateDateTime();
-loadAnnouncements();
+loadAnnouncementsFromDB();
 loadDashboardStats();
 </script>
 </body>
