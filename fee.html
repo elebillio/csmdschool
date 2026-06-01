@@ -15,7 +15,44 @@
   body { background: #f1f5f9; padding: 16px; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; }
   
-  .list-card { background: white; border-radius: 28px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
+  /* Header Style - Same as att_report.html */
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 10px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-radius: 16px 16px 0 0;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 20px; 
+    padding: 5px 12px; 
+    color: white; 
+    font-size: 0.7rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 4px;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .print-btn, .export-btn {
+    border-radius: 30px;
+    padding: 4px 12px;
+    font-size: 0.65rem;
+    cursor: pointer;
+  }
+  .print-btn { background: #475569; border: none; color: white; }
+  .print-btn:hover { background: #334155; }
+  .export-btn { background: #10b981; border: none; color: white; }
+  .export-btn:hover { background: #059669; }
+  
+  .list-card { background: white; border-radius: 0 0 16px 16px; padding: 20px 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.04); margin-bottom: 20px; }
   .search-box { background: #f8fafc; border-radius: 48px; padding: 6px 16px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
   .search-box input { border: none; background: transparent; flex: 1; outline: none; font-size: 0.8rem; }
   
@@ -33,7 +70,7 @@
   .group-content.collapsed { max-height: 0 !important; padding: 0; margin: 0; }
   
   .detail-card { background: white; border-radius: 32px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
-  .detail-header { background: linear-gradient(135deg, #059669, #10b981); padding: 24px 20px; color: white; display: flex; align-items: center; justify-content: space-between; }
+  .detail-header-green { background: linear-gradient(135deg, #059669, #10b981); padding: 24px 20px; color: white; display: flex; align-items: center; justify-content: space-between; }
   .info-grid { padding: 20px; background: #ffffff; }
   .info-row { display: flex; padding: 12px 0; border-bottom: 1px solid #eef2f8; }
   .info-label { width: 35%; font-weight: 700; font-size: 0.75rem; color: #475569; }
@@ -157,10 +194,11 @@
 
   <!-- Main Card -->
   <div class="list-card">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="fw-bold mb-0"><i class="bi bi-cash-stack me-2 text-success"></i>Fee Records</h5>
+    <div class="detail-header" style="margin-bottom: 16px; border-radius: 16px;">
+      <button class="back-btn" onclick="goBackToDashboard()"><i class="bi bi-arrow-left"></i> Back</button>
+      <h5 class="mb-0" style="font-size: 0.85rem;"><i class="bi bi-cash-stack me-1"></i>Fee Management</h5>
       <div>
-        <button class="btn-report me-2" onclick="openReportModal()"><i class="bi bi-graph-up"></i> Report</button>
+        <button class="btn-report me-1" onclick="openReportModal()"><i class="bi bi-graph-up"></i> Report</button>
         <button class="btn btn-outline-secondary rounded-pill btn-sm" onclick="loadFees()"><i class="bi bi-arrow-repeat"></i> Refresh</button>
       </div>
     </div>
@@ -211,7 +249,7 @@
 <!-- FEE DETAIL VIEW -->
 <div id="feeDetailView" style="display: none;" class="app-container">
   <div class="detail-card">
-    <div class="detail-header">
+    <div class="detail-header-green">
       <div class="flex-grow-1">
         <h4 id="feeDetailStudent" class="fw-bold mb-1">-</h4>
         <p id="feeDetailInvoice" class="mb-0 opacity-75">Invoice: --</p>
@@ -304,6 +342,22 @@ function getClassroomName(classroomId) {
     return classroom ? classroom.class_room_no : `Class ${classroomId}`;
 }
 
+function goBackToDashboard() {
+    if (window.parent && window.parent !== window) {
+        try {
+            if (typeof window.parent.closeIframe === 'function') {
+                window.parent.closeIframe();
+            } else {
+                window.parent.location.href = 'index.html';
+            }
+        } catch(e) {
+            window.location.href = 'index.html';
+        }
+    } else {
+        window.location.href = 'index.html';
+    }
+}
+
 // ======================= REPORT MODAL FUNCTIONS =======================
 function openReportModal() {
     const modal = document.getElementById('reportModal');
@@ -340,13 +394,7 @@ function shareViaWhatsApp(mobile, message) {
   const cleanMobile = cleanMobileNumber(mobile);
   const encodedMessage = encodeURIComponent(message);
   const whatsappUrl = `https://wa.me/${cleanMobile}?text=${encodedMessage}`;
-  
-  if (window.Android && window.Android.shareToWhatsApp) {
-    window.Android.shareToWhatsApp(cleanMobile, message);
-    showToast("Opening WhatsApp...");
-  } else {
-    window.location.href = whatsappUrl;
-  }
+  window.open(whatsappUrl, '_blank');
 }
 
 async function sendInvoice() {
@@ -365,7 +413,6 @@ async function sendInvoice() {
   const paid = Number(currentFee.stu_paid) || 0;
   const due = Number(currentFee.stu_due) || 0;
   const total = Number(currentFee.stu_total) || 0;
-  const status = due === 0 ? "✅ FULLY PAID" : (paid > 0 ? "⚠️ PARTIALLY PAID" : "❌ UNPAID");
   const statusEmoji = due === 0 ? "✅" : (paid > 0 ? "⚠️" : "❌");
   const statusText = due === 0 ? "PAID" : (paid > 0 ? "PARTIAL" : "UNPAID");
   
@@ -467,44 +514,6 @@ async function getNextReceiptId() {
     } catch (err) {
         console.error("Error in getNextReceiptId:", err);
         return "AFR-000001";
-    }
-}
-
-async function getNextFeeId() {
-    try {
-        const { data, error } = await supabase1
-            .from("student_pay_scale")
-            .select("stu_pay_id")
-            .order("stu_pay_id", { ascending: true });
-        
-        if (error) {
-            console.error("Error fetching IDs:", error);
-            return "AFE-000001";
-        }
-        
-        let maxNumber = 0;
-        const prefix = "AFE";
-        
-        if (data && data.length > 0) {
-            for (const record of data) {
-                const id = record.stu_pay_id;
-                if (id && id.startsWith(prefix + "-")) {
-                    const numericPart = id.substring(prefix.length + 1);
-                    const num = parseInt(numericPart, 10);
-                    if (!isNaN(num) && num > maxNumber) {
-                        maxNumber = num;
-                    }
-                }
-            }
-        }
-        
-        const nextNumber = maxNumber + 1;
-        const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
-        return newId;
-        
-    } catch (err) {
-        console.error("Error in getNextFeeId:", err);
-        return "AFE-000001";
     }
 }
 
