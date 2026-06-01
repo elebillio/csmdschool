@@ -69,8 +69,63 @@
   .status-dropdown-custom.meeting { background: #dbeafe; color: #1e40af; }
   .status-dropdown-custom.holiday { background: #cffafe; color: #155e75; }
   
-  .class-filter-row { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; background: white; padding: 8px 12px; border-radius: 30px; border: 1px solid #e2e8f0; }
-  .class-filter-row select { flex: 1; border: none; background: transparent; padding: 6px 0; font-size: 0.8rem; outline: none; }
+  .filter-row { 
+    display: flex; 
+    gap: 10px; 
+    margin-bottom: 16px; 
+    align-items: center; 
+    background: white; 
+    padding: 8px 12px; 
+    border-radius: 30px; 
+    border: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+  }
+  .filter-row select { 
+    flex: 2; 
+    border: none; 
+    background: transparent; 
+    padding: 6px 0; 
+    font-size: 0.8rem; 
+    outline: none; 
+  }
+  .date-picker-input {
+    flex: 1;
+    border: 1px solid #e2e8f0;
+    border-radius: 30px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    background: #f8fafc;
+    outline: none;
+    cursor: pointer;
+  }
+  .date-picker-input:focus {
+    border-color: #1e3c72;
+    background: white;
+  }
+  .go-date-btn {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border: none;
+    border-radius: 30px;
+    padding: 6px 12px;
+    color: white;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .go-date-btn:hover { opacity: 0.9; }
+  
+  .btn-report {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    border: none;
+    border-radius: 30px;
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-report:hover { transform: scale(1.02); opacity: 0.95; }
   
   .att-group { margin-bottom: 20px; }
   .att-group-header { background: #f1f5f9; padding: 12px 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 8px; }
@@ -109,19 +164,55 @@
   .report-icon-btn { background: transparent; border: none; border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; color: #1e3c72; cursor: pointer; }
   .report-icon-btn:hover { background: #eef2ff; }
   
-  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; margin-top: 12px; max-height: 380px; overflow-y: auto; padding: 6px; }
-  .cal-day { background: #f8fafc; border-radius: 40px; padding: 10px 4px; font-size: 0.7rem; font-weight: 500; border: 1px solid #e2e8f0; }
-  .cal-day-label { font-weight: 700; background: #eef2ff; color: #1e3c72; }
-  .cal-status-badge { display: block; font-size: 0.65rem; margin-top: 4px; font-weight: 600; }
-  .calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 16px; font-size: 0.7rem; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 20px; display: inline-block; margin-right: 4px; }
-  .report-header { background: #f1f5f9; border-radius: 20px; padding: 12px; margin-bottom: 12px; }
-  .status-summary { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; padding: 10px; background: #f8fafc; border-radius: 30px; }
-  .summary-badge { padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-  .report-filter-bar { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; }
-  .report-filter-btn { padding: 6px 16px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; border: none; background: #e2e8f0; color: #475569; transition: 0.2s; }
-  .report-filter-btn.active { background: #1e3c72; color: white; }
-  .month-nav { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
+  /* Report Modal */
+  .report-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+  }
+  .report-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 95%;
+    height: 90%;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .report-modal-header {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 12px 16px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .report-modal-header h5 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .close-report-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 4px 12px;
+    color: white;
+    cursor: pointer;
+  }
+  .close-report-btn:hover { background: rgba(255,255,255,0.3); }
+  .report-iframe {
+    width: 100%;
+    height: calc(100% - 48px);
+    border: none;
+  }
   
   .toast-custom {
     position: fixed;
@@ -139,6 +230,13 @@
     pointer-events: none;
   }
   .toast-custom.show { opacity: 1; }
+  
+  @media (max-width: 500px) {
+    .filter-row { flex-direction: column; align-items: stretch; }
+    .filter-row select { width: 100%; }
+    .date-picker-input { width: 100%; }
+    .go-date-btn { width: 100%; text-align: center; }
+  }
 </style>
 </head>
 <body>
@@ -146,7 +244,7 @@
 <div class="app-container">
   <!-- Header with Back Button -->
   <div class="detail-header">
-    <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+    <button class="back-btn" onclick="goBackToDashboard()"><i class="bi bi-arrow-left"></i> Back</button>
     <h5 class="mb-0">📅 Attendance Management</h5>
     <div style="width: 70px;"></div>
   </div>
@@ -155,7 +253,10 @@
   <div class="list-card">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h5 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-success"></i>Student Attendance</h5>
-      <button class="btn btn-primary rounded-pill btn-sm" id="globalMarkAllBtn"><i class="bi bi-check2-all"></i> Mark All</button>
+      <div>
+        <button class="btn-report me-2" onclick="openAttendanceReport()"><i class="bi bi-graph-up"></i> Report</button>
+        <button class="btn btn-primary rounded-pill btn-sm" id="globalMarkAllBtn"><i class="bi bi-check2-all"></i> Mark All</button>
+      </div>
     </div>
     
     <!-- Date Navigation -->
@@ -165,13 +266,15 @@
       <button class="btn btn-outline-secondary rounded-pill btn-sm" id="nextDateBtn">Next <i class="bi bi-chevron-right"></i></button>
     </div>
     
-    <!-- Class Filter -->
-    <div class="class-filter-row">
+    <!-- Class Filter + Date Picker -->
+    <div class="filter-row">
       <i class="bi bi-building"></i>
       <select id="classroomFilter">
         <option value="all">🏫 All Classes</option>
       </select>
-      <i class="bi bi-chevron-down text-muted"></i>
+      <i class="bi bi-calendar-date text-muted"></i>
+      <input type="date" id="datePickerInput" class="date-picker-input">
+      <button class="go-date-btn" id="goToDateBtn"><i class="bi bi-arrow-right"></i> Go</button>
     </div>
     
     <!-- Status Legend -->
@@ -212,33 +315,14 @@
   </div>
 </div>
 
-<!-- Report Modal -->
-<div class="modal fade" id="reportModal" tabindex="-1" data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-scrollable modal-fullscreen-sm-down">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title"><i class="bi bi-calendar-week me-2"></i>Attendance Report</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body p-3">
-        <div class="report-header text-center">
-          <div id="reportStudentName" class="fw-bold fs-5"></div>
-          <div id="reportStudentClass" class="small text-muted"></div>
-        </div>
-        <div class="report-filter-bar">
-          <button class="report-filter-btn" id="filterThisMonth">📅 This Month</button>
-          <button class="report-filter-btn" id="filterAllSession">📆 All Session (Mar 2026 - Feb 2027)</button>
-        </div>
-        <div id="monthNavContainer" class="month-nav">
-          <button class="btn btn-sm btn-outline-secondary" id="prevMonthBtn"><i class="bi bi-chevron-left"></i> Prev</button>
-          <span id="reportMonthYear" class="fw-bold"></span>
-          <button class="btn btn-sm btn-outline-secondary" id="nextMonthBtn">Next <i class="bi bi-chevron-right"></i></button>
-        </div>
-        <div id="reportCalendarContainer"></div>
-        <div class="calendar-legend" id="reportLegend"></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button></div>
+<!-- Report Modal for att_report.html -->
+<div id="attendanceReportModal" class="report-modal">
+  <div class="report-modal-content">
+    <div class="report-modal-header">
+      <h5><i class="bi bi-graph-up me-2"></i>Attendance Report | Class-wise Monthly Statement</h5>
+      <button class="close-report-btn" onclick="closeAttendanceReport()"><i class="bi bi-x-lg"></i> Close</button>
     </div>
+    <iframe id="attendanceReportIframe" class="report-iframe" src="att_report.html"></iframe>
   </div>
 </div>
 
@@ -286,16 +370,35 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-function goBack() {
+function goBackToDashboard() {
   if (window.parent && window.parent !== window) {
-    if (typeof window.parent.closeIframe === 'function') {
-      window.parent.closeIframe();
-    } else {
-      window.parent.location.href = 'index.html';
+    try {
+      if (typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+      } else {
+        window.parent.location.href = 'index.html';
+      }
+    } catch(e) {
+      window.location.href = 'index.html';
     }
   } else {
     window.location.href = 'index.html';
   }
+}
+
+// ==================== REPORT MODAL FUNCTIONS ====================
+function openAttendanceReport() {
+  const modal = document.getElementById('attendanceReportModal');
+  const iframe = document.getElementById('attendanceReportIframe');
+  iframe.src = 'att_report.html';
+  modal.style.display = 'block';
+}
+
+function closeAttendanceReport() {
+  const modal = document.getElementById('attendanceReportModal');
+  const iframe = document.getElementById('attendanceReportIframe');
+  iframe.src = 'about:blank';
+  modal.style.display = 'none';
 }
 
 // Status Configuration
@@ -310,7 +413,6 @@ const statusConfig = {
     8: { name: 'Holiday', class: 'holiday', color: '#06b6d4', bg: '#cffafe' } 
 };
 
-// Helper Functions
 function getStatusName(id) { return statusConfig[id]?.name || 'Not Marked'; }
 function getStatusBgColor(id) { return statusConfig[id]?.bg || '#f1f5f9'; }
 function getStatusTextColor(id) { return statusConfig[id]?.color || '#475569'; }
@@ -319,9 +421,6 @@ function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]
 function formatDate(d) { let y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 function getClassroomName(id) { let c = allClassrooms.find(c => c.class_room_id == id); return c ? c.class_room_no : `Class ${id}`; }
 
-// =====================================================
-// AUTO GENERATE ID: AAT-000001, AAT-000002...
-// =====================================================
 async function getNextAttendanceId() {
     try {
         const { data, error } = await supabase1
@@ -360,7 +459,6 @@ async function getNextAttendanceId() {
     }
 }
 
-// Get student image URL
 function getStudentImageUrl(student) {
     if (student.stu_image && typeof student.stu_image === 'string' && student.stu_image.length > 10) {
         if (student.stu_image.startsWith('data:image') || student.stu_image.startsWith('http')) {
@@ -371,7 +469,6 @@ function getStudentImageUrl(student) {
     return null;
 }
 
-// ==================== DATA LOADING ====================
 async function loadClassrooms() {
     const { data } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
     if(data) allClassrooms = data;
@@ -401,7 +498,6 @@ async function loadAttendanceData() {
     renderAttendanceList(); 
 }
 
-// ==================== ATTENDANCE FUNCTIONS ====================
 function getAttendanceStatus(studentId) { 
     let r = attendanceRecords.find(r=>r.stu_id===studentId); 
     return r ? r.stu_attendence_att_status_id : null; 
@@ -460,16 +556,22 @@ function renderAttendanceList() {
     if(!container) return;
     let filtered = getFilteredStudents(); 
     
-    // Update status legend
-    document.getElementById('statusLegend').innerHTML = attendanceStatuses.map(s=>`<span class="status-chip" style="background:${getStatusBgColor(s.att_status_id)};color:${getStatusTextColor(s.att_status_id)}">${s.att_status_type}</span>`).join(''); 
+    const legendContainer = document.getElementById('statusLegend');
+    if(legendContainer) {
+        legendContainer.innerHTML = attendanceStatuses.map(s=>`<span class="status-chip" style="background:${getStatusBgColor(s.att_status_id)};color:${getStatusTextColor(s.att_status_id)}">${s.att_status_type}</span>`).join('');
+    }
     
-    // Update statistics
     let stats={}; 
     for(let st of attendanceStatuses) stats[st.att_status_id] = filtered.filter(s=>getAttendanceStatus(s.stu_id)===st.att_status_id).length; 
-    document.getElementById('attendanceStats').innerHTML = attendanceStatuses.map(s=>`<div class="stat-card"><i class="bi bi-${s.att_status_id===1?'check-circle-fill':'person'}"></i><h3>${stats[s.att_status_id]||0}</h3><small>${s.att_status_type}</small></div>`).join(''); 
+    const statsContainer = document.getElementById('attendanceStats');
+    if(statsContainer) {
+        statsContainer.innerHTML = attendanceStatuses.map(s=>`<div class="stat-card"><i class="bi bi-${s.att_status_id===1?'check-circle-fill':'person'}"></i><h3>${stats[s.att_status_id]||0}</h3><small>${s.att_status_type}</small></div>`).join('');
+    }
     
-    // Update date display
-    document.getElementById('attendanceDate').innerText = currentAttendanceDate.toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'}); 
+    const dateEl = document.getElementById('attendanceDate');
+    if(dateEl) {
+        dateEl.innerText = currentAttendanceDate.toLocaleDateString('en-PK',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    }
     
     if(filtered.length===0){ 
         container.innerHTML='<div class="empty-state"><i class="bi bi-inbox fs-3"></i><p>No students found</p></div>'; 
@@ -569,10 +671,12 @@ async function saveAttendance() {
     const progressText = document.getElementById('saveProgressText');
     const saveBtn = document.getElementById('saveAttendanceBtn');
     
-    progressContainer.style.display = 'block';
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
-    progressBar.style.width = '0%';
+    if(progressContainer) progressContainer.style.display = 'block';
+    if(saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+    }
+    if(progressBar) progressBar.style.width = '0%';
     
     let successCount = 0, failCount = 0;
     
@@ -592,19 +696,21 @@ async function saveAttendance() {
         } catch (err) { failCount++; }
         
         const percent = Math.round(((i + 1) / recordsToSave.length) * 100);
-        progressBar.style.width = `${percent}%`;
-        progressText.innerText = `${i+1}/${recordsToSave.length} (✅${successCount} ⚠️${failCount})`;
+        if(progressBar) progressBar.style.width = `${percent}%`;
+        if(progressText) progressText.innerText = `${i+1}/${recordsToSave.length} (✅${successCount} ⚠️${failCount})`;
         await new Promise(r => setTimeout(r, 10));
     }
     
-    progressBar.style.width = '100%';
-    progressText.innerText = `✅ Saved ${successCount} records!`;
+    if(progressBar) progressBar.style.width = '100%';
+    if(progressText) progressText.innerText = `✅ Saved ${successCount} records!`;
     showToast(`Saved ${successCount} records!`);
     
-    saveBtn.disabled = false;
-    saveBtn.innerHTML = '<i class="bi bi-save"></i> Save Attendance (Current Class)';
+    if(saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="bi bi-save"></i> Save Attendance (Current Class)';
+    }
     await loadAttendanceData();
-    setTimeout(() => { progressContainer.style.display = 'none'; }, 2000);
+    if(progressContainer) setTimeout(() => { progressContainer.style.display = 'none'; }, 2000);
 }
 
 function changeDate(delta) { 
@@ -617,6 +723,20 @@ function goToToday() {
     loadAttendanceData(); 
 }
 
+function goToSelectedDate() {
+    const datePicker = document.getElementById('datePickerInput');
+    if(datePicker && datePicker.value) {
+        const selectedDate = new Date(datePicker.value);
+        if(!isNaN(selectedDate.getTime())) {
+            currentAttendanceDate = selectedDate;
+            loadAttendanceData();
+            showToast(`Date changed to ${formatDate(currentAttendanceDate)}`);
+        } else {
+            showToast("Invalid date selected", true);
+        }
+    }
+}
+
 function applyClassroomFilter() { 
     let val = document.getElementById('classroomFilter').value; 
     selectedClassroomId = val === 'all' ? null : parseInt(val); 
@@ -625,8 +745,10 @@ function applyClassroomFilter() {
 
 function openGlobalMarkAllModal() { 
     let select = document.getElementById('globalMarkAllStatus'); 
-    select.innerHTML = ''; 
-    for(let st of attendanceStatuses) select.innerHTML += `<option value="${st.att_status_id}">${st.att_status_type}</option>`; 
+    if(select) {
+        select.innerHTML = ''; 
+        for(let st of attendanceStatuses) select.innerHTML += `<option value="${st.att_status_id}">${st.att_status_type}</option>`; 
+    }
     new bootstrap.Modal(document.getElementById('globalMarkAllModal')).show(); 
 }
 
@@ -642,7 +764,7 @@ function applyGlobalMarkAll() {
     renderAttendanceList(); 
 }
 
-// ==================== REPORT MODULE ====================
+// ==================== REPORT MODULE (Individual Student) ====================
 let currentReportStudentId = null;
 let currentReportMonth = new Date();
 let reportFilter = 'month';
@@ -652,11 +774,16 @@ window.openReportModal = async function(studentId) {
     currentReportMonth = new Date();
     reportFilter = 'month';
     let student = allStudents.find(s=>s.stu_id===studentId);
-    document.getElementById('reportStudentName').innerHTML = escapeHtml(student?.stu_name||'Unknown');
-    document.getElementById('reportStudentClass').innerHTML = `Class: ${getClassroomName(student?.stu_class_room_id)} | ID: ${student?.stu_admission_no||'N/A'}`;
-    document.getElementById('filterThisMonth').classList.add('active');
-    document.getElementById('filterAllSession').classList.remove('active');
-    document.getElementById('monthNavContainer').style.display = 'flex';
+    const nameEl = document.getElementById('reportStudentName');
+    const classEl = document.getElementById('reportStudentClass');
+    if(nameEl) nameEl.innerHTML = escapeHtml(student?.stu_name||'Unknown');
+    if(classEl) classEl.innerHTML = `Class: ${getClassroomName(student?.stu_class_room_id)} | ID: ${student?.stu_admission_no||'N/A'}`;
+    const filterMonthBtn = document.getElementById('filterThisMonth');
+    const filterAllBtn = document.getElementById('filterAllSession');
+    const monthNav = document.getElementById('monthNavContainer');
+    if(filterMonthBtn) filterMonthBtn.classList.add('active');
+    if(filterAllBtn) filterAllBtn.classList.remove('active');
+    if(monthNav) monthNav.style.display = 'flex';
     await renderMonthCalendar();
     new bootstrap.Modal(document.getElementById('reportModal')).show();
 };
@@ -665,7 +792,8 @@ async function renderMonthCalendar() {
     let year = currentReportMonth.getFullYear();
     let month = currentReportMonth.getMonth();
     let monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    document.getElementById('reportMonthYear').innerHTML = `${monthNames[month]} ${year}`;
+    const monthYearEl = document.getElementById('reportMonthYear');
+    if(monthYearEl) monthYearEl.innerHTML = `${monthNames[month]} ${year}`;
     let firstDayOfMonth = new Date(year, month, 1);
     let startWeekday = firstDayOfMonth.getDay();
     let calStart = new Date(year, month, 1);
@@ -698,8 +826,10 @@ async function renderMonthCalendar() {
     summaryHtml += '</div>';
     let legendHtml = '';
     for(let st of attendanceStatuses) legendHtml += `<div><span class="legend-dot" style="background:${getStatusBgColor(st.att_status_id)}; border:1px solid ${getStatusTextColor(st.att_status_id)}"></span> ${st.att_status_type}</div>`;
-    document.getElementById('reportCalendarContainer').innerHTML = calendarHtml + summaryHtml;
-    document.getElementById('reportLegend').innerHTML = legendHtml;
+    const calendarContainer = document.getElementById('reportCalendarContainer');
+    const legendContainer = document.getElementById('reportLegend');
+    if(calendarContainer) calendarContainer.innerHTML = calendarHtml + summaryHtml;
+    if(legendContainer) legendContainer.innerHTML = legendHtml;
 }
 
 async function renderFullSessionCalendar() {
@@ -751,58 +881,87 @@ async function renderFullSessionCalendar() {
     summaryHtml += '</div>';
     let legendHtml = '';
     for(let st of attendanceStatuses) legendHtml += `<div><span class="legend-dot" style="background:${getStatusBgColor(st.att_status_id)}; border:1px solid ${getStatusTextColor(st.att_status_id)}"></span> ${st.att_status_type}</div>`;
-    document.getElementById('reportCalendarContainer').innerHTML = gridHtml + summaryHtml;
-    document.getElementById('reportLegend').innerHTML = legendHtml;
+    const calendarContainer = document.getElementById('reportCalendarContainer');
+    const legendContainer = document.getElementById('reportLegend');
+    if(calendarContainer) calendarContainer.innerHTML = gridHtml + summaryHtml;
+    if(legendContainer) legendContainer.innerHTML = legendHtml;
 }
 
 function setReportFilter(filter) {
     reportFilter = filter;
+    const filterMonthBtn = document.getElementById('filterThisMonth');
+    const filterAllBtn = document.getElementById('filterAllSession');
+    const monthNav = document.getElementById('monthNavContainer');
     if(filter === 'month') {
-        document.getElementById('filterThisMonth').classList.add('active');
-        document.getElementById('filterAllSession').classList.remove('active');
-        document.getElementById('monthNavContainer').style.display = 'flex';
+        if(filterMonthBtn) filterMonthBtn.classList.add('active');
+        if(filterAllBtn) filterAllBtn.classList.remove('active');
+        if(monthNav) monthNav.style.display = 'flex';
         renderMonthCalendar();
     } else {
-        document.getElementById('filterThisMonth').classList.remove('active');
-        document.getElementById('filterAllSession').classList.add('active');
-        document.getElementById('monthNavContainer').style.display = 'none';
+        if(filterMonthBtn) filterMonthBtn.classList.remove('active');
+        if(filterAllBtn) filterAllBtn.classList.add('active');
+        if(monthNav) monthNav.style.display = 'none';
         renderFullSessionCalendar();
     }
 }
 
 function changeReportMonth(delta) { currentReportMonth.setMonth(currentReportMonth.getMonth() + delta); renderMonthCalendar(); }
 
-// ==================== INITIALIZATION ====================
 async function init() {
     await loadClassrooms();
     await loadStatuses();
     await loadStudents();
     await loadAttendanceData();
+    
+    const datePicker = document.getElementById('datePickerInput');
+    if(datePicker) {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        datePicker.value = `${yyyy}-${mm}-${dd}`;
+    }
 }
 
 // ==================== EVENT LISTENERS ====================
-document.getElementById('prevDateBtn')?.addEventListener('click', () => changeDate(-1));
-document.getElementById('nextDateBtn')?.addEventListener('click', () => changeDate(1));
-document.getElementById('todayBtn')?.addEventListener('click', goToToday);
-document.getElementById('saveAttendanceBtn')?.addEventListener('click', saveAttendance);
-document.getElementById('globalMarkAllBtn')?.addEventListener('click', openGlobalMarkAllModal);
-document.getElementById('applyGlobalMarkAllBtn')?.addEventListener('click', applyGlobalMarkAll);
-document.getElementById('classroomFilter')?.addEventListener('change', applyClassroomFilter);
-document.getElementById('toggleGroupView')?.addEventListener('change', toggleGroupView);
-document.getElementById('attendanceSearch')?.addEventListener('input', () => renderAttendanceList());
-document.getElementById('filterThisMonth')?.addEventListener('click', () => setReportFilter('month'));
-document.getElementById('filterAllSession')?.addEventListener('click', () => setReportFilter('all'));
-document.getElementById('prevMonthBtn')?.addEventListener('click', () => changeReportMonth(-1));
-document.getElementById('nextMonthBtn')?.addEventListener('click', () => changeReportMonth(1));
+const prevBtn = document.getElementById('prevDateBtn');
+const nextBtn = document.getElementById('nextDateBtn');
+const todayBtn = document.getElementById('todayBtn');
+const saveBtn = document.getElementById('saveAttendanceBtn');
+const globalMarkBtn = document.getElementById('globalMarkAllBtn');
+const applyMarkBtn = document.getElementById('applyGlobalMarkAllBtn');
+const classFilter = document.getElementById('classroomFilter');
+const toggleGroup = document.getElementById('toggleGroupView');
+const searchInput = document.getElementById('attendanceSearch');
+const filterMonth = document.getElementById('filterThisMonth');
+const filterAll = document.getElementById('filterAllSession');
+const prevMonth = document.getElementById('prevMonthBtn');
+const nextMonth = document.getElementById('nextMonthBtn');
+const goToDateBtn = document.getElementById('goToDateBtn');
 
-// Make functions global for onclick events
+if(prevBtn) prevBtn.addEventListener('click', () => changeDate(-1));
+if(nextBtn) nextBtn.addEventListener('click', () => changeDate(1));
+if(todayBtn) todayBtn.addEventListener('click', goToToday);
+if(saveBtn) saveBtn.addEventListener('click', saveAttendance);
+if(globalMarkBtn) globalMarkBtn.addEventListener('click', openGlobalMarkAllModal);
+if(applyMarkBtn) applyMarkBtn.addEventListener('click', applyGlobalMarkAll);
+if(classFilter) classFilter.addEventListener('change', applyClassroomFilter);
+if(toggleGroup) toggleGroup.addEventListener('change', toggleGroupView);
+if(searchInput) searchInput.addEventListener('input', () => renderAttendanceList());
+if(filterMonth) filterMonth.addEventListener('click', () => setReportFilter('month'));
+if(filterAll) filterAll.addEventListener('click', () => setReportFilter('all'));
+if(prevMonth) prevMonth.addEventListener('click', () => changeReportMonth(-1));
+if(nextMonth) nextMonth.addEventListener('click', () => changeReportMonth(1));
+if(goToDateBtn) goToDateBtn.addEventListener('click', goToSelectedDate);
+
 window.updateAttendanceStatus = updateAttendanceStatus;
 window.markGroupAll = markGroupAll;
 window.toggleGroupCollapse = toggleGroupCollapse;
 window.openReportModal = openReportModal;
-window.goBack = goBack;
+window.goBackToDashboard = goBackToDashboard;
+window.openAttendanceReport = openAttendanceReport;
+window.closeAttendanceReport = closeAttendanceReport;
 
-// Start the application
 init();
 </script>
 </body>

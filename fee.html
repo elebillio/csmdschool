@@ -39,7 +39,6 @@
   .info-label { width: 35%; font-weight: 700; font-size: 0.75rem; color: #475569; }
   .info-value { width: 65%; font-size: 0.85rem; font-weight: 500; color: #0f172a; }
   
-  /* FIXED ACTION BAR - SMALL BUTTONS WITH SHORT TEXT */
   .action-bar {
     display: flex;
     gap: 8px;
@@ -61,9 +60,7 @@
     justify-content: center;
     gap: 4px;
   }
-  .btn-action i {
-    font-size: 0.7rem;
-  }
+  .btn-action i { font-size: 0.7rem; }
   
   .filter-row { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
   .filter-row select, .filter-row input { flex: 1; border-radius: 30px; border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 0.75rem; background: #f8fafc; }
@@ -89,6 +86,69 @@
     pointer-events: none;
   }
   .toast-custom.show { opacity: 1; }
+  
+  .btn-report {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    border: none;
+    border-radius: 30px;
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-report:hover { transform: scale(1.02); opacity: 0.95; }
+  
+  /* Report Iframe Modal */
+  .report-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+  }
+  .report-modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 95%;
+    height: 90%;
+    background: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+  }
+  .report-modal-header {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    padding: 12px 16px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .report-modal-header h5 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  .close-report-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 4px 12px;
+    color: white;
+    cursor: pointer;
+  }
+  .close-report-btn:hover { background: rgba(255,255,255,0.3); }
+  .report-iframe {
+    width: 100%;
+    height: calc(100% - 48px);
+    border: none;
+  }
 </style>
 </head>
 <body>
@@ -99,7 +159,10 @@
   <div class="list-card">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h5 class="fw-bold mb-0"><i class="bi bi-cash-stack me-2 text-success"></i>Fee Records</h5>
-      <button class="btn btn-outline-secondary rounded-pill btn-sm" onclick="loadFees()"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+      <div>
+        <button class="btn-report me-2" onclick="openReportModal()"><i class="bi bi-graph-up"></i> Report</button>
+        <button class="btn btn-outline-secondary rounded-pill btn-sm" onclick="loadFees()"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+      </div>
     </div>
     
     <div class="filter-row">
@@ -131,6 +194,17 @@
     <div id="feeListContainer">
       <div class="text-center py-4"><span class="loading-spinner"></span> Loading fees...</div>
     </div>
+  </div>
+</div>
+
+<!-- Report Modal (Iframe) -->
+<div id="reportModal" class="report-modal">
+  <div class="report-modal-content">
+    <div class="report-modal-header">
+      <h5><i class="bi bi-graph-up me-2"></i>Fee Report | Class-wise Monthly Statement</h5>
+      <button class="close-report-btn" onclick="closeReportModal()"><i class="bi bi-x-lg"></i> Close</button>
+    </div>
+    <iframe id="reportIframe" class="report-iframe" src="fee_report.html"></iframe>
   </div>
 </div>
 
@@ -205,7 +279,6 @@
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
-// ======================= SUPABASE INIT =======================
 const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
 const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -229,6 +302,21 @@ function getClassroomName(classroomId) {
     if (!classroomId) return 'Unknown Class';
     const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
     return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+// ======================= REPORT MODAL FUNCTIONS =======================
+function openReportModal() {
+    const modal = document.getElementById('reportModal');
+    const iframe = document.getElementById('reportIframe');
+    iframe.src = 'fee_report.html';
+    modal.style.display = 'block';
+}
+
+function closeReportModal() {
+    const modal = document.getElementById('reportModal');
+    const iframe = document.getElementById('reportIframe');
+    iframe.src = 'about:blank';
+    modal.style.display = 'none';
 }
 
 // ======================= WHATSAPP SHARE FUNCTIONS =======================
@@ -722,6 +810,8 @@ window.toggleGroup = toggleGroup;
 window.updateFeePayment = updateFeePayment;
 window.sendInvoice = sendInvoice;
 window.sendFeeReminder = sendFeeReminder;
+window.openReportModal = openReportModal;
+window.closeReportModal = closeReportModal;
 
 loadAllData();
 </script>

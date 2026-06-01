@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Attendance Report | Monthly Student Report</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #f0f4f8; padding: 8px; margin: 0; }
+  .app-container { max-width: 1400px; margin: 0 auto; }
+  
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 10px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-radius: 16px 16px 0 0;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 20px; 
+    padding: 5px 12px; 
+    color: white; 
+    font-size: 0.7rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 4px;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .report-card {
+    background: white;
+    border-radius: 0 0 16px 16px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  
+  .filter-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .filter-section .row {
+    margin: 0 -4px;
+  }
+  .filter-section .col-md-2, .filter-section .col-md-3 {
+    padding: 0 4px;
+  }
+  .filter-section .form-label {
+    margin-bottom: 2px;
+    font-size: 0.65rem;
+  }
+  .filter-section .form-select-sm, .filter-section .btn-sm {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+  
+  .info-note {
+    background: #e0f2fe;
+    border-left: 3px solid #0284c7;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    color: #0369a1;
+    margin-top: 8px;
+  }
+  
+  .report-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+  }
+  
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.65rem;
+    min-width: 700px;
+  }
+  
+  .report-table th {
+    background: #f1f5f9;
+    padding: 6px 4px;
+    text-align: center;
+    font-weight: 600;
+    color: #1e293b;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: 0.65rem;
+  }
+  
+  .report-table td {
+    padding: 5px 4px;
+    text-align: center;
+    border-bottom: 1px solid #eef2f8;
+    vertical-align: middle;
+  }
+  
+  .report-table tr:hover {
+    background: #f8fafc;
+  }
+  
+  .student-name-cell {
+    text-align: left;
+    font-weight: 600;
+    background: white;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    min-width: 130px;
+  }
+  
+  .admission-date-cell {
+    font-size: 0.6rem;
+    color: #64748b;
+  }
+  
+  .present, .absent, .sick-leave, .casual-leave, .short-leave, .long-leave, .meeting, .holiday, .not-marked, .not-applicable {
+    border-radius: 20px;
+    padding: 2px 0;
+    display: inline-block;
+    width: 24px;
+    font-size: 0.6rem;
+    font-weight: 600;
+  }
+  .present { background: #d1fae5; color: #065f46; }
+  .absent { background: #fee2e2; color: #991b1b; }
+  .sick-leave { background: #fed7aa; color: #9a3412; }
+  .casual-leave { background: #ede9fe; color: #5b21b6; }
+  .short-leave { background: #fce7f3; color: #be185d; }
+  .long-leave { background: #f3f4f6; color: #374151; }
+  .meeting { background: #dbeafe; color: #1e40af; }
+  .holiday { background: #cffafe; color: #155e75; }
+  .not-marked { background: #f1f5f9; color: #94a3b8; }
+  .not-applicable { background: #e2e8f0; color: #64748b; }
+  
+  .summary-card {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-radius: 12px;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    color: white;
+  }
+  
+  .summary-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .stat-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: 30px;
+    padding: 4px 12px;
+    text-align: center;
+  }
+  
+  .stat-badge h4 { margin: 0; font-size: 1rem; font-weight: 700; }
+  .stat-badge p { margin: 0; font-size: 0.55rem; opacity: 0.8; }
+  
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.6rem; }
+  .legend-color { width: 14px; height: 14px; border-radius: 20px; }
+  
+  .print-btn, .export-btn {
+    border-radius: 30px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+  .print-btn { background: #475569; border: none; color: white; }
+  .print-btn:hover { background: #334155; }
+  .export-btn { background: #10b981; border: none; color: white; }
+  .export-btn:hover { background: #059669; }
+  
+  .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  @media print {
+    body { background: white; padding: 0; }
+    .back-btn, .print-btn, .export-btn { display: none; }
+    .report-card { padding: 0; box-shadow: none; }
+    .summary-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+    <h5 class="mb-0" style="font-size: 0.9rem;"><i class="bi bi-calendar-week-fill me-1"></i>Attendance Report</h5>
+    <div>
+      <button class="print-btn me-1" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+      <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-excel"></i> Export</button>
+    </div>
+  </div>
+  
+  <div class="report-card">
+    <div class="filter-section">
+      <div class="row g-1 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label fw-bold">Class</label>
+          <select id="classSelect" class="form-select form-select-sm">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Month</label>
+          <select id="monthSelect" class="form-select form-select-sm">
+            <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
+            <option value="3">Apr</option><option value="4">May</option><option value="5">Jun</option>
+            <option value="6">Jul</option><option value="7">Aug</option><option value="8">Sep</option>
+            <option value="9">Oct</option><option value="10">Nov</option><option value="11">Dec</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Year</label>
+          <select id="yearSelect" class="form-select form-select-sm">
+            <option value="2024">2024</option><option value="2025" selected>2025</option>
+            <option value="2026">2026</option><option value="2027">2027</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-primary btn-sm w-100" id="loadReportBtn"><i class="bi bi-search"></i> Generate</button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary btn-sm w-100" id="resetBtn"><i class="bi bi-arrow-repeat"></i> Reset</button>
+        </div>
+      </div>
+      <div class="info-note">
+        <i class="bi bi-info-circle-fill me-1"></i> Students shown after admission date. Days before admission show "—".
+      </div>
+    </div>
+    
+    <div class="summary-card" id="summaryCard" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+        <h6 class="mb-0" id="reportTitle" style="font-size: 0.75rem;">Attendance Report</h6>
+        <div class="summary-stats" id="summaryStats"></div>
+      </div>
+    </div>
+    
+    <div id="reportTableContainer" class="report-table-wrapper">
+      <div class="text-center py-3">
+        <i class="bi bi-calendar2-week fs-4 text-muted"></i>
+        <p class="text-muted mt-1" style="font-size: 0.7rem;">Select class, month, year and click Generate</p>
+      </div>
+    </div>
+    
+    <div class="legend">
+      <div class="legend-item"><div class="legend-color present"></div><span>P</span></div>
+      <div class="legend-item"><div class="legend-color absent"></div><span>A</span></div>
+      <div class="legend-item"><div class="legend-color sick-leave"></div><span>SL</span></div>
+      <div class="legend-item"><div class="legend-color casual-leave"></div><span>CL</span></div>
+      <div class="legend-item"><div class="legend-color short-leave"></div><span>SH</span></div>
+      <div class="legend-item"><div class="legend-color long-leave"></div><span>LL</span></div>
+      <div class="legend-item"><div class="legend-color meeting"></div><span>M</span></div>
+      <div class="legend-item"><div class="legend-color holiday"></div><span>H</span></div>
+      <div class="legend-item"><div class="legend-color not-marked"></div><span>—</span></div>
+      <div class="legend-item"><div class="legend-color not-applicable"></div><span>NA</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let allClasses = [];
+
+const statusConfig = {
+    1: { name: 'P', fullName: 'Present', class: 'present' },
+    2: { name: 'A', fullName: 'Absent', class: 'absent' },
+    3: { name: 'SL', fullName: 'Sick Leave', class: 'sick-leave' },
+    4: { name: 'CL', fullName: 'Casual Leave', class: 'casual-leave' },
+    5: { name: 'SH', fullName: 'Short Leave', class: 'short-leave' },
+    6: { name: 'LL', fullName: 'Long Leave', class: 'long-leave' },
+    7: { name: 'M', fullName: 'Meeting', class: 'meeting' },
+    8: { name: 'H', fullName: 'Holiday', class: 'holiday' }
+};
+
+function getStatusClass(statusId) { return statusConfig[statusId]?.class || 'not-marked'; }
+function getStatusShortName(statusId) { return statusConfig[statusId]?.name || '—'; }
+function escapeHtml(str) { if (!str) return ''; return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;')); }
+
+function goBack() {
+    if (window.parent && window.parent !== window) {
+        try {
+            if (typeof window.parent.closeIframe === 'function') window.parent.closeIframe();
+            else window.parent.location.href = 'attendance.html';
+        } catch(e) { window.location.href = 'attendance.html'; }
+    } else { window.location.href = 'attendance.html'; }
+}
+
+async function loadClasses() {
+    const { data, error } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
+    if (error) return;
+    allClasses = data || [];
+    const classSelect = document.getElementById('classSelect');
+    classSelect.innerHTML = '<option value="">-- Select --</option>';
+    for (const cls of allClasses) {
+        classSelect.innerHTML += `<option value="${cls.class_room_id}">${cls.class_room_no}</option>`;
+    }
+}
+
+async function loadStudentsByClass(classId) {
+    const { data, error } = await supabase1
+        .from("students")
+        .select("*")
+        .eq("stu_class_room_id", classId)
+        .order("stu_name");
+    if (error) return [];
+    return data || [];
+}
+
+async function loadAttendanceForMonth(classId, year, month) {
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month + 1, 0);
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+    
+    const { data, error } = await supabase1
+        .from("students_attendence")
+        .select("*")
+        .gte("stu_attendence_date", startDate)
+        .lte("stu_attendence_date", endDate);
+    if (error) return [];
+    return data || [];
+}
+
+function getDaysInMonth(year, month) { return new Date(year, month + 1, 0).getDate(); }
+
+async function generateReport() {
+    const classId = document.getElementById('classSelect').value;
+    const month = parseInt(document.getElementById('monthSelect').value);
+    const year = parseInt(document.getElementById('yearSelect').value);
+    
+    if (!classId) { alert("Select class"); return; }
+    
+    const container = document.getElementById('reportTableContainer');
+    container.innerHTML = '<div class="text-center py-3"><div class="loading-spinner"></div><p class="mt-1" style="font-size:0.7rem;">Loading...</p></div>';
+    
+    try {
+        const students = await loadStudentsByClass(parseInt(classId));
+        const attendance = await loadAttendanceForMonth(parseInt(classId), year, month);
+        
+        if (students.length === 0) {
+            container.innerHTML = '<div class="text-center py-3"><i class="bi bi-people fs-4 text-muted"></i><p class="mt-1">No students</p></div>';
+            return;
+        }
+        
+        const daysInMonth = getDaysInMonth(year, month);
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        const attendanceMap = new Map();
+        for (const att of attendance) {
+            const key = `${att.stu_id}_${att.stu_attendence_date}`;
+            attendanceMap.set(key, att.stu_attendence_att_status_id);
+        }
+        
+        let totalPresent = 0, totalAbsent = 0, totalLeave = 0, totalPossibleDays = 0;
+        
+        let html = `<table class="report-table"><thead><tr>
+            <th class="student-name-cell">Student</th>
+            <th>Adm No</th>
+            <th>Adm Date</th>`;
+        
+        for (let d = 1; d <= daysInMonth; d++) {
+            html += `<th style="min-width: 40px;">${d}</th>`;
+        }
+        
+        html += `<th>P</th><th>A</th><th>L</th><th>%</th></tr></thead><tbody>`;
+        
+        for (const student of students) {
+            let present = 0, absent = 0, leave = 0, possibleDays = 0;
+            const admissionDate = student.stu_admission_date ? new Date(student.stu_admission_date) : null;
+            const admissionDateStr = admissionDate ? admissionDate.toLocaleDateString('en-PK') : '—';
+            
+            html += `<tr>
+                <td class="student-name-cell"><strong>${escapeHtml(student.stu_name)}</strong></td>
+                <td>${escapeHtml(student.stu_admission_no) || '—'}</td>
+                <td class="admission-date-cell">${admissionDateStr}</td>`;
+            
+            for (let d = 1; d <= daysInMonth; d++) {
+                const currentDate = new Date(year, month, d);
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const key = `${student.stu_id}_${dateStr}`;
+                const statusId = attendanceMap.get(key);
+                
+                let isAdmitted = true;
+                if (admissionDate && currentDate < admissionDate) isAdmitted = false;
+                
+                if (!isAdmitted) {
+                    html += `<td><span class="not-applicable">—</span></td>`;
+                } else {
+                    possibleDays++;
+                    const statusClass = getStatusClass(statusId);
+                    const shortName = getStatusShortName(statusId);
+                    if (statusId === 1) present++;
+                    else if (statusId === 2) absent++;
+                    else if (statusId >= 3 && statusId <= 8) leave++;
+                    html += `<td><span class="${statusClass}">${shortName}</span></td>`;
+                }
+            }
+            
+            const percentage = possibleDays > 0 ? Math.round((present / possibleDays) * 100) : 0;
+            totalPresent += present; totalAbsent += absent; totalLeave += leave; totalPossibleDays += possibleDays;
+            
+            html += `<td class="text-success fw-bold">${present}</td>
+                     <td class="text-danger fw-bold">${absent}</td>
+                     <td class="text-warning fw-bold">${leave}</td>
+                     <td><strong>${percentage}%</strong></td></tr>`;
+        }
+        
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+        
+        const overallPercentage = totalPossibleDays > 0 ? Math.round((totalPresent / totalPossibleDays) * 100) : 0;
+        const classObj = allClasses.find(c => c.class_room_id == classId);
+        const className = classObj ? classObj.class_room_no : 'Class';
+        
+        document.getElementById('reportTitle').innerHTML = `${className} | ${monthNames[month]} ${year}`;
+        document.getElementById('summaryStats').innerHTML = `
+            <div class="stat-badge"><h4>${students.length}</h4><p>Students</p></div>
+            <div class="stat-badge"><h4>${daysInMonth}</h4><p>Days</p></div>
+            <div class="stat-badge"><h4>${totalPresent}</h4><p>P</p></div>
+            <div class="stat-badge"><h4>${totalAbsent}</h4><p>A</p></div>
+            <div class="stat-badge"><h4>${totalLeave}</h4><p>L</p></div>
+            <div class="stat-badge"><h4>${overallPercentage}%</h4><p>%</p></div>
+        `;
+        document.getElementById('summaryCard').style.display = 'block';
+        
+    } catch (error) {
+        container.innerHTML = `<div class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle-fill"></i><p>Error</p></div>`;
+    }
+}
+
+function resetFilters() {
+    document.getElementById('classSelect').value = '';
+    document.getElementById('monthSelect').value = new Date().getMonth().toString();
+    document.getElementById('yearSelect').value = new Date().getFullYear().toString();
+    document.getElementById('reportTableContainer').innerHTML = `
+        <div class="text-center py-3">
+            <i class="bi bi-calendar2-week fs-4 text-muted"></i>
+            <p class="text-muted mt-1" style="font-size:0.7rem;">Select class, month, year</p>
+        </div>
+    `;
+    document.getElementById('summaryCard').style.display = 'none';
+}
+
+function exportToExcel() {
+    const table = document.querySelector('.report-table');
+    if (!table) { alert("Generate report first"); return; }
+    
+    let csv = [];
+    const rows = table.querySelectorAll('tr');
+    for (const row of rows) {
+        const rowData = [];
+        const cols = row.querySelectorAll('th, td');
+        for (const col of cols) {
+            let text = col.innerText.replace(/\n/g, ' ').replace(/,/g, ';');
+            rowData.push(text);
+        }
+        csv.push(rowData.join(','));
+    }
+    
+    const blob = new Blob(["\uFEFF" + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance_report.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById('loadReportBtn')?.addEventListener('click', generateReport);
+document.getElementById('resetBtn')?.addEventListener('click', resetFilters);
+
+async function init() {
+    await loadClasses();
+    const now = new Date();
+    document.getElementById('monthSelect').value = now.getMonth();
+    document.getElementById('yearSelect').value = now.getFullYear();
+}
+
+init();
+
+window.goBack = goBack;
+window.exportToExcel = exportToExcel;
+</script>
+</body>
+</html>

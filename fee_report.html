@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Fee Report | Class-wise Monthly Fee Statement</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  body { background: #f0f4f8; padding: 8px; margin: 0; }
+  .app-container { max-width: 1400px; margin: 0 auto; }
+  
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 10px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-radius: 16px 16px 0 0;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 20px; 
+    padding: 5px 12px; 
+    color: white; 
+    font-size: 0.7rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 4px;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .report-card {
+    background: white;
+    border-radius: 0 0 16px 16px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  
+  .filter-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .filter-section .row {
+    margin: 0 -4px;
+  }
+  .filter-section .col-md-4 {
+    padding: 0 4px;
+  }
+  .filter-section .form-label {
+    margin-bottom: 2px;
+    font-size: 0.65rem;
+  }
+  .filter-section .form-select-sm, .filter-section .btn-sm {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+  
+  .report-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+  }
+  
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.65rem;
+    min-width: 1000px;
+  }
+  
+  .report-table th {
+    background: #f1f5f9;
+    padding: 6px 4px;
+    text-align: center;
+    font-weight: 600;
+    color: #1e293b;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: 0.65rem;
+  }
+  
+  .report-table td {
+    padding: 5px 4px;
+    text-align: center;
+    border-bottom: 1px solid #eef2f8;
+    vertical-align: middle;
+  }
+  
+  .report-table tr:hover {
+    background: #f8fafc;
+  }
+  
+  .student-name-cell {
+    text-align: left;
+    font-weight: 600;
+    background: white;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    min-width: 140px;
+  }
+  
+  .month-header {
+    background: #e0f2fe;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+  
+  .paid-cell { background: #d1fae5; color: #065f46; font-weight: 600; }
+  .due-cell { background: #fee2e2; color: #991b1b; font-weight: 600; }
+  .partial-cell { background: #fed7aa; color: #9a3412; }
+  
+  .summary-card {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    color: white;
+  }
+  
+  .summary-stats {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .stat-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: 30px;
+    padding: 4px 12px;
+    text-align: center;
+  }
+  
+  .stat-badge h4 { margin: 0; font-size: 1rem; font-weight: 700; }
+  .stat-badge p { margin: 0; font-size: 0.55rem; opacity: 0.8; }
+  
+  .print-btn, .export-btn {
+    border-radius: 30px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+  .print-btn { background: #475569; border: none; color: white; }
+  .print-btn:hover { background: #334155; }
+  .export-btn { background: #10b981; border: none; color: white; }
+  .export-btn:hover { background: #059669; }
+  
+  .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .text-muted small { font-size: 0.6rem; }
+  .mt-2 { margin-top: 4px !important; }
+  .mb-0 { margin-bottom: 0 !important; }
+  .me-2 { margin-right: 6px !important; }
+  
+  .report-table td strong, .report-table td small {
+    font-size: 0.6rem;
+  }
+  
+  @media print {
+    body { background: white; padding: 0; }
+    .back-btn, .print-btn, .export-btn, .filter-section button { display: none; }
+    .report-card { padding: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBackToFee()"><i class="bi bi-arrow-left"></i> Back</button>
+    <h5 class="mb-0" style="font-size: 0.9rem;"><i class="bi bi-cash-stack me-1"></i>Fee Report</h5>
+    <div>
+      <button class="print-btn me-1" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+      <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-excel"></i> Export</button>
+    </div>
+  </div>
+  
+  <div class="report-card">
+    <div class="filter-section">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Session</label>
+          <select id="sessionSelect" class="form-select form-select-sm">
+            <option value="1">Session 2024-2025</option>
+            <option value="2">Session 2025-2026</option>
+            <option value="3">Session 2026-2027</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Class</label>
+          <select id="classSelect" class="form-select form-select-sm">
+            <option value="">-- Select --</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-primary btn-sm w-100" id="loadReportBtn"><i class="bi bi-search"></i> Generate</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="summary-card" id="summaryCard" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0" id="reportTitle" style="font-size: 0.8rem;">Fee Report</h6>
+        <div class="summary-stats" id="summaryStats"></div>
+      </div>
+    </div>
+    
+    <div id="reportTableContainer" class="report-table-wrapper">
+      <div class="text-center py-3">
+        <i class="bi bi-cash-stack fs-4 text-muted"></i>
+        <p class="text-muted mt-1" style="font-size: 0.7rem;">Select session and class</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let allClasses = [];
+let allStudents = [];
+let allFees = [];
+
+const monthNames = {
+  1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+  7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+}
+
+function goBackToFee() {
+  try {
+    if (window.parent && typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+      return;
+    }
+    if (window.parent && window.parent !== window) {
+      window.parent.location.href = 'fee.html';
+      return;
+    }
+    window.location.href = 'fee.html';
+  } catch(e) {
+    window.location.href = 'fee.html';
+  }
+}
+
+async function loadClasses() {
+  const { data, error } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
+  if (error) return;
+  allClasses = data || [];
+  const classSelect = document.getElementById('classSelect');
+  classSelect.innerHTML = '<option value="">-- Select --</option>';
+  for (const cls of allClasses) {
+    classSelect.innerHTML += `<option value="${cls.class_room_id}">${cls.class_room_no}</option>`;
+  }
+}
+
+async function loadStudentsByClass(classId) {
+  const { data, error } = await supabase1
+    .from("students")
+    .select("*")
+    .eq("stu_class_room_id", classId)
+    .order("stu_name");
+  if (error) return [];
+  return data || [];
+}
+
+async function loadFeesBySession(sessionId) {
+  const { data, error } = await supabase1
+    .from("student_pay_scale")
+    .select("*")
+    .eq("session_id", sessionId);
+  if (error) return [];
+  return data || [];
+}
+
+function getSessionMonths() {
+  const months = [];
+  for (let m = 1; m <= 12; m++) {
+    months.push({ month: m, monthName: monthNames[m] });
+  }
+  return months;
+}
+
+async function generateReport() {
+  const sessionId = parseInt(document.getElementById('sessionSelect').value);
+  const classId = document.getElementById('classSelect').value;
+  
+  if (!classId) { alert("Select class"); return; }
+  
+  const container = document.getElementById('reportTableContainer');
+  container.innerHTML = '<div class="text-center py-3"><div class="loading-spinner"></div><p class="mt-1" style="font-size:0.7rem;">Loading...</p></div>';
+  
+  try {
+    const students = await loadStudentsByClass(parseInt(classId));
+    const allFeeRecords = await loadFeesBySession(sessionId);
+    
+    if (students.length === 0) {
+      container.innerHTML = '<div class="text-center py-3 text-muted"><i class="bi bi-people fs-4"></i><p class="mt-1">No students</p></div>';
+      return;
+    }
+    
+    const sessionMonths = getSessionMonths();
+    const feeMap = new Map();
+    for (const fee of allFeeRecords) {
+      if (fee.stu_issu_date) {
+        const feeDate = new Date(fee.stu_issu_date);
+        const month = feeDate.getMonth() + 1;
+        const key = `${fee.stu_id}_${month}`;
+        feeMap.set(key, fee);
+      }
+    }
+    
+    const classObj = allClasses.find(c => c.class_room_id == classId);
+    const className = classObj ? classObj.class_room_no : 'Class';
+    
+    let html = `<table class="report-table"><thead><tr>
+      <th class="student-name-cell">Student</th>
+      <th>Adm No</th>`;
+    
+    for (const month of sessionMonths) {
+      html += `<th class="month-header">${month.monthName}</th>`;
+    }
+    
+    html += `<th>Paid</th><th>Due</th><th>%</th></tr></thead><tbody>`;
+    
+    let grandPaid = 0, grandDue = 0;
+    
+    for (const student of students) {
+      let totalPaid = 0, totalDue = 0;
+      
+      html += `<tr>
+        <td class="student-name-cell"><strong>${escapeHtml(student.stu_name)}</strong><br><small>${escapeHtml(student.stu_admission_no)}</small></td>
+        <td>${escapeHtml(student.stu_admission_no) || '—'}</td>`;
+      
+      for (const month of sessionMonths) {
+        const key = `${student.stu_id}_${month.month}`;
+        const fee = feeMap.get(key);
+        
+        if (fee) {
+          const paid = Number(fee.stu_paid) || 0;
+          const due = Number(fee.stu_due) || 0;
+          totalPaid += paid;
+          totalDue += due;
+          
+          let cellClass = '';
+          if (due === 0 && paid > 0) cellClass = 'paid-cell';
+          else if (paid > 0 && due > 0) cellClass = 'partial-cell';
+          else if (due > 0 && paid === 0) cellClass = 'due-cell';
+          
+          html += `<td class="${cellClass}"><strong>${paid.toLocaleString()}</strong><br><small>${due.toLocaleString()}</small></td>`;
+        } else {
+          html += `<td class="text-muted">—</td>`;
+        }
+      }
+      
+      const percentage = totalPaid + totalDue > 0 ? Math.round((totalPaid / (totalPaid + totalDue)) * 100) : 0;
+      grandPaid += totalPaid;
+      grandDue += totalDue;
+      
+      html += `<td class="fw-bold text-success">${totalPaid.toLocaleString()}</td>
+               <td class="fw-bold text-danger">${totalDue.toLocaleString()}</td>
+               <td><strong>${percentage}%</strong></td></tr>`;
+    }
+    
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+    
+    const totalStudents = students.length;
+    const collectionRate = grandPaid + grandDue > 0 ? Math.round((grandPaid / (grandPaid + grandDue)) * 100) : 0;
+    
+    document.getElementById('reportTitle').innerHTML = `${className} | Session ${sessionId}`;
+    document.getElementById('summaryStats').innerHTML = `
+      <div class="stat-badge"><h4>${totalStudents}</h4><p>Students</p></div>
+      <div class="stat-badge"><h4>PKR ${(grandPaid/1000).toFixed(0)}K</h4><p>Collected</p></div>
+      <div class="stat-badge"><h4>PKR ${(grandDue/1000).toFixed(0)}K</h4><p>Pending</p></div>
+      <div class="stat-badge"><h4>${collectionRate}%</h4><p>Rate</p></div>
+    `;
+    document.getElementById('summaryCard').style.display = 'block';
+    
+  } catch (error) {
+    container.innerHTML = `<div class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle-fill"></i><p>Error</p></div>`;
+  }
+}
+
+function exportToExcel() {
+  const table = document.querySelector('.report-table');
+  if (!table) { alert("Generate report first"); return; }
+  
+  let csv = [];
+  const rows = table.querySelectorAll('tr');
+  for (const row of rows) {
+    const rowData = [];
+    const cols = row.querySelectorAll('th, td');
+    for (const col of cols) {
+      let text = col.innerText.replace(/\n/g, ' ').replace(/,/g, ';');
+      rowData.push(text);
+    }
+    csv.push(rowData.join(','));
+  }
+  
+  const blob = new Blob(["\uFEFF" + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fee_report.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('loadReportBtn')?.addEventListener('click', generateReport);
+
+async function init() {
+  await loadClasses();
+}
+
+init();
+
+window.goBackToFee = goBackToFee;
+window.exportToExcel = exportToExcel;
+</script>
+</body>
+</html>
