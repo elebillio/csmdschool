@@ -81,7 +81,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.65rem;
-    min-width: 1000px;
+    min-width: 900px;
   }
   
   .report-table th {
@@ -115,13 +115,23 @@
     position: sticky;
     left: 0;
     z-index: 5;
-    min-width: 140px;
+    min-width: 100px;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .admission-cell {
+    min-width: 70px;
+    white-space: nowrap;
   }
   
   .month-header {
     background: #e0f2fe;
     font-size: 0.65rem;
     white-space: nowrap;
+    min-width: 65px;
   }
   
   .paid-cell { background: #d1fae5; color: #065f46; font-weight: 600; }
@@ -131,14 +141,14 @@
   .summary-card {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     border-radius: 12px;
-    padding: 10px 16px;
+    padding: 8px 12px;
     margin-bottom: 12px;
     color: white;
   }
   
   .summary-stats {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -146,12 +156,12 @@
   .stat-badge {
     background: rgba(255,255,255,0.2);
     border-radius: 30px;
-    padding: 4px 12px;
+    padding: 3px 10px;
     text-align: center;
   }
   
-  .stat-badge h4 { margin: 0; font-size: 1rem; font-weight: 700; }
-  .stat-badge p { margin: 0; font-size: 0.55rem; opacity: 0.8; }
+  .stat-badge h4 { margin: 0; font-size: 0.9rem; font-weight: 700; }
+  .stat-badge p { margin: 0; font-size: 0.5rem; opacity: 0.8; }
   
   .print-btn, .export-btn {
     border-radius: 30px;
@@ -166,15 +176,6 @@
   
   .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  
-  .text-muted small { font-size: 0.6rem; }
-  .mt-2 { margin-top: 4px !important; }
-  .mb-0 { margin-bottom: 0 !important; }
-  .me-2 { margin-right: 6px !important; }
-  
-  .report-table td strong, .report-table td small {
-    font-size: 0.6rem;
-  }
   
   @media print {
     body { background: white; padding: 0; }
@@ -219,8 +220,8 @@
     </div>
     
     <div class="summary-card" id="summaryCard" style="display: none;">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h6 class="mb-0" id="reportTitle" style="font-size: 0.8rem;">Fee Report</h6>
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+        <h6 class="mb-0" id="reportTitle" style="font-size: 0.7rem;">Fee Report</h6>
         <div class="summary-stats" id="summaryStats"></div>
       </div>
     </div>
@@ -341,7 +342,7 @@ async function generateReport() {
     
     let html = `<table class="report-table"><thead><tr>
       <th class="student-name-cell">Student</th>
-      <th>Adm No</th>`;
+      <th class="admission-cell">Adm No</th>`;
     
     for (const month of sessionMonths) {
       html += `<th class="month-header">${month.monthName}</th>`;
@@ -355,8 +356,8 @@ async function generateReport() {
       let totalPaid = 0, totalDue = 0;
       
       html += `<tr>
-        <td class="student-name-cell"><strong>${escapeHtml(student.stu_name)}</strong><br><small>${escapeHtml(student.stu_admission_no)}</small></td>
-        <td>${escapeHtml(student.stu_admission_no) || '—'}</td>`;
+        <td class="student-name-cell" title="${escapeHtml(student.stu_name)}"><strong>${escapeHtml(student.stu_name)}</strong><br><small>${escapeHtml(student.stu_admission_no)}</small></td>
+        <td class="admission-cell">${escapeHtml(student.stu_admission_no) || '—'}</td>`;
       
       for (const month of sessionMonths) {
         const key = `${student.stu_id}_${month.month}`;
@@ -385,7 +386,8 @@ async function generateReport() {
       
       html += `<td class="fw-bold text-success">${totalPaid.toLocaleString()}</td>
                <td class="fw-bold text-danger">${totalDue.toLocaleString()}</td>
-               <td><strong>${percentage}%</strong></td></tr>`;
+               <td><strong>${percentage}%</strong></td>
+              </tr>`;
     }
     
     html += `</tbody></table>`;
@@ -404,6 +406,7 @@ async function generateReport() {
     document.getElementById('summaryCard').style.display = 'block';
     
   } catch (error) {
+    console.error(error);
     container.innerHTML = `<div class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle-fill"></i><p>Error</p></div>`;
   }
 }

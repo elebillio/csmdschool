@@ -91,12 +91,12 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.65rem;
-    min-width: 700px;
+    min-width: 650px;
   }
   
   .report-table th {
     background: #f1f5f9;
-    padding: 6px 4px;
+    padding: 5px 3px;
     text-align: center;
     font-weight: 600;
     color: #1e293b;
@@ -104,11 +104,11 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
   }
   
   .report-table td {
-    padding: 5px 4px;
+    padding: 4px 3px;
     text-align: center;
     border-bottom: 1px solid #eef2f8;
     vertical-align: middle;
@@ -125,20 +125,30 @@
     position: sticky;
     left: 0;
     z-index: 5;
-    min-width: 130px;
+    min-width: 90px;
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .admission-cell {
+    min-width: 60px;
+    white-space: nowrap;
   }
   
   .admission-date-cell {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     color: #64748b;
+    min-width: 65px;
   }
   
   .present, .absent, .sick-leave, .casual-leave, .short-leave, .long-leave, .meeting, .holiday, .not-marked, .not-applicable {
     border-radius: 20px;
     padding: 2px 0;
     display: inline-block;
-    width: 24px;
-    font-size: 0.6rem;
+    width: 22px;
+    font-size: 0.55rem;
     font-weight: 600;
   }
   .present { background: #d1fae5; color: #065f46; }
@@ -155,14 +165,14 @@
   .summary-card {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
     border-radius: 12px;
-    padding: 8px 16px;
+    padding: 6px 12px;
     margin-bottom: 12px;
     color: white;
   }
   
   .summary-stats {
     display: flex;
-    gap: 10px;
+    gap: 6px;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -170,30 +180,30 @@
   .stat-badge {
     background: rgba(255,255,255,0.2);
     border-radius: 30px;
-    padding: 4px 12px;
+    padding: 2px 8px;
     text-align: center;
   }
   
-  .stat-badge h4 { margin: 0; font-size: 1rem; font-weight: 700; }
-  .stat-badge p { margin: 0; font-size: 0.55rem; opacity: 0.8; }
+  .stat-badge h4 { margin: 0; font-size: 0.85rem; font-weight: 700; }
+  .stat-badge p { margin: 0; font-size: 0.5rem; opacity: 0.8; }
   
   .legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
-    margin-top: 12px;
-    padding-top: 10px;
+    margin-top: 10px;
+    padding-top: 8px;
     border-top: 1px solid #e2e8f0;
   }
   
-  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.6rem; }
-  .legend-color { width: 14px; height: 14px; border-radius: 20px; }
+  .legend-item { display: flex; align-items: center; gap: 3px; font-size: 0.55rem; }
+  .legend-color { width: 12px; height: 12px; border-radius: 20px; }
   
   .print-btn, .export-btn {
     border-radius: 30px;
-    padding: 4px 12px;
-    font-size: 0.7rem;
+    padding: 3px 10px;
+    font-size: 0.65rem;
     cursor: pointer;
   }
   .print-btn { background: #475569; border: none; color: white; }
@@ -201,7 +211,7 @@
   .export-btn { background: #10b981; border: none; color: white; }
   .export-btn:hover { background: #059669; }
   
-  .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   
   @media print {
@@ -217,7 +227,7 @@
 <div class="app-container">
   <div class="detail-header">
     <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
-    <h5 class="mb-0" style="font-size: 0.9rem;"><i class="bi bi-calendar-week-fill me-1"></i>Attendance Report</h5>
+    <h5 class="mb-0" style="font-size: 0.85rem;"><i class="bi bi-calendar-week-fill me-1"></i>Attendance Report</h5>
     <div>
       <button class="print-btn me-1" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
       <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-excel"></i> Export</button>
@@ -263,7 +273,7 @@
     
     <div class="summary-card" id="summaryCard" style="display: none;">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-        <h6 class="mb-0" id="reportTitle" style="font-size: 0.75rem;">Attendance Report</h6>
+        <h6 class="mb-0" id="reportTitle" style="font-size: 0.7rem;">Attendance Report</h6>
         <div class="summary-stats" id="summaryStats"></div>
       </div>
     </div>
@@ -389,12 +399,12 @@ async function generateReport() {
         let totalPresent = 0, totalAbsent = 0, totalLeave = 0, totalPossibleDays = 0;
         
         let html = `<table class="report-table"><thead><tr>
-            <th class="student-name-cell">Student</th>
-            <th>Adm No</th>
-            <th>Adm Date</th>`;
+            <th class="student-name-cell" title="Student Name">Student</th>
+            <th class="admission-cell">Adm No</th>
+            <th class="admission-date-cell">Adm Date</th>`;
         
         for (let d = 1; d <= daysInMonth; d++) {
-            html += `<th style="min-width: 40px;">${d}</th>`;
+            html += `<th style="min-width: 32px;">${d}</th>`;
         }
         
         html += `<th>P</th><th>A</th><th>L</th><th>%</th></tr></thead><tbody>`;
@@ -404,9 +414,15 @@ async function generateReport() {
             const admissionDate = student.stu_admission_date ? new Date(student.stu_admission_date) : null;
             const admissionDateStr = admissionDate ? admissionDate.toLocaleDateString('en-PK') : '—';
             
+            // Truncate long names
+            let shortName = student.stu_name;
+            if (shortName && shortName.length > 15) {
+                shortName = shortName.substring(0, 13) + '..';
+            }
+            
             html += `<tr>
-                <td class="student-name-cell"><strong>${escapeHtml(student.stu_name)}</strong></td>
-                <td>${escapeHtml(student.stu_admission_no) || '—'}</td>
+                <td class="student-name-cell" title="${escapeHtml(student.stu_name)}"><strong>${escapeHtml(shortName)}</strong></td>
+                <td class="admission-cell">${escapeHtml(student.stu_admission_no) || '—'}</td>
                 <td class="admission-date-cell">${admissionDateStr}</td>`;
             
             for (let d = 1; d <= daysInMonth; d++) {
@@ -423,11 +439,11 @@ async function generateReport() {
                 } else {
                     possibleDays++;
                     const statusClass = getStatusClass(statusId);
-                    const shortName = getStatusShortName(statusId);
+                    const shortNameStatus = getStatusShortName(statusId);
                     if (statusId === 1) present++;
                     else if (statusId === 2) absent++;
                     else if (statusId >= 3 && statusId <= 8) leave++;
-                    html += `<td><span class="${statusClass}">${shortName}</span></td>`;
+                    html += `<td><span class="${statusClass}" title="${statusConfig[statusId]?.fullName || 'Not Marked'}">${shortNameStatus}</span></td>`;
                 }
             }
             
@@ -437,7 +453,8 @@ async function generateReport() {
             html += `<td class="text-success fw-bold">${present}</td>
                      <td class="text-danger fw-bold">${absent}</td>
                      <td class="text-warning fw-bold">${leave}</td>
-                     <td><strong>${percentage}%</strong></td></tr>`;
+                     <td><strong>${percentage}%</strong></td>
+                    </tr>`;
         }
         
         html += `</tbody></table>`;
@@ -449,7 +466,7 @@ async function generateReport() {
         
         document.getElementById('reportTitle').innerHTML = `${className} | ${monthNames[month]} ${year}`;
         document.getElementById('summaryStats').innerHTML = `
-            <div class="stat-badge"><h4>${students.length}</h4><p>Students</p></div>
+            <div class="stat-badge"><h4>${students.length}</h4><p>Std</p></div>
             <div class="stat-badge"><h4>${daysInMonth}</h4><p>Days</p></div>
             <div class="stat-badge"><h4>${totalPresent}</h4><p>P</p></div>
             <div class="stat-badge"><h4>${totalAbsent}</h4><p>A</p></div>
@@ -459,6 +476,7 @@ async function generateReport() {
         document.getElementById('summaryCard').style.display = 'block';
         
     } catch (error) {
+        console.error(error);
         container.innerHTML = `<div class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle-fill"></i><p>Error</p></div>`;
     }
 }
