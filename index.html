@@ -14,6 +14,68 @@
   * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #f0f4f8; }
   
+  /* Login Container */
+  .login-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 60px 20px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-card {
+    background: white;
+    border-radius: 32px;
+    padding: 32px 24px;
+    box-shadow: 0 20px 35px -10px rgba(0,0,0,0.1);
+    width: 100%;
+  }
+  .login-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .login-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .login-header p {
+    font-size: 0.7rem;
+    color: #64748b;
+    margin-top: 8px;
+  }
+  .login-input {
+    border-radius: 50px;
+    padding: 12px 20px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    font-size: 0.85rem;
+    width: 100%;
+    outline: none;
+    transition: all 0.2s;
+  }
+  .login-input:focus {
+    border-color: #1e3c72;
+    background: white;
+  }
+  .login-btn {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border: none;
+    border-radius: 50px;
+    padding: 12px;
+    font-weight: 600;
+    width: 100%;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  
   /* Ticker Styles */
   .ticker-container-full {
     position: fixed;
@@ -81,8 +143,8 @@
     z-index: 3;
   }
   
-  body { padding-top: 42px; }
-  .dashboard-container { max-width: 550px; margin: 0 auto; padding: 20px 16px; min-height: 100vh; }
+  body.logged-in { padding-top: 42px; }
+  .dashboard-container { max-width: 550px; margin: 0 auto; padding: 20px 16px; min-height: 100vh; display: none; }
   
   .header { 
     background: linear-gradient(135deg, #1e3c72, #2a5298); 
@@ -177,7 +239,6 @@
     border-radius: 40px;
   }
   
-  /* Iframe Container - NO HEADER */
   .iframe-container {
     position: fixed;
     top: 42px;
@@ -191,7 +252,6 @@
   }
   iframe { width: 100%; height: 100%; border: none; display: block; }
   
-  /* Back button floating */
   .iframe-back-btn {
     position: fixed;
     bottom: 20px;
@@ -206,7 +266,7 @@
     cursor: pointer;
     z-index: 1001;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    display: flex;
+    display: none;
     align-items: center;
     gap: 8px;
     transition: all 0.2s;
@@ -216,22 +276,12 @@
   .attendance-summary { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 6px; border-top: 1px solid #eef2f8; }
   .attendance-summary span { font-size: 0.55rem; }
   
-  /* Notification Modal Styles */
   .notification-modal { max-width: 500px; }
-  .student-list-modal-container { max-height: 350px; overflow-y: auto; }
-  .student-item { padding: 10px 12px; border-bottom: 1px solid #eef2f8; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: background 0.2s; }
-  .student-item.selected { background: #d1fae5; }
+  .student-item { padding: 10px 12px; border-bottom: 1px solid #eef2f8; display: flex; align-items: center; gap: 10px; cursor: pointer; }
   .student-checkbox-custom { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #cbd5e1; background: white; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
   .student-checkbox-custom.checked { background: #25D366; border-color: #25D366; color: white; }
-  .selection-bar { background: #f8fafc; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eef2f8; position: sticky; top: 0; background: white; z-index: 10; }
   .quick-templates { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
-  .template-chip { background: #eef2ff; border-radius: 30px; padding: 4px 10px; font-size: 0.65rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-  .search-input-fast { border-radius: 40px; padding: 8px 14px; font-size: 0.75rem; border: 1px solid #e2e8f0; background: #f8fafc; width: 100%; outline: none; }
-  .class-selector { margin-bottom: 12px; }
-  .class-selector select { width: 100%; padding: 8px 14px; border-radius: 40px; border: 1px solid #e2e8f0; background: #f8fafc; font-size: 0.75rem; }
-  .student-badge { background: #25D366; color: white; padding: 3px 10px; border-radius: 30px; font-size: 0.65rem; font-weight: 600; }
-  
-  .announcement-list { max-height: 400px; overflow-y: auto; }
+  .template-chip { background: #eef2ff; border-radius: 30px; padding: 4px 10px; font-size: 0.65rem; cursor: pointer; }
   .announcement-item { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid #eef2f8; background: white; margin-bottom: 5px; border-radius: 12px; }
   .announcement-text { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.8rem; }
   
@@ -251,19 +301,54 @@
     pointer-events: none;
   }
   
+  .logout-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 30px;
+    padding: 4px 12px;
+    font-size: 0.65rem;
+    color: white;
+    cursor: pointer;
+  }
+  
   @media (max-width: 640px) {
     .ticker-label-full { padding: 3px 10px; font-size: 0.55rem; }
     .ticker-wrapper-full { margin-left: 85px; }
-    body { padding-top: 38px; }
+    body.logged-in { padding-top: 38px; }
     .iframe-container { top: 38px; height: calc(100% - 38px); }
-    .iframe-back-btn { bottom: 15px; right: 15px; padding: 10px 16px; font-size: 0.75rem; }
   }
 </style>
 </head>
 <body>
 
-<!-- Ticker -->
-<div class="ticker-container-full">
+<!-- Login View -->
+<div class="login-container" id="loginView">
+  <div class="login-card">
+    <div class="login-header">
+      <i class="bi bi-backpack4-fill" style="font-size: 2.5rem; color: #1e3c72;"></i>
+      <h2>School Manager</h2>
+      <p>Login to access dashboard</p>
+    </div>
+    <form id="loginForm">
+      <div class="mb-3">
+        <input type="text" id="empReg" class="login-input" placeholder="Employee Registration Number" autocomplete="off">
+      </div>
+      <div class="mb-3">
+        <input type="password" id="empPassword" class="login-input" placeholder="Password">
+      </div>
+      <button type="submit" id="loginBtn" class="login-btn">Login <i class="bi bi-box-arrow-in-right"></i></button>
+    </form>
+    <div class="text-center mt-3">
+      <small class="text-muted">Authorized access only</small>
+    </div>
+  </div>
+</div>
+
+<!-- Ticker (Hidden until login) -->
+<div class="ticker-container-full" id="tickerContainer" style="display: none;">
   <div class="ticker-inner">
     <div class="ticker-label-full"><i class="bi bi-megaphone-fill"></i> NEWS</div>
     <div class="ticker-wrapper-full">
@@ -273,17 +358,18 @@
   </div>
 </div>
 
-<!-- Dashboard View -->
-<div class="dashboard-container" id="dashboardView">
+<!-- Dashboard View (Hidden until login) -->
+<div class="dashboard-container" id="dashboardView" style="display: none;">
   <div class="header">
     <h1><i class="bi bi-backpack4-fill"></i> School Manager</h1>
-    <p>Complete School Management System</p>
+    <p id="welcomeUserText">Welcome, Admin!</p>
+    <button class="logout-btn" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</button>
   </div>
   
   <div class="welcome-banner">
     <i class="bi bi-emoji-smile"></i>
     <div>
-      <h4>Welcome back, Admin!</h4>
+      <h4 id="welcomeUserMsg">Welcome back, Admin!</h4>
       <p>Manage students, attendance, fees, syllabus & notifications</p>
     </div>
   </div>
@@ -397,14 +483,13 @@
   <div class="datetime" id="dateTimeDisplay"></div>
 </div>
 
-<!-- Iframe Container - No Header, only iframe -->
+<!-- Iframe Container -->
 <div class="iframe-container" id="iframeContainer">
   <iframe id="moduleIframe" src=""></iframe>
 </div>
+<button class="iframe-back-btn" id="iframeBackBtn" onclick="closeIframe()"><i class="bi bi-arrow-left"></i> Back</button>
 
-
-
-<!-- Edit Announcement Modal -->
+<!-- Modals -->
 <div class="modal fade" id="editAnnouncementModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-scrollable">
     <div class="modal-content">
@@ -414,9 +499,7 @@
       </div>
       <div class="modal-body p-3">
         <div id="announcementList"></div>
-        <button class="btn btn-outline-primary btn-sm w-100 mt-3" onclick="addNewAnnouncement()">
-          <i class="bi bi-plus-circle"></i> Add New
-        </button>
+        <button class="btn btn-outline-primary btn-sm w-100 mt-3" onclick="addNewAnnouncement()"><i class="bi bi-plus-circle"></i> Add New</button>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -426,7 +509,6 @@
   </div>
 </div>
 
-<!-- Notification Modal -->
 <div class="modal fade" id="notificationModal" tabindex="-1">
   <div class="modal-dialog notification-modal">
     <div class="modal-content">
@@ -453,7 +535,6 @@
   </div>
 </div>
 
-<!-- Student Selection Modal -->
 <div class="modal fade" id="studentListModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-scrollable notification-modal">
     <div class="modal-content">
@@ -484,6 +565,8 @@
   </div>
 </div>
 
+<div id="customToast"></div>
+
 <script>
 const supabase1 = window.supabase.createClient(
   "https://tqcfcztyvmedmuhohpps.supabase.co",
@@ -491,37 +574,154 @@ const supabase1 = window.supabase.createClient(
 );
 
 // ==================== GLOBAL VARIABLES ====================
+let currentUser = null;
 let allStudents = [];
 let allClasses = [];
 let selectedStudentIds = new Set();
 let currentFilteredStudents = [];
 let pendingMessage = "";
 let currentClassId = null;
-
-// ==================== ANNOUNCEMENTS FROM DATABASE ====================
 let announcements = [];
 let currentModal = null;
 
-async function loadAnnouncementsFromDB() {
+// ==================== LOGIN FUNCTIONS ====================
+async function login(empReg, password) {
   try {
-    const { data, error } = await supabase1
-      .from("announcements")
-      .select("*")
-      .order("id", { ascending: true });
+    console.log("Attempting login for emp_reg:", empReg);
     
-    if (error) {
-      console.error("Error loading from DB:", error);
-      setDefaultAnnouncements();
-      renderTicker();
-      return;
+    // Try multiple table names
+    const tableNames = ["employees_school", "employee_school", "employees", "school_employees"];
+    let userData = null;
+    let usedTable = null;
+    
+    for (const tableName of tableNames) {
+      const { data, error } = await supabase1
+        .from(tableName)
+        .select("*")
+        .eq("emp_reg", empReg)
+        .maybeSingle();
+      
+      if (data && !error) {
+        userData = data;
+        usedTable = tableName;
+        console.log(`Found in table: ${tableName}`);
+        break;
+      }
     }
     
+    if (!userData) {
+      // Try case-insensitive search in employees_school
+      const { data: caseInsensitive } = await supabase1
+        .from("employees_school")
+        .select("*")
+        .ilike("emp_reg", empReg)
+        .maybeSingle();
+      
+      if (caseInsensitive) {
+        userData = caseInsensitive;
+        usedTable = "employees_school (case-insensitive)";
+        console.log("Found with case-insensitive search");
+      }
+    }
+    
+    if (!userData) {
+      console.log("No employee found with emp_reg:", empReg);
+      return { success: false, message: "Employee registration number not found" };
+    }
+    
+    console.log("Found in:", usedTable);
+    console.log("User data:", userData);
+    
+    // Check password - try different possible column names
+    const passwordValue = userData.emp_password || userData.password || userData.pwd;
+    
+    if (!passwordValue) {
+      return { success: false, message: "Password not set for this account" };
+    }
+    
+    if (passwordValue !== password) {
+      console.log("Password mismatch");
+      return { success: false, message: "Invalid password" };
+    }
+    
+    // Login successful
+    currentUser = { 
+      emp_id: userData.emp_id || userData.id,
+      emp_reg: userData.emp_reg || userData.emp_reg_no || userData.registration_no, 
+      emp_name: userData.emp_name || userData.name 
+    };
+    localStorage.setItem("schoolUser", JSON.stringify(currentUser));
+    
+    console.log("Login successful for:", currentUser.emp_name);
+    return { success: true, user: currentUser };
+    
+  } catch (err) {
+    console.error("Login exception:", err);
+    return { success: false, message: "Login failed: " + err.message };
+  }
+}
+
+function checkAutoLogin() {
+  const savedUser = localStorage.getItem("schoolUser");
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      console.log("Auto-login successful for:", currentUser.emp_name);
+      showDashboard();
+      return true;
+    } catch(e) {
+      console.error("Auto-login parse error:", e);
+      localStorage.removeItem("schoolUser");
+      return false;
+    }
+  }
+  return false;
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem("schoolUser");
+  document.getElementById("loginView").style.display = "flex";
+  document.getElementById("tickerContainer").style.display = "none";
+  document.getElementById("dashboardView").style.display = "none";
+  document.getElementById("iframeContainer").style.display = "none";
+  document.getElementById("iframeBackBtn").style.display = "none";
+  document.body.classList.remove("logged-in");
+  const empRegInput = document.getElementById("empReg");
+  const empPasswordInput = document.getElementById("empPassword");
+  if (empRegInput) empRegInput.value = "";
+  if (empPasswordInput) empPasswordInput.value = "";
+  showToast("Logged out successfully");
+}
+
+function showDashboard() {
+  document.getElementById("loginView").style.display = "none";
+  document.getElementById("tickerContainer").style.display = "block";
+  document.getElementById("dashboardView").style.display = "block";
+  document.body.classList.add("logged-in");
+  
+  // Update welcome message
+  const userName = currentUser?.emp_name || "Admin";
+  const welcomeTextEl = document.getElementById("welcomeUserText");
+  const welcomeMsgEl = document.getElementById("welcomeUserMsg");
+  if (welcomeTextEl) welcomeTextEl.innerHTML = `Welcome, ${userName}!`;
+  if (welcomeMsgEl) welcomeMsgEl.innerHTML = `Welcome back, ${userName}!`;
+  
+  // Load dashboard data
+  loadDashboardStats();
+  loadAnnouncementsFromDB();
+  updateDateTime();
+  if (window.dateTimeInterval) clearInterval(window.dateTimeInterval);
+  window.dateTimeInterval = setInterval(updateDateTime, 1000);
+}
+
+// ==================== ANNOUNCEMENTS ====================
+async function loadAnnouncementsFromDB() {
+  try {
+    const { data, error } = await supabase1.from("announcements").select("*").order("id", { ascending: true });
+    if (error) throw error;
     if (data && data.length > 0) {
-      announcements = data.map(a => ({
-        id: a.id,
-        icon: a.icon || "bi-megaphone-fill",
-        text: a.message
-      }));
+      announcements = data.map(a => ({ id: a.id, icon: a.icon || "bi-megaphone-fill", text: a.message }));
     } else {
       setDefaultAnnouncements();
     }
@@ -546,53 +746,28 @@ function setDefaultAnnouncements() {
 
 async function saveAnnouncementsToDB() {
   try {
-    const { error: deleteError } = await supabase1
-      .from("announcements")
-      .delete()
-      .neq("id", 0);
-    
-    if (deleteError) {
-      console.error("Delete error:", deleteError);
-      showToast("Error deleting: " + deleteError.message, true);
-      return false;
-    }
-    
+    await supabase1.from("announcements").delete().neq("id", 0);
     for (const ann of announcements) {
-      const { error: insertError } = await supabase1
-        .from("announcements")
-        .insert({
-          icon: ann.icon,
-          message: ann.text
-        });
-      
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        showToast("Error saving: " + insertError.message, true);
-        return false;
-      }
+      await supabase1.from("announcements").insert({ icon: ann.icon, message: ann.text });
     }
-    
-    showToast("Announcements saved to database!");
+    showToast("Announcements saved!");
     return true;
   } catch (error) {
-    console.error("Error saving announcements:", error);
-    showToast("Error: " + error.message, true);
+    showToast("Error saving: " + error.message, true);
     return false;
   }
 }
 
 function renderTicker() {
   const tickerContainer = document.getElementById('tickerText');
-  if(!tickerContainer) return;
-  
+  if (!tickerContainer) return;
   if (announcements.length === 0) {
     tickerContainer.innerHTML = '<span>No announcements available</span>';
     return;
   }
-  
   const allAnnouncements = [...announcements, ...announcements];
   let html = '';
-  for(const ann of allAnnouncements) {
+  for (const ann of allAnnouncements) {
     html += `<span><i class="bi ${ann.icon}"></i> ${escapeHtml(ann.text)}</span>`;
   }
   tickerContainer.innerHTML = html;
@@ -600,9 +775,9 @@ function renderTicker() {
 
 function refreshModalContent() {
   const container = document.getElementById('announcementList');
-  if(!container) return;
+  if (!container) return;
   let html = '';
-  for(let i = 0; i < announcements.length; i++) {
+  for (let i = 0; i < announcements.length; i++) {
     html += `<div class="announcement-item">
         <select class="form-select form-select-sm" style="width: 60px;" id="ann_icon_${i}" onchange="updateIconPreview(${i})">
           <option value="bi-calendar-event" ${announcements[i].icon === 'bi-calendar-event' ? 'selected' : ''}>📅</option>
@@ -619,10 +794,6 @@ function refreshModalContent() {
       </div>`;
   }
   container.innerHTML = html;
-}
-
-function updateIconPreview(index) {
-  // Just for combo box - no preview needed now
 }
 
 function openEditAnnouncementModal() {
@@ -646,10 +817,10 @@ function removeAnnouncement(index) {
 }
 
 async function saveAnnouncements() {
-  for(let i = 0; i < announcements.length; i++) {
+  for (let i = 0; i < announcements.length; i++) {
     const iconSelect = document.getElementById(`ann_icon_${i}`);
     const textInput = document.getElementById(`ann_text_${i}`);
-    if(iconSelect && textInput) {
+    if (iconSelect && textInput) {
       announcements[i].icon = iconSelect.value;
       announcements[i].text = textInput.value;
     }
@@ -659,19 +830,31 @@ async function saveAnnouncements() {
   await loadAnnouncementsFromDB();
 }
 
+function updateIconPreview(index) {}
+
 // ==================== MODULE FUNCTIONS ====================
 function openModule(moduleName) {
-  document.getElementById('moduleIframe').src = moduleName + '.html';
-  document.getElementById('iframeContainer').style.display = 'flex';
-  document.getElementById('dashboardView').style.display = 'none';
-  document.getElementById('iframeBackBtn').style.display = 'flex';
+  const iframe = document.getElementById('moduleIframe');
+  const iframeContainer = document.getElementById('iframeContainer');
+  const dashboardView = document.getElementById('dashboardView');
+  const backBtn = document.getElementById('iframeBackBtn');
+  
+  if (iframe) iframe.src = moduleName + '.html';
+  if (iframeContainer) iframeContainer.style.display = 'flex';
+  if (dashboardView) dashboardView.style.display = 'none';
+  if (backBtn) backBtn.style.display = 'flex';
 }
 
 function closeIframe() {
-  document.getElementById('moduleIframe').src = 'about:blank';
-  document.getElementById('iframeContainer').style.display = 'none';
-  document.getElementById('dashboardView').style.display = 'block';
-  document.getElementById('iframeBackBtn').style.display = 'none';
+  const iframe = document.getElementById('moduleIframe');
+  const iframeContainer = document.getElementById('iframeContainer');
+  const dashboardView = document.getElementById('dashboardView');
+  const backBtn = document.getElementById('iframeBackBtn');
+  
+  if (iframe) iframe.src = 'about:blank';
+  if (iframeContainer) iframeContainer.style.display = 'none';
+  if (dashboardView) dashboardView.style.display = 'block';
+  if (backBtn) backBtn.style.display = 'none';
   loadDashboardStats();
 }
 
@@ -679,20 +862,22 @@ function closeIframe() {
 async function loadDashboardStats() {
   try {
     const { count: studentsCount } = await supabase1.from("students").select("*", { count: "exact", head: true });
-    document.getElementById('totalStudents').innerText = studentsCount || 0;
+    const totalStudentsEl = document.getElementById('totalStudents');
+    if (totalStudentsEl) totalStudentsEl.innerText = studentsCount || 0;
     
     const { data: classes } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
-    if(classes) {
+    if (classes) {
       allClasses = classes;
       const classFilter = document.getElementById('classFilter');
-      if(classFilter) {
+      if (classFilter) {
         classFilter.innerHTML = '<option value="">-- All Classes --</option>';
-        for(const c of allClasses) {
+        for (const c of allClasses) {
           classFilter.innerHTML += `<option value="${c.class_room_id}">${c.class_room_no}</option>`;
         }
       }
     }
-    document.getElementById('totalClasses').innerText = allClasses.length || 0;
+    const totalClassesEl = document.getElementById('totalClasses');
+    if (totalClassesEl) totalClassesEl.innerText = allClasses.length || 0;
     
     const todayStr = new Date().toISOString().split('T')[0];
     const { data: todayAttendance } = await supabase1.from("students_attendence").select("*").eq("stu_attendence_date", todayStr);
@@ -706,12 +891,17 @@ async function loadDashboardStats() {
         else if (leaveStatusIds.includes(statusId)) leave++;
       }
     }
-    document.getElementById('totalPresent').innerText = present;
-    document.getElementById('totalAbsent').innerText = absent;
-    document.getElementById('totalLeave').innerText = leave;
+    const totalPresentEl = document.getElementById('totalPresent');
+    const totalAbsentEl = document.getElementById('totalAbsent');
+    const totalLeaveEl = document.getElementById('totalLeave');
+    if (totalPresentEl) totalPresentEl.innerText = present;
+    if (totalAbsentEl) totalAbsentEl.innerText = absent;
+    if (totalLeaveEl) totalLeaveEl.innerText = leave;
+    
     const totalMarked = present + absent + leave;
     const attendanceRate = totalMarked > 0 ? Math.round((present / totalMarked) * 100) : 0;
-    document.getElementById('attendanceRate').innerText = attendanceRate + '%';
+    const attendanceRateEl = document.getElementById('attendanceRate');
+    if (attendanceRateEl) attendanceRateEl.innerText = attendanceRate + '%';
     
     const { data: fees } = await supabase1.from("student_pay_scale").select("*");
     let totalCollected = 0, totalPending = 0, todayCollectionAmount = 0;
@@ -725,16 +915,20 @@ async function loadDashboardStats() {
         }
       }
     }
-    document.getElementById('totalFees').innerText = (totalCollected / 1000).toFixed(1) + 'K';
-    document.getElementById('pendingFees').innerText = (totalPending / 1000).toFixed(1) + 'K';
-    document.getElementById('todayCollection').innerText = (todayCollectionAmount / 1000).toFixed(1) + 'K';
-  } catch(e) { console.log("Error:", e); }
+    const totalFeesEl = document.getElementById('totalFees');
+    const pendingFeesEl = document.getElementById('pendingFees');
+    const todayCollectionEl = document.getElementById('todayCollection');
+    if (totalFeesEl) totalFeesEl.innerText = (totalCollected / 1000).toFixed(1) + 'K';
+    if (pendingFeesEl) pendingFeesEl.innerText = (totalPending / 1000).toFixed(1) + 'K';
+    if (todayCollectionEl) todayCollectionEl.innerText = (todayCollectionAmount / 1000).toFixed(1) + 'K';
+  } catch (e) { console.log("Error:", e); }
 }
 
 // ==================== NOTIFICATION FUNCTIONS ====================
 function openNotificationModal() {
   pendingMessage = "";
-  document.getElementById('notificationMessage').value = '';
+  const msgEl = document.getElementById('notificationMessage');
+  if (msgEl) msgEl.value = '';
   new bootstrap.Modal(document.getElementById('notificationModal')).show();
 }
 
@@ -747,13 +941,16 @@ function setTemplate(type) {
     fee: '💰 Fee due by 10th.', 
     exam: '📝 Exams starting soon.' 
   };
-  document.getElementById('notificationMessage').value = templates[type] || '';
+  const msgEl = document.getElementById('notificationMessage');
+  if (msgEl) msgEl.value = templates[type] || '';
 }
 
 async function goToStudentSelection() {
-  pendingMessage = document.getElementById('notificationMessage').value.trim();
+  const msgEl = document.getElementById('notificationMessage');
+  pendingMessage = msgEl ? msgEl.value.trim() : '';
   if (!pendingMessage) { alert("Please write a message first"); return; }
-  document.getElementById('messagePreview').innerHTML = pendingMessage;
+  const previewEl = document.getElementById('messagePreview');
+  if (previewEl) previewEl.innerHTML = pendingMessage;
   await loadStudents();
   bootstrap.Modal.getInstance(document.getElementById('notificationModal')).hide();
   new bootstrap.Modal(document.getElementById('studentListModal')).show();
@@ -773,7 +970,8 @@ async function loadStudents() {
 }
 
 function renderStudentList() {
-  const search = document.getElementById('searchStudent')?.value.toLowerCase() || '';
+  const searchEl = document.getElementById('searchStudent');
+  const search = searchEl ? searchEl.value.toLowerCase() : '';
   let filtered = allStudents.filter(s => s.stu_name?.toLowerCase().includes(search) || s.stu_admission_no?.toLowerCase().includes(search));
   currentFilteredStudents = filtered;
   let html = '';
@@ -784,9 +982,12 @@ function renderStudentList() {
       <div><strong>${escapeHtml(s.stu_name)}</strong><br><small>${escapeHtml(s.stu_admission_no)}</small></div>
     </div>`;
   }
-  document.getElementById('studentListContainer').innerHTML = html;
-  document.getElementById('selectedCount').innerHTML = `${selectedStudentIds.size} selected`;
-  document.getElementById('sendBtn').disabled = selectedStudentIds.size === 0;
+  const container = document.getElementById('studentListContainer');
+  const selectedCountEl = document.getElementById('selectedCount');
+  const sendBtn = document.getElementById('sendBtn');
+  if (container) container.innerHTML = html;
+  if (selectedCountEl) selectedCountEl.innerHTML = `${selectedStudentIds.size} selected`;
+  if (sendBtn) sendBtn.disabled = selectedStudentIds.size === 0;
   updateSelectAllCheckbox();
 }
 
@@ -797,7 +998,8 @@ function toggleStudent(id) {
 }
 
 function toggleSelectAll() {
-  const checked = document.getElementById('selectAllCheckbox').checked;
+  const checkbox = document.getElementById('selectAllCheckbox');
+  const checked = checkbox ? checkbox.checked : false;
   if (checked) currentFilteredStudents.forEach(s => selectedStudentIds.add(s.stu_id));
   else currentFilteredStudents.forEach(s => selectedStudentIds.delete(s.stu_id));
   renderStudentList();
@@ -805,13 +1007,13 @@ function toggleSelectAll() {
 
 function updateSelectAllCheckbox() {
   const allSelected = currentFilteredStudents.length > 0 && currentFilteredStudents.every(s => selectedStudentIds.has(s.stu_id));
-  document.getElementById('selectAllCheckbox').checked = allSelected;
+  const checkbox = document.getElementById('selectAllCheckbox');
+  if (checkbox) checkbox.checked = allSelected;
 }
 
 async function sendNotifications() {
   const targetStudents = allStudents.filter(s => selectedStudentIds.has(s.stu_id));
   const message = `${pendingMessage}\n\n📱 The Leads High School (Dinga)`;
-  
   for (let s of targetStudents) {
     let mobile = s.stu_mobile1 || s.stu_mobile2;
     if (mobile) {
@@ -844,10 +1046,46 @@ function showToast(message, isError = false) {
 
 function updateDateTime() {
   const now = new Date();
-  document.getElementById('dateTimeDisplay').innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + now.toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' | <i class="bi bi-clock"></i> ' + now.toLocaleTimeString();
+  const dateTimeEl = document.getElementById('dateTimeDisplay');
+  if (dateTimeEl) {
+    dateTimeEl.innerHTML = '<i class="bi bi-calendar3 me-1"></i> ' + now.toLocaleDateString('en-PK', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + ' | <i class="bi bi-clock"></i> ' + now.toLocaleTimeString();
+  }
 }
 
-// Event Listeners
+// ==================== EVENT LISTENERS ====================
+document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const empReg = document.getElementById('empReg').value.trim();
+  const empPassword = document.getElementById('empPassword').value;
+  
+  if (!empReg) {
+    showToast("Please enter registration number", true);
+    return;
+  }
+  
+  if (!empPassword) {
+    showToast("Please enter password", true);
+    return;
+  }
+  
+  const loginBtn = document.getElementById('loginBtn');
+  loginBtn.disabled = true;
+  loginBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Logging in...';
+  
+  const result = await login(empReg, empPassword);
+  
+  if (result.success) {
+    showToast(`Welcome ${result.user.emp_name}!`);
+    showDashboard();
+  } else {
+    showToast(result.message || "Login failed", true);
+  }
+  
+  loginBtn.disabled = false;
+  loginBtn.innerHTML = 'Login <i class="bi bi-box-arrow-in-right"></i>';
+});
+
 document.getElementById('classFilter')?.addEventListener('change', (e) => {
   currentClassId = e.target.value || null;
   loadStudents();
@@ -857,7 +1095,7 @@ document.getElementById('statStudents')?.addEventListener('click', () => openMod
 document.getElementById('statAttendance')?.addEventListener('click', () => openModule('attendance'));
 document.getElementById('statTotalFee')?.addEventListener('click', () => openModule('fee'));
 
-// Make functions global
+// ==================== MAKE FUNCTIONS GLOBAL ====================
 window.openModule = openModule;
 window.closeIframe = closeIframe;
 window.openEditAnnouncementModal = openEditAnnouncementModal;
@@ -873,12 +1111,12 @@ window.toggleStudent = toggleStudent;
 window.toggleSelectAll = toggleSelectAll;
 window.sendNotifications = sendNotifications;
 window.loadStudents = loadStudents;
+window.logout = logout;
 
-// Initialize
-setInterval(updateDateTime, 1000);
-updateDateTime();
-loadAnnouncementsFromDB();
-loadDashboardStats();
+// ==================== INITIALIZE ====================
+if (!checkAutoLogin()) {
+  document.getElementById("loginView").style.display = "flex";
+}
 </script>
 </body>
 </html>
