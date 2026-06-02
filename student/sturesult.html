@@ -10,7 +10,655 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<style><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>My Results | Student Portal</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
+  * { font-family: system-ui, sans-serif; }
+  body { background: #f0f4f8; padding: 16px; margin: 0; }
+  .app-container { max-width: 550px; margin: 0 auto; }
+  
+  .detail-card { background: white; border-radius: 28px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+  .detail-header { background: linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; color: white; display: flex; align-items: center; gap: 16px; }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 30px; 
+    padding: 6px 14px; 
+    color: white; 
+    font-size: 0.75rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 5px;
+    transition: background 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .report-header { background: #f1f5f9; border-radius: 20px; padding: 12px; margin-bottom: 16px; text-align: center; }
+  .report-header .student-name { font-size: 1.1rem; font-weight: 700; color: #1e3c72; }
+  .student-img-small { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.1); background: #e2e8f0; }
+  .avatar-small { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; margin: 0 auto; }
+  
+  .expand-collapse-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 16px; }
+  .expand-collapse-btn { background: #f1f5f9; border: none; border-radius: 30px; padding: 5px 12px; font-size: 0.7rem; font-weight: 500; color: #475569; cursor: pointer; transition: background 0.2s; }
+  .expand-collapse-btn:hover { background: #e2e8f0; }
+  
+  .exam-group { margin-bottom: 12px; border-radius: 16px; background: white; border: 1px solid #eef2f8; overflow: hidden; }
+  .exam-group-header {
+    background: linear-gradient(135deg, #f0f4ff, #e8edf8);
+    padding: 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #d1dbe8;
+    transition: background 0.2s;
+  }
+  .exam-group-header:hover { background: linear-gradient(135deg, #e8edff, #dfe4f0); }
+  .exam-group-header .title { font-weight: 800; font-size: 1rem; color: #1e3c72; }
+  .badge-count { 
+    font-size: 0.65rem; 
+    background: #e2e8f0; 
+    padding: 3px 10px; 
+    border-radius: 30px; 
+    color: #1e3c72; 
+    font-weight: 600; 
+    display: inline-block; 
+  }
+  .toggle-icon { transition: transform 0.2s; font-size: 1rem; font-weight: bold; }
+  .exam-group-header.collapsed .toggle-icon { transform: rotate(-90deg); }
+  .exam-group-content { overflow: hidden; transition: max-height 0.3s ease; }
+  .exam-group-content.collapsed { max-height: 0 !important; padding: 0; }
+  
+  .result-card {
+    background: white;
+    border-radius: 16px;
+    padding: 14px;
+    margin: 10px 12px;
+    border: 1px solid #eef2f8;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+  .result-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #eef2f8;
+  }
+  .result-card-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1e3c72;
+  }
+  .grade-badge {
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  .grade-a-plus { background: #e0e7ff; color: #3730a3; }
+  .grade-a { background: #d1fae5; color: #065f46; }
+  .grade-b-plus { background: #cffafe; color: #155e75; }
+  .grade-b { background: #dbeafe; color: #1e40af; }
+  .grade-c { background: #fef3c7; color: #92400e; }
+  .grade-e { background: #fed7aa; color: #9a3412; }
+  .grade-f { background: #fee2e2; color: #991b1b; }
+  
+  .subject-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .subject-row:last-child { border-bottom: none; }
+  .subject-name { font-weight: 500; font-size: 0.8rem; color: #1e293b; }
+  .subject-marks { font-size: 0.8rem; font-weight: 600; color: #1e3c72; }
+  .subject-grade { font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+  .result-footer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #eef2f8;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    font-weight: 600;
+  }
+  
+  .empty-state { text-align: center; padding: 30px; color: #94a3b8; font-size: 0.8rem; }
+  .loading-spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .toast-custom { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.8rem; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast-custom.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app-container" id="appContainer"></div>
+<div id="toastMsg" class="toast-custom"></div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let currentStudent = null;
+let viewerStudent = null;
+let allExamTypes = [];
+let allSubjects = [];
+let allClassrooms = [];
+let allDateSheets = [];
+let allExamResults = [];
+let expandedExamGroups = {};
+
+function showToast(message) {
+  const toast = document.getElementById('toastMsg');
+  toast.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function escapeHtml(str) { 
+  if(!str) return ''; 
+  return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':(m==='<'?'&lt;':'&gt;')); 
+}
+
+function getClassroomName(classroomId) {
+  const classroom = allClassrooms.find(c => c.class_room_id == classroomId);
+  return classroom ? classroom.class_room_no : `Class ${classroomId}`;
+}
+
+function getStudentImageUrl(student) {
+  if (student.stu_image && typeof student.stu_image === 'string' && student.stu_image.length > 10) {
+    if (student.stu_image.startsWith('data:image') || student.stu_image.startsWith('http')) {
+      return student.stu_image;
+    }
+    return `data:image/jpeg;base64,${student.stu_image}`;
+  }
+  return null;
+}
+
+// ==================== GRADE CALCULATION BASED ON PERCENTAGE ====================
+function getConditionIdFromPercentage(percentage) {
+  if(percentage >= 90) return 7;
+  if(percentage >= 80) return 6;
+  if(percentage >= 70) return 5;
+  if(percentage >= 60) return 4;
+  if(percentage >= 50) return 3;
+  if(percentage >= 40) return 2;
+  return 1;
+}
+
+function getGradeFromPercentage(percentage) {
+  const conditionId = getConditionIdFromPercentage(percentage);
+  if(conditionId === 7) return { text: 'A+', class: 'grade-a-plus' };
+  if(conditionId === 6) return { text: 'A', class: 'grade-a' };
+  if(conditionId === 5) return { text: 'B+', class: 'grade-b-plus' };
+  if(conditionId === 4) return { text: 'B', class: 'grade-b' };
+  if(conditionId === 3) return { text: 'C', class: 'grade-c' };
+  if(conditionId === 2) return { text: 'E', class: 'grade-e' };
+  return { text: 'F', class: 'grade-f' };
+}
+
+function getGradeFromConditionId(conditionId) {
+  if(conditionId === 7) return { text: 'A+', class: 'grade-a-plus' };
+  if(conditionId === 6) return { text: 'A', class: 'grade-a' };
+  if(conditionId === 5) return { text: 'B+', class: 'grade-b-plus' };
+  if(conditionId === 4) return { text: 'B', class: 'grade-b' };
+  if(conditionId === 3) return { text: 'C', class: 'grade-c' };
+  if(conditionId === 2) return { text: 'E', class: 'grade-e' };
+  return { text: 'F', class: 'grade-f' };
+}
+
+// Back button function
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    if (typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    } else {
+      window.parent.location.href = 'index.html';
+    }
+  } else {
+    window.location.href = 'index.html';
+  }
+}
+
+async function loadData() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetStudentId = urlParams.get('stu_id');
+  const viewerId = urlParams.get('viewer_id');
+  
+  // Load viewer student
+  if (viewerId && viewerId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", viewerId).single();
+    if (!error && data) {
+      viewerStudent = data;
+    }
+  }
+  
+  if (!viewerStudent) {
+    const saved = localStorage.getItem('currentStudent');
+    if (saved) {
+      try {
+        viewerStudent = JSON.parse(saved);
+      } catch(e) {}
+    }
+  }
+  
+  if (!viewerStudent) {
+    const savedLogin = localStorage.getItem('studentLoggedIn');
+    if (savedLogin) {
+      try {
+        const sessionData = JSON.parse(savedLogin);
+        viewerStudent = sessionData.student || sessionData;
+      } catch(e) {}
+    }
+  }
+  
+  // Load target student
+  if (targetStudentId && targetStudentId !== 'null') {
+    const { data, error } = await supabase1.from("students").select("*").eq("stu_id", targetStudentId).single();
+    if (!error && data) {
+      currentStudent = data;
+    } else {
+      currentStudent = viewerStudent;
+    }
+  } else {
+    currentStudent = viewerStudent;
+  }
+  
+  if(!currentStudent) {
+    showToast("Session expired. Please login again.");
+    setTimeout(() => {
+      if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+        window.parent.location.href = 'index.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }, 1500);
+    return;
+  }
+  
+  // Load all required data
+  const [examTypes, classrooms, dateSheets, subjects, examResults] = await Promise.all([
+    supabase1.from("exam_type").select("*"),
+    supabase1.from("class_rooms").select("*"),
+    supabase1.from("exam_date_sheet").select("*"),
+    supabase1.from("subjects").select("*, subject_books!inner(*)").eq("sub_classroom_id", currentStudent.stu_class_room_id).eq("sub_status", true),
+    supabase1.from("examinations").select("*").eq("stu_id", currentStudent.stu_id)
+  ]);
+  
+  if(examTypes.data) allExamTypes = examTypes.data;
+  if(classrooms.data) allClassrooms = classrooms.data;
+  if(dateSheets.data) allDateSheets = dateSheets.data;
+  if(subjects.data) allSubjects = subjects.data;
+  if(examResults.data) allExamResults = examResults.data;
+  
+  console.log("Loading results for student:", currentStudent.stu_name, "Class:", currentStudent.stu_class_room_id);
+  
+  renderResultPage();
+}
+
+function renderResultPage() {
+  const container = document.getElementById('appContainer');
+  
+  const imgUrl = getStudentImageUrl(currentStudent);
+  const initial = currentStudent.stu_name?.charAt(0).toUpperCase() || '?';
+  
+  let avatarHtml = '';
+  if (imgUrl) {
+    avatarHtml = `<img src="${imgUrl}" class="student-img-small" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.avatar-small').style.display='flex';">`;
+    avatarHtml += `<div class="avatar-small" style="display:none;">${initial}</div>`;
+  } else {
+    avatarHtml = `<div class="avatar-small">${initial}</div>`;
+  }
+  
+  const viewingNote = (viewerStudent && currentStudent.stu_id !== viewerStudent.stu_id) 
+    ? `<div class="alert alert-info py-1 px-3 mb-2 rounded-pill text-center" style="font-size:0.7rem; background:#dbeafe; color:#1e40af; border:none;">
+        <i class="bi bi-eye-fill me-1"></i> Viewing: ${escapeHtml(currentStudent.stu_name)} (${escapeHtml(currentStudent.stu_admission_no)})
+       </div>`
+    : '';
+  
+  const html = `
+    <div class="detail-card">
+      <div class="detail-header">
+        <button class="back-btn" onclick="goBack()"><i class="bi bi-arrow-left"></i> Back</button>
+        <h5 class="mb-0">📊 My Results</h5>
+        <div style="width: 70px;"></div>
+      </div>
+      <div class="p-3">
+        ${viewingNote}
+        <div class="report-header d-flex align-items-center gap-3">
+          <div style="position:relative;">${avatarHtml}</div>
+          <div class="text-start">
+            <div class="student-name">${escapeHtml(currentStudent.stu_name)}</div>
+            <div class="small text-muted">${escapeHtml(currentStudent.stu_admission_no)} | ${getClassroomName(currentStudent.stu_class_room_id)}</div>
+          </div>
+        </div>
+        <div class="expand-collapse-bar" id="expandCollapseBar"></div>
+        <div id="examGroupsContainer"></div>
+      </div>
+    </div>
+  `;
+  container.innerHTML = html;
+  renderExamGroups();
+}
+
+async function renderExamGroups() {
+  const container = document.getElementById('examGroupsContainer');
+  if(!container) return;
+  
+  let examTypesWithResults = [];
+  
+  for(let et of allExamTypes) {
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id);
+    let hasResult = false;
+    
+    for(const ds of dateSheetsForExam) {
+      const result = allExamResults.find(r => r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
+      if(result && (result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '')) {
+        hasResult = true;
+        break;
+      }
+      if(result && result.exam_absentees === 1) {
+        hasResult = true;
+        break;
+      }
+    }
+    
+    if(hasResult) {
+      examTypesWithResults.push(et);
+    }
+  }
+  
+  if(examTypesWithResults.length === 0) {
+    container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size: 2rem;"></i><p class="mt-2">No results found yet</p><small class="text-muted">Results will appear here once published</small></div>`;
+    document.getElementById('expandCollapseBar').style.display = 'none';
+    return;
+  }
+  
+  document.getElementById('expandCollapseBar').style.display = 'flex';
+  document.getElementById('expandCollapseBar').innerHTML = `
+    <button class="expand-collapse-btn" onclick="expandAllGroups()"><i class="bi bi-arrows-expand"></i> Expand All</button>
+    <button class="expand-collapse-btn" onclick="collapseAllGroups()"><i class="bi bi-arrows-collapse"></i> Collapse All</button>
+  `;
+  
+  let html = '';
+  for(let et of examTypesWithResults) {
+    let isExpanded = expandedExamGroups[et.exam_type_id] === true;
+    
+    let totalObtained = 0, totalMax = 0, resultsCount = 0;
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id);
+    
+    for(const ds of dateSheetsForExam) {
+      const subject = allSubjects.find(s => s.sub_id === ds.exam_date_sheet_sub_id);
+      if(subject) {
+        const maxMarks = subject.sub_remarks || 100;
+        totalMax += maxMarks;
+        const result = allExamResults.find(r => r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
+        if(result && result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '') {
+          totalObtained += Math.round(parseFloat(result.exam_sub_marks_obtain) || 0);
+          resultsCount++;
+        } else if(result && result.exam_absentees === 1) {
+          resultsCount++;
+        }
+      }
+    }
+    
+    const percentage = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
+    const overallGrade = getGradeFromPercentage(percentage);
+    const totalSubjects = dateSheetsForExam.length;
+    
+    html += `<div class="exam-group" data-exam-id="${et.exam_type_id}">
+      <div class="exam-group-header ${isExpanded ? '' : 'collapsed'}" onclick="toggleExamGroup('${et.exam_type_id}')">
+        <div>
+          <div class="title"><i class="bi bi-folder2-open me-2"></i> ${escapeHtml(et.exam_type1)}</div>
+          <div class="small text-muted mt-1">${et.exam_type_start_date || ''} ${et.exam_type_end_date ? 'to ' + et.exam_type_end_date : ''}</div>
+        </div>
+        <div class="text-end">
+          <div>
+            <span class="badge-count"><i class="bi bi-journal-bookmark-fill"></i> ${resultsCount}/${totalSubjects}</span>
+            <span class="badge-count ms-2" style="background:${overallGrade.class === 'grade-a-plus' ? '#e0e7ff' : (overallGrade.class === 'grade-a' ? '#d1fae5' : '#e2e8f0')}">🏆 ${overallGrade.text}</span>
+          </div>
+          <i class="bi bi-chevron-down toggle-icon mt-1"></i>
+        </div>
+      </div>
+      <div class="exam-group-content ${isExpanded ? '' : 'collapsed'}" id="exam-group-content-${et.exam_type_id}">
+        <div id="resultsContainer-${et.exam_type_id}" class="p-2"><div class="text-center py-3"><span class="loading-spinner"></span> Loading results...</div></div>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+  
+  for(let et of examTypesWithResults) {
+    if(expandedExamGroups[et.exam_type_id] === true) {
+      await renderResultsForExam(et.exam_type_id);
+    }
+  }
+}
+
+async function renderResultsForExam(examTypeId) {
+  const container = document.getElementById(`resultsContainer-${examTypeId}`);
+  if(!container) return;
+  
+  container.innerHTML = `<div class="text-center py-3"><span class="loading-spinner"></span> Loading results...</div>`;
+  
+  const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === examTypeId);
+  
+  if(dateSheetsForExam.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i class="bi bi-inbox"></i><p>No subjects found for this exam</p></div>';
+    return;
+  }
+  
+  let totalObtained = 0, totalMax = 0;
+  let subjectsHtml = '';
+  
+  // Sort subjects by date sheet day
+  const sortedDateSheets = [...dateSheetsForExam].sort((a, b) => {
+    if(a.exam_date_sheet_day && b.exam_date_sheet_day) {
+      return new Date(a.exam_date_sheet_day) - new Date(b.exam_date_sheet_day);
+    }
+    return 0;
+  });
+  
+  for(const ds of sortedDateSheets) {
+    const subject = allSubjects.find(s => s.sub_id === ds.exam_date_sheet_sub_id);
+    if(subject) {
+      const maxMarks = subject.sub_remarks || 100;
+      totalMax += maxMarks;
+      const result = allExamResults.find(r => r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
+      
+      let obtained = 0;
+      let isAbsent = false;
+      let hasMarks = false;
+      
+      if(result) {
+        if(result.exam_absentees === 1) {
+          isAbsent = true;
+        } else if(result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '') {
+          obtained = Math.round(parseFloat(result.exam_sub_marks_obtain) || 0);
+          hasMarks = true;
+          totalObtained += obtained;
+        }
+      }
+      
+      // Calculate grade based on percentage for this subject
+      const subjectPercentage = maxMarks > 0 ? (obtained / maxMarks) * 100 : 0;
+      const subjectGrade = getGradeFromPercentage(subjectPercentage);
+      
+      // Get book name
+      let bookName = "Subject";
+      if (subject.sub_subject_book_id) {
+        const { data: bookData } = await supabase1.from("subject_books").select("subject_books_name").eq("subject_books_id", subject.sub_subject_book_id).single();
+        if(bookData) bookName = bookData.subject_books_name;
+      } else if (subject.sub_name) {
+        bookName = subject.sub_name;
+      }
+      
+      let marksDisplay = '';
+      let gradeDisplay = '';
+      
+      if(isAbsent) {
+        marksDisplay = '<span class="subject-marks text-danger">Absent</span>';
+        gradeDisplay = `<span class="subject-grade ${subjectGrade.class} grade-badge">${subjectGrade.text}</span>`;
+      } else if(hasMarks) {
+        marksDisplay = `<span class="subject-marks">${obtained} / ${maxMarks}</span>`;
+        gradeDisplay = `<span class="subject-grade ${subjectGrade.class} grade-badge">${subjectGrade.text}</span>`;
+      } else {
+        marksDisplay = '<span class="subject-marks text-muted">Not entered</span>';
+      }
+      
+      // Show date if available
+      const dateDisplay = ds.exam_date_sheet_day ? `<div class="small text-muted ms-2">${ds.exam_date_sheet_day}</div>` : '';
+      
+      subjectsHtml += `<div class="subject-row">
+        <div>
+          <span class="subject-name">📖 ${escapeHtml(bookName)}</span>
+          ${dateDisplay}
+        </div>
+        <div>
+          ${marksDisplay}
+          ${gradeDisplay}
+        </div>
+      </div>`;
+    }
+  }
+  
+  const percentage = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
+  const overallGrade = getGradeFromPercentage(percentage);
+  
+  const resultHtml = `
+    <div class="result-card">
+      <div class="result-card-header">
+        <span class="result-card-title"><i class="bi bi-trophy-fill me-1 text-warning"></i> Result Summary</span>
+        <span class="grade-badge ${overallGrade.class}">${overallGrade.text}</span>
+      </div>
+      ${subjectsHtml}
+      <div class="result-footer">
+        <span>Total: ${totalObtained}/${totalMax}</span>
+        <span>${percentage.toFixed(2)}%</span>
+      </div>
+    </div>
+  `;
+  
+  container.innerHTML = resultHtml;
+}
+
+function toggleExamGroup(examTypeId) {
+  expandedExamGroups[examTypeId] = !expandedExamGroups[examTypeId];
+  const content = document.getElementById(`exam-group-content-${examTypeId}`);
+  const header = document.querySelector(`.exam-group[data-exam-id="${examTypeId}"] .exam-group-header`);
+  if(content) {
+    if(expandedExamGroups[examTypeId]) {
+      content.classList.remove('collapsed');
+      header?.classList.remove('collapsed');
+      renderResultsForExam(examTypeId);
+    } else {
+      content.classList.add('collapsed');
+      header?.classList.add('collapsed');
+    }
+  }
+}
+
+function expandAllGroups() {
+  let examTypesWithResults = [];
+  for(let et of allExamTypes) {
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id);
+    let hasResult = false;
+    for(const ds of dateSheetsForExam) {
+      const result = allExamResults.find(r => r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
+      if(result && (result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '')) {
+        hasResult = true;
+        break;
+      }
+      if(result && result.exam_absentees === 1) {
+        hasResult = true;
+        break;
+      }
+    }
+    if(hasResult) examTypesWithResults.push(et);
+  }
+  
+  for(let examType of examTypesWithResults) {
+    if(!expandedExamGroups[examType.exam_type_id]) {
+      expandedExamGroups[examType.exam_type_id] = true;
+      const content = document.getElementById(`exam-group-content-${examType.exam_type_id}`);
+      const header = document.querySelector(`.exam-group[data-exam-id="${examType.exam_type_id}"] .exam-group-header`);
+      if(content) {
+        content.classList.remove('collapsed');
+        header?.classList.remove('collapsed');
+        renderResultsForExam(examType.exam_type_id);
+      }
+    }
+  }
+}
+
+function collapseAllGroups() {
+  let examTypesWithResults = [];
+  for(let et of allExamTypes) {
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === et.exam_type_id);
+    let hasResult = false;
+    for(const ds of dateSheetsForExam) {
+      const result = allExamResults.find(r => r.exam_exam_date_sheet_id === ds.exam_date_sheet_id);
+      if(result && (result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '')) {
+        hasResult = true;
+        break;
+      }
+      if(result && result.exam_absentees === 1) {
+        hasResult = true;
+        break;
+      }
+    }
+    if(hasResult) examTypesWithResults.push(et);
+  }
+  
+  for(let examType of examTypesWithResults) {
+    if(expandedExamGroups[examType.exam_type_id]) {
+      expandedExamGroups[examType.exam_type_id] = false;
+      const content = document.getElementById(`exam-group-content-${examType.exam_type_id}`);
+      const header = document.querySelector(`.exam-group[data-exam-id="${examType.exam_type_id}"] .exam-group-header`);
+      if(content) {
+        content.classList.add('collapsed');
+        header?.classList.add('collapsed');
+      }
+    }
+  }
+}
+
+window.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'logout') {
+    currentStudent = null;
+    localStorage.removeItem('currentStudent');
+    localStorage.removeItem('studentLoggedIn');
+    if (window.parent && window.parent !== window && typeof window.parent.closeIframe === 'function') {
+      window.parent.closeIframe();
+    }
+    window.location.href = 'index.html';
+  }
+});
+
+loadData();
+
+window.goBack = goBack;
+window.toggleExamGroup = toggleExamGroup;
+window.expandAllGroups = expandAllGroups;
+window.collapseAllGroups = collapseAllGroups;
+</script>
+</body>
+</html>
   * { font-family: system-ui, sans-serif; }
   body { background: #f0f4f8; padding: 16px; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; }
