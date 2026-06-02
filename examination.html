@@ -9,8 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1  } 
-/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <style>
   * { font-family: system-ui, sans-serif; }
@@ -318,13 +317,6 @@
     color: #065f46;
     font-weight: 600;
   }
-  .subject-grade.grade-a-plus { background: #e0e7ff; color: #3730a3; }
-  .subject-grade.grade-a { background: #d1fae5; color: #065f46; }
-  .subject-grade.grade-b-plus { background: #cffafe; color: #155e75; }
-  .subject-grade.grade-b { background: #dbeafe; color: #1e40af; }
-  .subject-grade.grade-c { background: #fef3c7; color: #92400e; }
-  .subject-grade.grade-e { background: #fed7aa; color: #9a3412; }
-  .subject-grade.grade-f { background: #fee2e2; color: #991b1b; }
   
   .result-summary {
     background: #eef2ff;
@@ -344,13 +336,6 @@
     font-weight: 600;
     display: inline-block;
   }
-  .grade-badge.grade-a-plus { background: #e0e7ff; color: #3730a3; }
-  .grade-badge.grade-a { background: #d1fae5; color: #065f46; }
-  .grade-badge.grade-b-plus { background: #cffafe; color: #155e75; }
-  .grade-badge.grade-b { background: #dbeafe; color: #1e40af; }
-  .grade-badge.grade-c { background: #fef3c7; color: #92400e; }
-  .grade-badge.grade-e { background: #fed7aa; color: #9a3412; }
-  .grade-badge.grade-f { background: #fee2e2; color: #991b1b; }
   
   .absent-badge { background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
   
@@ -790,17 +775,36 @@ async function getStudentAbsentCount(studentId) {
 function getClassroomName(id) { const c = allClassrooms.find(c => c.class_room_id == id); return c ? c.class_room_no : `Class ${id}`; }
 function getClassroomOrder(className) { const classroom = allClassrooms.find(c => c.class_room_no === className); return classroom ? classroom.class_room_serial : 999; }
 function getStudentsByClass(classroomId) { return allStudents.filter(s => s.stu_class_room_id === parseInt(classroomId)); }
-function getConditionIdFromPercentage(p) { if(p>=90) return 7; if(p>=80) return 6; if(p>=70) return 5; if(p>=60) return 4; if(p>=50) return 3; if(p>=40) return 2; return 1; }
-function getGradeText(cid) { if(cid===7) return { text: 'A+', class: 'grade-a-plus', order:7 }; if(cid===6) return { text: 'A', class: 'grade-a', order:6 }; if(cid===5) return { text: 'B+', class: 'grade-b-plus', order:5 }; if(cid===4) return { text: 'B', class: 'grade-b', order:4 }; if(cid===3) return { text: 'C', class: 'grade-c', order:3 }; if(cid===2) return { text: 'E', class: 'grade-e', order:2 }; return { text: 'F', class: 'grade-f', order:1 }; }
+
+// ==================== GRADE CALCULATION BASED ON PERCENTAGE ====================
+function getConditionIdFromPercentage(percentage) {
+  if(percentage >= 90) return 7;
+  if(percentage >= 80) return 6;
+  if(percentage >= 70) return 5;
+  if(percentage >= 60) return 4;
+  if(percentage >= 50) return 3;
+  if(percentage >= 40) return 2;
+  return 1;
+}
+
+function getGradeText(conditionId) {
+  if(conditionId === 7) return { text: 'A+', class: 'grade-a-plus', order: 7 };
+  if(conditionId === 6) return { text: 'A', class: 'grade-a', order: 6 };
+  if(conditionId === 5) return { text: 'B+', class: 'grade-b-plus', order: 5 };
+  if(conditionId === 4) return { text: 'B', class: 'grade-b', order: 4 };
+  if(conditionId === 3) return { text: 'C', class: 'grade-c', order: 3 };
+  if(conditionId === 2) return { text: 'E', class: 'grade-e', order: 2 };
+  return { text: 'F', class: 'grade-f', order: 1 };
+}
 
 function getStudentAvatarHTML(student) {
   const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
   if (student.stu_image && student.stu_image !== '' && student.stu_image !== null) {
     let imageSrc = student.stu_image;
     if (!imageSrc.startsWith('data:image')) { imageSrc = 'data:image/jpeg;base64,' + imageSrc; }
-    return `<img src="${imageSrc}" class="student-img" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-avatar').style.display='flex';">`;
+    return `<img src="${imageSrc}" class="student-img" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" onerror="this.onerror=null; this.style.display='none'; this.parentElement.querySelector('.fallback-avatar').style.display='flex';">`;
   }
-  return `<div class="student-result-avatar">${initial}</div>`;
+  return `<div class="student-result-avatar" style="width: 40px; height: 40px;">${initial}</div>`;
 }
 
 function getTopStudentForSubject(dateSheetId, subjectMaxMarks, classroomId) {
@@ -1037,7 +1041,10 @@ async function saveAllStudentMarks() {
     const { data: existing } = await supabase1.from("examinations").select("exam_id").eq("stu_id", student.stu_id).eq("exam_exam_date_sheet_id", selectedSubject.date_sheet_id).maybeSingle();
     let result;
     if(existing) {
-      result = await supabase1.from("examinations").update({ exam_sub_marks_obtain: obtainedStr, exam_exam_result_condition_id: conditionId }).eq("stu_id", student.stu_id).eq("exam_exam_date_sheet_id", selectedSubject.date_sheet_id);
+      result = await supabase1.from("examinations").update({ 
+        exam_sub_marks_obtain: obtainedStr, 
+        exam_exam_result_condition_id: conditionId 
+      }).eq("stu_id", student.stu_id).eq("exam_exam_date_sheet_id", selectedSubject.date_sheet_id);
     } else {
       const examId = await generateExamId();
       result = await supabase1.from("examinations").insert([{ 
@@ -1216,7 +1223,7 @@ async function renderStudentsResultList() {
   container.innerHTML = html; 
 }
 
-// viewStudentResult with SINGLE image
+// viewStudentResult with FIXED grade calculation
 async function viewStudentResult(studentId) {
   const s = allStudents.find(x=>x.stu_id===studentId);
   const sheets = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id === selectedExamTypeId);
@@ -1236,8 +1243,13 @@ async function viewStudentResult(studentId) {
         obt = Math.round(parseFloat(res.exam_sub_marks_obtain)||0); 
       }
       if(!isAbsentInExam) totalO += obt;
-      const g = (res && !isAbsentInExam) ? getGradeText(res.exam_exam_result_condition_id) : { text:'—', class:'' };
-      subs.push({ name: sub.subject_books?.subject_books_name||'Unknown', obtained: obt, max: maxM, grade: g.text, absentInExam: isAbsentInExam });
+      
+      // Calculate percentage based on max marks of this subject
+      const subjectPercentage = maxM > 0 ? (obt / maxM) * 100 : 0;
+      const subjectConditionId = getConditionIdFromPercentage(subjectPercentage);
+      const subjectGrade = getGradeText(subjectConditionId);
+      
+      subs.push({ name: sub.subject_books?.subject_books_name||'Unknown', obtained: obt, max: maxM, grade: subjectGrade.text, absentInExam: isAbsentInExam });
       
       if(isAbsentInExam) { 
         subsHtml += `<div class="subject-row">
@@ -1249,7 +1261,7 @@ async function viewStudentResult(studentId) {
           <div class="subject-name">${escapeHtml(sub.subject_books?.subject_books_name||'Unknown')}</div>
           <div>
             <span class="subject-marks">${obt} / ${maxM}</span>
-            <span class="subject-grade ${g.class}">${g.text}</span>
+            <span class="subject-grade ${subjectGrade.class}">${subjectGrade.text}</span>
           </div>
         </div>`; 
       }
