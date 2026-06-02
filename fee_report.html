@@ -6,9 +6,9 @@
 <title>Fee Report | Class-wise Monthly Fee Statement</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
   * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,34 +25,34 @@
     flex-direction: column;
   }
   .app-container { 
-    max-width: 1400px; 
+    max-width: 100%;
     margin: 0 auto; 
     width: 100%;
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 8px;
+    padding: 5px;
   }
   
   .detail-header { 
     background: linear-gradient(135deg, #1e3c72, #2a5298); 
-    padding: 10px 16px; 
+    padding: 8px 12px; 
     color: white; 
     display: flex; 
     align-items: center; 
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 8px;
-    border-radius: 16px 16px 0 0;
+    gap: 6px;
+    border-radius: 12px 12px 0 0;
     flex-shrink: 0;
   }
   .back-btn { 
     background: rgba(255,255,255,0.2); 
     border: none; 
     border-radius: 20px; 
-    padding: 5px 12px; 
+    padding: 4px 10px; 
     color: white; 
-    font-size: 0.7rem; 
+    font-size: 0.65rem; 
     cursor: pointer; 
     display: inline-flex; 
     align-items: center; 
@@ -62,9 +62,9 @@
   
   .report-card {
     background: white;
-    border-radius: 0 0 16px 16px;
-    padding: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 0 0 12px 12px;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -73,48 +73,50 @@
   
   .filter-section {
     background: #f8fafc;
-    border-radius: 12px;
-    padding: 12px;
-    margin-bottom: 12px;
+    border-radius: 10px;
+    padding: 8px;
+    margin-bottom: 8px;
     border: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
   
   .filter-section .row {
-    margin: 0 -4px;
+    margin: 0 -3px;
   }
   .filter-section .col-md-4 {
-    padding: 0 4px;
+    padding: 0 3px;
   }
   .filter-section .form-label {
     margin-bottom: 2px;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
   }
   .filter-section .form-select-sm, .filter-section .btn-sm {
-    font-size: 0.7rem;
-    padding: 4px 8px;
+    font-size: 0.65rem;
+    padding: 3px 6px;
   }
   
   .report-table-wrapper {
     overflow-x: auto;
     overflow-y: auto;
-    border-radius: 12px;
+    border-radius: 10px;
     border: 1px solid #e2e8f0;
     background: white;
     flex: 1;
     min-height: 0;
+    width: 100%;
   }
   
   .report-table {
-    width: 100%;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
-    font-size: 0.65rem;
-    min-width: 900px;
+    font-size: 0.6rem;
+    table-layout: auto;
   }
   
   .report-table th {
     background: #f1f5f9;
-    padding: 6px 4px;
+    padding: 5px 5px;
     text-align: center;
     font-weight: 600;
     color: #1e293b;
@@ -122,18 +124,17 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
+    white-space: nowrap;
   }
   
   .report-table td {
-    padding: 5px 4px;
+    padding: 4px 4px;
     text-align: center;
     border-bottom: 1px solid #eef2f8;
     vertical-align: middle;
-  }
-  
-  .report-table tr:hover {
-    background: #f8fafc;
+    white-space: nowrap;
+    font-size: 0.6rem;
   }
   
   .student-name-cell {
@@ -144,10 +145,7 @@
     left: 0;
     z-index: 5;
     min-width: 100px;
-    max-width: 120px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   
   .admission-cell {
@@ -157,9 +155,9 @@
   
   .month-header {
     background: #e0f2fe;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     white-space: nowrap;
-    min-width: 65px;
+    min-width: 55px;
   }
   
   .paid-cell { background: #d1fae5; color: #065f46; font-weight: 600; }
@@ -168,48 +166,113 @@
   
   .summary-card {
     background: linear-gradient(135deg, #1e3c72, #2a5298);
-    border-radius: 12px;
-    padding: 8px 12px;
-    margin-bottom: 12px;
+    border-radius: 10px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
     color: white;
     flex-shrink: 0;
   }
   
   .summary-stats {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     justify-content: center;
   }
   
   .stat-badge {
     background: rgba(255,255,255,0.2);
-    border-radius: 30px;
-    padding: 3px 10px;
+    border-radius: 25px;
+    padding: 2px 8px;
     text-align: center;
   }
   
-  .stat-badge h4 { margin: 0; font-size: 0.9rem; font-weight: 700; }
-  .stat-badge p { margin: 0; font-size: 0.5rem; opacity: 0.8; }
+  .stat-badge h4 { margin: 0; font-size: 0.8rem; font-weight: 700; }
+  .stat-badge p { margin: 0; font-size: 0.45rem; opacity: 0.8; }
   
-  .print-btn, .export-btn {
-    border-radius: 30px;
-    padding: 4px 12px;
-    font-size: 0.7rem;
+  .print-btn, .export-btn, .pdf-btn {
+    border-radius: 25px;
+    padding: 3px 10px;
+    font-size: 0.65rem;
     cursor: pointer;
+    border: none;
   }
-  .print-btn { background: #475569; border: none; color: white; }
+  .print-btn { background: #475569; color: white; }
   .print-btn:hover { background: #334155; }
-  .export-btn { background: #10b981; border: none; color: white; }
+  .export-btn { background: #10b981; color: white; }
   .export-btn:hover { background: #059669; }
+  .pdf-btn { background: #ef4444; color: white; }
+  .pdf-btn:hover { background: #dc2626; }
   
-  .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   
+  .pdf-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s;
+  }
+  .pdf-loading.show {
+    visibility: visible;
+    opacity: 1;
+  }
+  .pdf-loading-content {
+    background: white;
+    padding: 15px 25px;
+    border-radius: 15px;
+    text-align: center;
+  }
+  .pdf-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #1e3c72;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 8px;
+  }
+  
+  /* PDF-specific styles */
+  .pdf-header {
+    text-align: center;
+    padding: 10px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  .pdf-header .school-name {
+    font-size: 14px;
+    font-weight: bold;
+  }
+  .pdf-header .report-title {
+    font-size: 11px;
+    opacity: 0.9;
+  }
+  .pdf-header .date {
+    font-size: 9px;
+    opacity: 0.7;
+  }
+  
   @media print {
-    body { background: white; padding: 0; }
-    .back-btn, .print-btn, .export-btn, .filter-section button { display: none; }
-    .report-card { padding: 0; box-shadow: none; }
+    body { background: white; padding: 0; margin: 0; }
+    .back-btn, .print-btn, .export-btn, .pdf-btn, .filter-section button, .filter-section select, .filter-section .form-label { display: none !important; }
+    .report-card { padding: 0; margin: 0; box-shadow: none; }
+    .filter-section { display: none !important; }
+    .report-table-wrapper { overflow: visible !important; }
+    .report-table { width: 100%; table-layout: auto; }
+    .report-table th, .report-table td { border: 1px solid #ddd; }
+    .paid-cell, .due-cell, .partial-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -217,11 +280,15 @@
 
 <div class="app-container">
   <div class="detail-header">
-    <button class="back-btn" onclick="goBackToFee()"><i class="bi bi-arrow-left"></i> Back</button>
-    <h5 class="mb-0" style="font-size: 0.85rem;"><i class="bi bi-cash-stack me-1"></i>Fee Report</h5>
+    <button class="back-btn" onclick="goBackToFee()">← Back</button>
+    <div style="text-align: center; flex: 1;">
+      <div style="font-size: 0.7rem; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
+      <div style="font-size: 0.55rem; opacity: 0.8;">Fee Report</div>
+    </div>
     <div>
-      <button class="print-btn me-1" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
-      <button class="export-btn" onclick="exportToExcel()"><i class="bi bi-file-excel"></i> Export</button>
+      <button class="print-btn me-1" onclick="window.print()">🖨️ Print</button>
+      <button class="pdf-btn me-1" onclick="exportToPDF()">📄 PDF</button>
+      <button class="export-btn" onclick="exportToExcel()">📎 Export</button>
     </div>
   </div>
   
@@ -231,9 +298,9 @@
         <div class="col-md-4">
           <label class="form-label fw-bold">Session</label>
           <select id="sessionSelect" class="form-select form-select-sm">
-            <option value="1">Session 2024-2025</option>
-            <option value="2">Session 2025-2026</option>
-            <option value="3">Session 2026-2027</option>
+            <option value="1">2024-2025</option>
+            <option value="2">2025-2026</option>
+            <option value="3" selected>2026-2027</option>
           </select>
         </div>
         <div class="col-md-4">
@@ -243,24 +310,32 @@
           </select>
         </div>
         <div class="col-md-4">
-          <button class="btn btn-primary btn-sm w-100" id="loadReportBtn"><i class="bi bi-search"></i> Generate</button>
+          <button class="btn btn-primary btn-sm w-100" id="loadReportBtn">🔍 Generate</button>
         </div>
       </div>
     </div>
     
     <div class="summary-card" id="summaryCard" style="display: none;">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
-        <h6 class="mb-0" id="reportTitle" style="font-size: 0.7rem;">Fee Report</h6>
+        <h6 class="mb-0" id="reportTitle" style="font-size: 0.65rem;">Fee Report</h6>
         <div class="summary-stats" id="summaryStats"></div>
       </div>
     </div>
     
     <div id="reportTableContainer" class="report-table-wrapper">
-      <div class="text-center py-3">
-        <i class="bi bi-cash-stack fs-4 text-muted"></i>
-        <p class="text-muted mt-1" style="font-size: 0.7rem;">Select session and class</p>
+      <div class="text-center py-2">
+        <div style="font-size: 1.5rem;">💰</div>
+        <p class="text-muted mt-1" style="font-size: 0.65rem;">Select session and class</p>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="pdfLoading" class="pdf-loading">
+  <div class="pdf-loading-content">
+    <div class="pdf-spinner"></div>
+    <p>Generating PDF...</p>
+    <small>Please wait</small>
   </div>
 </div>
 
@@ -273,6 +348,7 @@ let allClasses = [];
 let allStudents = [];
 let allFees = [];
 
+const monthOrder = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2];
 const monthNames = {
   1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
   7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
@@ -331,8 +407,8 @@ async function loadFeesBySession(sessionId) {
 
 function getSessionMonths() {
   const months = [];
-  for (let m = 1; m <= 12; m++) {
-    months.push({ month: m, monthName: monthNames[m] });
+  for (const monthNum of monthOrder) {
+    months.push({ month: monthNum, monthName: monthNames[monthNum] });
   }
   return months;
 }
@@ -344,14 +420,14 @@ async function generateReport() {
   if (!classId) { alert("Select class"); return; }
   
   const container = document.getElementById('reportTableContainer');
-  container.innerHTML = '<div class="text-center py-3"><div class="loading-spinner"></div><p class="mt-1" style="font-size:0.7rem;">Loading...</p></div>';
+  container.innerHTML = '<div class="text-center py-2"><div class="loading-spinner"></div><p>Loading...</p></div>';
   
   try {
     const students = await loadStudentsByClass(parseInt(classId));
     const allFeeRecords = await loadFeesBySession(sessionId);
     
     if (students.length === 0) {
-      container.innerHTML = '<div class="text-center py-3 text-muted"><i class="bi bi-people fs-4"></i><p class="mt-1">No students</p></div>';
+      container.innerHTML = '<div class="text-center py-2 text-muted"><div style="font-size:1.5rem;">👥</div><p>No students</p></div>';
       return;
     }
     
@@ -369,15 +445,16 @@ async function generateReport() {
     const classObj = allClasses.find(c => c.class_room_id == classId);
     const className = classObj ? classObj.class_room_no : 'Class';
     
-    let html = `<table class="report-table"><thead><tr>
-      <th class="student-name-cell">Student</th>
-      <th class="admission-cell">Adm No</th>`;
+    let html = '<table class="report-table" id="feeReportTable"><thead><tr>';
+    html += '<th class="student-name-cell">Student</th>';
+    html += '<th class="admission-cell">Adm No</th>';
     
     for (const month of sessionMonths) {
       html += `<th class="month-header">${month.monthName}</th>`;
     }
     
-    html += `<th>Paid</th><th>Due</th><th>%</th></tr></thead><tbody>`;
+    html += '<th>Paid</th><th>Due</th><th>%</th>';
+    html += '<tr></thead><tbody>';
     
     let grandPaid = 0, grandDue = 0;
     
@@ -385,13 +462,13 @@ async function generateReport() {
       let totalPaid = 0, totalDue = 0;
       
       let shortName = student.stu_name;
-      if (shortName && shortName.length > 15) {
-        shortName = shortName.substring(0, 13) + '..';
+      if (shortName && shortName.length > 18) {
+        shortName = shortName.substring(0, 16) + '..';
       }
       
       html += `<tr>
-        <td class="student-name-cell" title="${escapeHtml(student.stu_name)}"><strong>${escapeHtml(shortName)}</strong><br><small>${escapeHtml(student.stu_admission_no)}</small></td>
-        <td class="admission-cell">${escapeHtml(student.stu_admission_no) || '—'}</td>`;
+        <td class="student-name-cell" title="${escapeHtml(student.stu_name)}">${escapeHtml(shortName)}<br><span style="font-size:0.55rem;color:#64748b;">${escapeHtml(student.stu_admission_no)}</span><\/td>
+        <td class="admission-cell">${escapeHtml(student.stu_admission_no) || '—'}<\/td>`;
       
       for (const month of sessionMonths) {
         const key = `${student.stu_id}_${month.month}`;
@@ -408,9 +485,9 @@ async function generateReport() {
           else if (paid > 0 && due > 0) cellClass = 'partial-cell';
           else if (due > 0 && paid === 0) cellClass = 'due-cell';
           
-          html += `<td class="${cellClass}"><strong>${paid.toLocaleString()}</strong><br><small>${due.toLocaleString()}</small></td>`;
+          html += `<td class="${cellClass}"><strong>${paid.toLocaleString()}</strong><br><span style="font-size:0.55rem;">${due.toLocaleString()}</span><\/td>`;
         } else {
-          html += `<td class="text-muted">—</td>`;
+          html += `<td class="text-muted">—<\/td>`;
         }
       }
       
@@ -418,19 +495,19 @@ async function generateReport() {
       grandPaid += totalPaid;
       grandDue += totalDue;
       
-      html += `<td class="fw-bold text-success">${totalPaid.toLocaleString()}</td>
-               <td class="fw-bold text-danger">${totalDue.toLocaleString()}</td>
-               <td><strong>${percentage}%</strong></td>
-              </tr>`;
+      html += `<td style="font-weight:bold;color:#10b981;">${totalPaid.toLocaleString()}<\/td>
+               <td style="font-weight:bold;color:#ef4444;">${totalDue.toLocaleString()}<\/td>
+               <td style="font-weight:bold;">${percentage}%<\/td>
+              <\/tr>`;
     }
     
-    html += `</tbody></tr>`;
+    html += '</tbody></table>';
     container.innerHTML = html;
     
     const totalStudents = students.length;
     const collectionRate = grandPaid + grandDue > 0 ? Math.round((grandPaid / (grandPaid + grandDue)) * 100) : 0;
     
-    document.getElementById('reportTitle').innerHTML = `${className} | Session ${sessionId}`;
+    document.getElementById('reportTitle').innerHTML = `${className} | Session ${sessionId === 1 ? '2024-2025' : (sessionId === 2 ? '2025-2026' : '2026-2027')}`;
     document.getElementById('summaryStats').innerHTML = `
       <div class="stat-badge"><h4>${totalStudents}</h4><p>Std</p></div>
       <div class="stat-badge"><h4>PKR ${(grandPaid/1000).toFixed(0)}K</h4><p>Paid</p></div>
@@ -441,7 +518,7 @@ async function generateReport() {
     
   } catch (error) {
     console.error(error);
-    container.innerHTML = `<div class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle-fill"></i><p>Error</p></div>`;
+    container.innerHTML = '<div class="text-center py-2 text-danger"><div style="font-size:1.5rem;">❌</div><p>Error</p></div>';
   }
 }
 
@@ -470,6 +547,72 @@ function exportToExcel() {
   URL.revokeObjectURL(url);
 }
 
+function exportToPDF() {
+  const element = document.querySelector('.report-card');
+  if (!element) { alert("Generate report first"); return; }
+  
+  const loadingOverlay = document.getElementById('pdfLoading');
+  loadingOverlay.classList.add('show');
+  
+  const classObj = allClasses.find(c => c.class_room_id == document.getElementById('classSelect').value);
+  const className = classObj ? classObj.class_room_no : 'Class';
+  const sessionId = document.getElementById('sessionSelect').value;
+  const sessionName = sessionId === '1' ? '2024-2025' : (sessionId === '2' ? '2025-2026' : '2026-2027');
+  
+  // Get current date and time
+  const now = new Date();
+  const dateStr = now.toLocaleString();
+  
+  // Create a new div for PDF content with header
+  const pdfContent = document.createElement('div');
+  pdfContent.style.padding = '15px';
+  pdfContent.style.backgroundColor = 'white';
+  pdfContent.style.fontFamily = 'Arial, sans-serif';
+  
+  // Add header (school name)
+  pdfContent.innerHTML = `
+    <div class="pdf-header" style="text-align: center; padding: 12px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 8px; margin-bottom: 15px;">
+      <div class="school-name" style="font-size: 14px; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
+      <div class="report-title" style="font-size: 11px; opacity: 0.9; margin-top: 3px;">Fee Report | ${className} | Session ${sessionName}</div>
+      <div class="date" style="font-size: 9px; opacity: 0.7; margin-top: 3px;">Generated on: ${dateStr}</div>
+    </div>
+  `;
+  
+  // Clone the element content (without buttons, selects, labels)
+  const cloneElement = element.cloneNode(true);
+  
+  // Remove filter section (buttons, selects, labels)
+  const filterSection = cloneElement.querySelector('.filter-section');
+  if (filterSection) filterSection.remove();
+  
+  // Remove buttons from summary card
+  const summaryCard = cloneElement.querySelector('.summary-card');
+  if (summaryCard) {
+    const btns = summaryCard.querySelectorAll('button');
+    btns.forEach(btn => btn.remove());
+  }
+  
+  pdfContent.appendChild(cloneElement);
+  
+  const opt = {
+    margin: [0.3, 0.3, 0.3, 0.3],
+    filename: `fee_report_${className}_${sessionName}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: false, logging: false, allowTaint: true },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+  };
+  
+  setTimeout(() => {
+    html2pdf().set(opt).from(pdfContent).save().then(() => {
+      loadingOverlay.classList.remove('show');
+    }).catch(err => {
+      console.error("PDF Error:", err);
+      loadingOverlay.classList.remove('show');
+      alert("PDF failed. Please use Print button.");
+    });
+  }, 100);
+}
+
 document.getElementById('loadReportBtn')?.addEventListener('click', generateReport);
 
 async function init() {
@@ -480,6 +623,7 @@ init();
 
 window.goBackToFee = goBackToFee;
 window.exportToExcel = exportToExcel;
+window.exportToPDF = exportToPDF;
 </script>
 </body>
 </html>
