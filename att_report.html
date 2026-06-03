@@ -208,6 +208,84 @@
   .stat-badge h4 { margin: 0; font-size: 0.75rem; font-weight: 700; }
   .stat-badge p { margin: 0; font-size: 0.4rem; opacity: 0.8; }
   
+  /* Footer Summary Styles */
+  .footer-summary {
+    background: #f8fafc;
+    border-top: 2px solid #1e3c72;
+    padding: 8px 10px;
+    margin-top: 8px;
+    border-radius: 8px;
+    font-size: 0.55rem;
+    flex-shrink: 0;
+  }
+  .footer-summary-title {
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 5px;
+    font-size: 0.6rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 3px;
+  }
+  .daily-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .day-item {
+    flex: 1;
+    min-width: 35px;
+    text-align: center;
+    padding: 3px;
+    background: white;
+    border-radius: 5px;
+    border: 1px solid #e2e8f0;
+  }
+  .day-number {
+    font-weight: 700;
+    color: #1e3c72;
+    font-size: 0.5rem;
+  }
+  .day-present {
+    color: #10b981;
+    font-weight: 600;
+    font-size: 0.5rem;
+  }
+  .day-absent {
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 0.5rem;
+  }
+  .day-leave {
+    color: #f59e0b;
+    font-weight: 600;
+    font-size: 0.5rem;
+  }
+  .total-summary {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid #e2e8f0;
+    font-weight: 700;
+  }
+  .total-label {
+    color: #1e3c72;
+  }
+  .total-present {
+    color: #10b981;
+  }
+  .total-absent {
+    color: #ef4444;
+  }
+  .total-leave {
+    color: #f59e0b;
+  }
+  .total-rate {
+    color: #1e3c72;
+  }
+  
   .legend {
     display: flex;
     flex-wrap: wrap;
@@ -218,7 +296,6 @@
     border-top: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
-  
   .legend-item { display: flex; align-items: center; gap: 2px; font-size: 0.5rem; }
   .legend-color { width: 10px; height: 10px; border-radius: 20px; }
   
@@ -282,7 +359,7 @@
     .report-table-wrapper { overflow: visible !important; }
     .report-table { width: 100%; table-layout: auto; }
     .report-table th, .report-table td { border: 1px solid #ddd; }
-    .present, .absent, .sick-leave, .casual-leave, .short-leave, .long-leave, .meeting, .holiday, .not-marked, .not-applicable {
+    .present, .absent, .sick-leave, .casual-leave, .short-leave, .long-leave, .meeting, .holiday, .not-marked, .not-applicable, .footer-summary {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -353,6 +430,19 @@
       <div class="text-center py-2">
         <div style="font-size: 1.5rem;">📅</div>
         <p class="text-muted mt-1" style="font-size: 0.65rem;">Select class, month, year and click Generate</p>
+      </div>
+    </div>
+    
+    <!-- Footer Summary -->
+    <div id="footerSummary" class="footer-summary" style="display: none;">
+      <div class="footer-summary-title">📊 Daily Summary</div>
+      <div id="dailySummaryContainer" class="daily-summary"></div>
+      <div class="total-summary">
+        <span class="total-label">📌 TOTAL:</span>
+        <span class="total-present" id="footerTotalPresent">P: 0</span>
+        <span class="total-absent" id="footerTotalAbsent">A: 0</span>
+        <span class="total-leave" id="footerTotalLeave">L: 0</span>
+        <span class="total-rate" id="footerTotalRate">0%</span>
       </div>
     </div>
     
@@ -463,6 +553,7 @@ async function generateReport() {
         
         if (students.length === 0) {
             container.innerHTML = '<div class="text-center py-2 text-muted"><div style="font-size:1.5rem;">👥</div><p>No students</p></div>';
+            document.getElementById('footerSummary').style.display = 'none';
             return;
         }
         
@@ -476,6 +567,11 @@ async function generateReport() {
         }
         
         let totalPresent = 0, totalAbsent = 0, totalLeave = 0, totalPossibleDays = 0;
+        let dailyTotals = {};
+        
+        for (let d = 1; d <= daysInMonth; d++) {
+            dailyTotals[d] = { present: 0, absent: 0, leave: 0 };
+        }
         
         let html = `<table class="report-table" id="attendanceReportTable"><thead><tr>
             <th class="student-name-cell">Student</th>
@@ -516,9 +612,16 @@ async function generateReport() {
                     possibleDays++;
                     const statusClass = getStatusClass(statusId);
                     const shortNameStatus = getStatusShortName(statusId);
-                    if (statusId === 1) present++;
-                    else if (statusId === 2) absent++;
-                    else if (statusId >= 3 && statusId <= 8) leave++;
+                    if (statusId === 1) {
+                        present++;
+                        dailyTotals[d].present++;
+                    } else if (statusId === 2) {
+                        absent++;
+                        dailyTotals[d].absent++;
+                    } else if (statusId >= 3 && statusId <= 8) {
+                        leave++;
+                        dailyTotals[d].leave++;
+                    }
                     html += `<td><span class="${statusClass}" title="${statusConfig[statusId]?.fullName || 'Not Marked'}">${shortNameStatus}</span></td>`;
                 }
             }
@@ -551,9 +654,32 @@ async function generateReport() {
         `;
         document.getElementById('summaryCard').style.display = 'block';
         
+        // Update Daily Footer Summary
+        let dailyHtml = '';
+        for (let d = 1; d <= daysInMonth; d++) {
+            const present = dailyTotals[d].present;
+            const absent = dailyTotals[d].absent;
+            const leave = dailyTotals[d].leave;
+            dailyHtml += `
+                <div class="day-item">
+                    <div class="day-number">${d}</div>
+                    <div class="day-present">P:${present}</div>
+                    <div class="day-absent">A:${absent}</div>
+                    <div class="day-leave">L:${leave}</div>
+                </div>
+            `;
+        }
+        document.getElementById('dailySummaryContainer').innerHTML = dailyHtml;
+        document.getElementById('footerTotalPresent').innerHTML = `P: ${totalPresent}`;
+        document.getElementById('footerTotalAbsent').innerHTML = `A: ${totalAbsent}`;
+        document.getElementById('footerTotalLeave').innerHTML = `L: ${totalLeave}`;
+        document.getElementById('footerTotalRate').innerHTML = `${overallPercentage}%`;
+        document.getElementById('footerSummary').style.display = 'block';
+        
     } catch (error) {
         console.error(error);
         container.innerHTML = '<div class="text-center py-2 text-danger"><div style="font-size:1.5rem;">❌</div><p>Error</p></div>';
+        document.getElementById('footerSummary').style.display = 'none';
     }
 }
 
@@ -568,6 +694,7 @@ function resetFilters() {
         </div>
     `;
     document.getElementById('summaryCard').style.display = 'none';
+    document.getElementById('footerSummary').style.display = 'none';
 }
 
 function exportToExcel() {
@@ -646,7 +773,7 @@ function exportToPDF() {
     if (legendHtml) pdfContent.innerHTML += legendHtml;
     
     const opt = {
-        margin: [0.1, 0.1, 0.1, 0.05], // left margin reduced (0.05)
+        margin: [0.1, 0.1, 0.1, 0.05],
         filename: `attendance_report_${className}_${monthNames[month]}_${year}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: false, logging: false, allowTaint: true },
