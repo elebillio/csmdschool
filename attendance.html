@@ -15,7 +15,6 @@
   body { background: #f1f5f9; padding: 16px; margin: 0; }
   .app-container { max-width: 550px; margin: 0 auto; }
   
-  /* Detail Header Style */
   .detail-header { 
     background: linear-gradient(135deg, #1e3c72, #2a5298); 
     padding: 20px 16px; 
@@ -164,7 +163,6 @@
   .report-icon-btn { background: transparent; border: none; border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; color: #1e3c72; cursor: pointer; }
   .report-icon-btn:hover { background: #eef2ff; }
   
-  /* Report Modal */
   .report-modal {
     display: none;
     position: fixed;
@@ -242,14 +240,12 @@
 <body>
 
 <div class="app-container">
-  <!-- Header with Back Button -->
   <div class="detail-header">
     <button class="back-btn" onclick="goBackToDashboard()"><i class="bi bi-arrow-left"></i> Back</button>
     <h5 class="mb-0">📅 Attendance Management</h5>
     <div style="width: 70px;"></div>
   </div>
   
-  <!-- Attendance Main Card -->
   <div class="list-card">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h5 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-success"></i>Student Attendance</h5>
@@ -259,14 +255,12 @@
       </div>
     </div>
     
-    <!-- Date Navigation -->
     <div class="date-nav">
       <button class="btn btn-outline-secondary rounded-pill btn-sm" id="prevDateBtn"><i class="bi bi-chevron-left"></i> Prev</button>
       <div class="text-center"><span id="attendanceDate" class="fw-bold small"></span><button class="btn btn-sm btn-link p-0 ms-1 small" id="todayBtn">Today</button></div>
       <button class="btn btn-outline-secondary rounded-pill btn-sm" id="nextDateBtn">Next <i class="bi bi-chevron-right"></i></button>
     </div>
     
-    <!-- Class Filter + Date Picker -->
     <div class="filter-row">
       <i class="bi bi-building"></i>
       <select id="classroomFilter">
@@ -277,19 +271,15 @@
       <button class="go-date-btn" id="goToDateBtn"><i class="bi bi-arrow-right"></i> Go</button>
     </div>
     
-    <!-- Status Legend -->
     <div class="status-colors" id="statusLegend"></div>
     
-    <!-- Statistics -->
     <div class="attendance-stats" id="attendanceStats"></div>
     
-    <!-- Search -->
     <div class="search-box mb-2">
       <i class="bi bi-search text-secondary"></i>
       <input type="text" id="attendanceSearch" placeholder="Search student...">
     </div>
     
-    <!-- Group Toggle -->
     <div class="filter-switch-right">
       <div class="form-check form-switch">
         <input class="form-check-input" type="checkbox" id="toggleGroupView" checked>
@@ -297,25 +287,21 @@
       </div>
     </div>
     
-    <!-- Attendance List Container -->
     <div id="attendanceListContainer">
       <div class="text-center py-4"><span class="loading-spinner"></span> Loading students...</div>
     </div>
     
-    <!-- Progress Bar -->
     <div id="saveProgressContainer" class="progress-container">
       <div class="progress"><div id="saveProgressBar" class="progress-bar"></div></div>
       <div id="saveProgressText" class="progress-text">Saving...</div>
     </div>
     
-    <!-- Save Button -->
     <div class="mt-3">
       <button id="saveAttendanceBtn" class="btn-primary-custom"><i class="bi bi-save"></i> Save Attendance (Current Class)</button>
     </div>
   </div>
 </div>
 
-<!-- Report Modal for att_report.html -->
 <div id="attendanceReportModal" class="report-modal">
   <div class="report-modal-content">
     <div class="report-modal-header">
@@ -326,7 +312,6 @@
   </div>
 </div>
 
-<!-- Mark All Modal -->
 <div class="modal fade" id="globalMarkAllModal" tabindex="-1">
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
@@ -348,12 +333,10 @@
 <div id="toastMsg" class="toast-custom"></div>
 
 <script>
-// ==================== SUPABASE CONFIG ====================
 const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
 const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
 const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-// ==================== GLOBAL VARIABLES ====================
 let allStudents = [];
 let allClassrooms = [];
 let attendanceStatuses = [];
@@ -362,6 +345,7 @@ let currentAttendanceDate = new Date();
 let selectedClassroomId = null;
 let groupViewEnabled = true;
 let groupStates = {};
+let currentSessionId = 1;
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -386,7 +370,6 @@ function goBackToDashboard() {
   }
 }
 
-// ==================== REPORT MODAL FUNCTIONS ====================
 function openAttendanceReport() {
   const modal = document.getElementById('attendanceReportModal');
   const iframe = document.getElementById('attendanceReportIframe');
@@ -401,7 +384,6 @@ function closeAttendanceReport() {
   modal.style.display = 'none';
 }
 
-// Status Configuration
 const statusConfig = { 
     1: { name: 'Present', class: 'present', color: '#10b981', bg: '#d1fae5' }, 
     2: { name: 'Absent', class: 'absent', color: '#ef4444', bg: '#fee2e2' }, 
@@ -421,42 +403,22 @@ function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]
 function formatDate(d) { let y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 function getClassroomName(id) { let c = allClassrooms.find(c => c.class_room_id == id); return c ? c.class_room_no : `Class ${id}`; }
 
+// ==================== TIMESTAMP-BASED ID GENERATION (NO DUPLICATES) ====================
+function generateAttendanceId() {
+    const now = new Date();
+    const timestamp = now.getFullYear().toString().slice(-2) +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0') +
+        String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0') +
+        String(now.getSeconds()).padStart(2, '0') +
+        String(now.getMilliseconds()).padStart(3, '0');
+    return `AAT-${timestamp}`;
+}
+
 async function getNextAttendanceId() {
-    try {
-        const { data, error } = await supabase1
-            .from("students_attendence")
-            .select("stu_attendence_id")
-            .order("stu_attendence_id", { ascending: true });
-        
-        if (error) {
-            console.error("Error fetching IDs:", error);
-            return "AAT-000001";
-        }
-        
-        let maxNumber = 0;
-        const prefix = "AAT";
-        
-        if (data && data.length > 0) {
-            for (const record of data) {
-                const id = record.stu_attendence_id;
-                if (id && id.startsWith(prefix + "-")) {
-                    const numericPart = id.substring(prefix.length + 1);
-                    const num = parseInt(numericPart, 10);
-                    if (!isNaN(num) && num > maxNumber) {
-                        maxNumber = num;
-                    }
-                }
-            }
-        }
-        
-        const nextNumber = maxNumber + 1;
-        const newId = `${prefix}-${nextNumber.toString().padStart(6, '0')}`;
-        return newId;
-        
-    } catch (err) {
-        console.error("Error in getNextAttendanceId:", err);
-        return "AAT-000001";
-    }
+    // Simple timestamp-based unique ID
+    return generateAttendanceId();
 }
 
 function getStudentImageUrl(student) {
@@ -660,11 +622,36 @@ function renderAttendanceList() {
     } 
 }
 
+// ==================== FIXED SAVE ATTENDANCE - TIMESTAMP ID (NO CONFLICTS) ====================
 async function saveAttendance() {
     const dateStr = formatDate(currentAttendanceDate);
-    let studentsToSave = selectedClassroomId ? allStudents.filter(s=>s.stu_class_room_id===selectedClassroomId) : allStudents;
-    let recordsToSave = attendanceRecords.filter(rec => studentsToSave.some(s=>s.stu_id===rec.stu_id));
-    if (recordsToSave.length === 0) { alert("No attendance records to save!"); return; }
+    
+    let studentsToSave = selectedClassroomId ? allStudents.filter(s => s.stu_class_room_id === selectedClassroomId) : allStudents;
+    
+    if (studentsToSave.length === 0) { 
+        alert("No students found for this class!"); 
+        return; 
+    }
+    
+    let recordsToSave = [];
+    for (const student of studentsToSave) {
+        const record = attendanceRecords.find(r => r.stu_id === student.stu_id);
+        let statusId = record ? record.stu_attendence_att_status_id : null;
+        
+        if (statusId !== null && statusId !== undefined && statusId !== '') {
+            recordsToSave.push({
+                stu_id: student.stu_id,
+                stu_attendence_att_status_id: parseInt(statusId),
+                stu_attendence_date: dateStr,
+                session_id: currentSessionId
+            });
+        }
+    }
+    
+    if (recordsToSave.length === 0) { 
+        alert("No attendance records to save! Please mark attendance first."); 
+        return; 
+    }
     
     const progressContainer = document.getElementById('saveProgressContainer');
     const progressBar = document.getElementById('saveProgressBar');
@@ -678,38 +665,79 @@ async function saveAttendance() {
     }
     if(progressBar) progressBar.style.width = '0%';
     
-    let successCount = 0, failCount = 0;
+    let updateCount = 0, insertCount = 0, failCount = 0;
     
     for (let i = 0; i < recordsToSave.length; i++) {
         const record = recordsToSave[i];
-        record.stu_attendence_date = dateStr;
         try {
-            const { data: existing } = await supabase1.from("students_attendence").select("stu_attendence_id").eq("stu_id", record.stu_id).eq("stu_attendence_date", dateStr).maybeSingle();
+            // First check if record exists for this student and date
+            const { data: existing } = await supabase1
+                .from("students_attendence")
+                .select("stu_attendence_id")
+                .eq("stu_id", record.stu_id)
+                .eq("stu_attendence_date", dateStr)
+                .maybeSingle();
+            
             if (existing) { 
-                const result = await supabase1.from("students_attendence").update({ stu_attendence_att_status_id: record.stu_attendence_att_status_id }).eq("stu_attendence_id", existing.stu_attendence_id); 
-                if (!result.error) successCount++; else failCount++; 
+                // UPDATE existing record
+                const result = await supabase1
+                    .from("students_attendence")
+                    .update({ 
+                        stu_attendence_att_status_id: record.stu_attendence_att_status_id,
+                        session_id: record.session_id
+                    })
+                    .eq("stu_attendence_id", existing.stu_attendence_id);
+                
+                if (!result.error) {
+                    updateCount++;
+                    console.log(`Updated: ${record.stu_id} - Status: ${record.stu_attendence_att_status_id}`);
+                } else {
+                    failCount++;
+                    console.error("Update error:", result.error);
+                }
             } else { 
-                const newId = await getNextAttendanceId();
-                const result = await supabase1.from("students_attendence").insert([{ stu_attendence_id: newId, stu_id: record.stu_id, stu_attendence_att_status_id: record.stu_attendence_att_status_id, stu_attendence_date: dateStr, session_id: 1 }]); 
-                if (!result.error) successCount++; else failCount++; 
+                // INSERT new record with unique timestamp ID
+                const newId = generateAttendanceId();
+                const result = await supabase1
+                    .from("students_attendence")
+                    .insert([{ 
+                        stu_attendence_id: newId, 
+                        stu_id: record.stu_id, 
+                        stu_attendence_att_status_id: record.stu_attendence_att_status_id, 
+                        stu_attendence_date: record.stu_attendence_date, 
+                        session_id: record.session_id 
+                    }]);
+                
+                if (!result.error) {
+                    insertCount++;
+                    console.log(`Inserted: ${record.stu_id} - Status: ${record.stu_attendence_att_status_id} - ID: ${newId}`);
+                } else {
+                    failCount++;
+                    console.error("Insert error:", result.error);
+                }
             }
-        } catch (err) { failCount++; }
+        } catch (err) { 
+            failCount++; 
+            console.error("Save error:", err);
+        }
         
         const percent = Math.round(((i + 1) / recordsToSave.length) * 100);
         if(progressBar) progressBar.style.width = `${percent}%`;
-        if(progressText) progressText.innerText = `${i+1}/${recordsToSave.length} (✅${successCount} ⚠️${failCount})`;
+        if(progressText) progressText.innerText = `${i+1}/${recordsToSave.length} (✅U:${updateCount} I:${insertCount} ⚠️${failCount})`;
         await new Promise(r => setTimeout(r, 10));
     }
     
     if(progressBar) progressBar.style.width = '100%';
-    if(progressText) progressText.innerText = `✅ Saved ${successCount} records!`;
-    showToast(`Saved ${successCount} records!`);
+    if(progressText) progressText.innerText = `✅ Complete! Updated: ${updateCount}, Inserted: ${insertCount}, Failed: ${failCount}`;
+    showToast(`Saved ${updateCount + insertCount} records!`);
     
     if(saveBtn) {
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="bi bi-save"></i> Save Attendance (Current Class)';
     }
+    
     await loadAttendanceData();
+    
     if(progressContainer) setTimeout(() => { progressContainer.style.display = 'none'; }, 2000);
 }
 
@@ -764,149 +792,7 @@ function applyGlobalMarkAll() {
     renderAttendanceList(); 
 }
 
-// ==================== REPORT MODULE (Individual Student) ====================
-let currentReportStudentId = null;
-let currentReportMonth = new Date();
-let reportFilter = 'month';
-
-window.openReportModal = async function(studentId) {
-    currentReportStudentId = studentId;
-    currentReportMonth = new Date();
-    reportFilter = 'month';
-    let student = allStudents.find(s=>s.stu_id===studentId);
-    const nameEl = document.getElementById('reportStudentName');
-    const classEl = document.getElementById('reportStudentClass');
-    if(nameEl) nameEl.innerHTML = escapeHtml(student?.stu_name||'Unknown');
-    if(classEl) classEl.innerHTML = `Class: ${getClassroomName(student?.stu_class_room_id)} | ID: ${student?.stu_admission_no||'N/A'}`;
-    const filterMonthBtn = document.getElementById('filterThisMonth');
-    const filterAllBtn = document.getElementById('filterAllSession');
-    const monthNav = document.getElementById('monthNavContainer');
-    if(filterMonthBtn) filterMonthBtn.classList.add('active');
-    if(filterAllBtn) filterAllBtn.classList.remove('active');
-    if(monthNav) monthNav.style.display = 'flex';
-    await renderMonthCalendar();
-    new bootstrap.Modal(document.getElementById('reportModal')).show();
-};
-
-async function renderMonthCalendar() {
-    let year = currentReportMonth.getFullYear();
-    let month = currentReportMonth.getMonth();
-    let monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthYearEl = document.getElementById('reportMonthYear');
-    if(monthYearEl) monthYearEl.innerHTML = `${monthNames[month]} ${year}`;
-    let firstDayOfMonth = new Date(year, month, 1);
-    let startWeekday = firstDayOfMonth.getDay();
-    let calStart = new Date(year, month, 1);
-    calStart.setDate(1 - startWeekday);
-    let dates = [];
-    for(let i=0; i<42; i++) { let d = new Date(calStart); d.setDate(calStart.getDate() + i); dates.push(d); }
-    let fetchPromises = dates.map(d => supabase1.from("students_attendence").select("stu_attendence_att_status_id").eq("stu_id", currentReportStudentId).eq("stu_attendence_date", formatDate(d)).maybeSingle());
-    let results = await Promise.all(fetchPromises);
-    let statusCounts = {};
-    for(let st of attendanceStatuses) statusCounts[st.att_status_id] = 0;
-    let calendarHtml = `<div class="calendar-grid">`;
-    calendarHtml += `<div class="cal-day cal-day-label">Sun</div><div class="cal-day cal-day-label">Mon</div><div class="cal-day cal-day-label">Tue</div><div class="cal-day cal-day-label">Wed</div><div class="cal-day cal-day-label">Thu</div><div class="cal-day cal-day-label">Fri</div><div class="cal-day cal-day-label">Sat</div>`;
-    for(let i=0; i<dates.length; i++) {
-        let d = dates[i];
-        let isCurrentMonth = (d.getMonth() === month && d.getFullYear() === year);
-        let statusId = results[i]?.data?.stu_attendence_att_status_id || null;
-        if(statusId && isCurrentMonth) statusCounts[statusId] = (statusCounts[statusId]||0)+1;
-        let statusName = statusId ? getStatusName(statusId) : '—';
-        let bgColor = statusId ? getStatusBgColor(statusId) : '#f8fafc';
-        let textColor = statusId ? getStatusTextColor(statusId) : '#6c757d';
-        calendarHtml += `<div class="cal-day" style="background:${bgColor}; color:${textColor}; opacity:${isCurrentMonth?1:0.4}"><div><strong>${d.getDate()}</strong></div><div class="cal-status-badge">${statusName.substring(0,3)}</div></div>`;
-    }
-    calendarHtml += `</div>`;
-    let summaryHtml = '<div class="status-summary">';
-    for(let st of attendanceStatuses) {
-        let count = statusCounts[st.att_status_id]||0;
-        if(count>0 || st.att_status_id===1 || st.att_status_id===2)
-            summaryHtml += `<div class="summary-badge" style="background:${getStatusBgColor(st.att_status_id)}; color:${getStatusTextColor(st.att_status_id)}"><span class="legend-dot" style="background:${getStatusBgColor(st.att_status_id)}"></span> ${st.att_status_type}: ${count}</div>`;
-    }
-    summaryHtml += '</div>';
-    let legendHtml = '';
-    for(let st of attendanceStatuses) legendHtml += `<div><span class="legend-dot" style="background:${getStatusBgColor(st.att_status_id)}; border:1px solid ${getStatusTextColor(st.att_status_id)}"></span> ${st.att_status_type}</div>`;
-    const calendarContainer = document.getElementById('reportCalendarContainer');
-    const legendContainer = document.getElementById('reportLegend');
-    if(calendarContainer) calendarContainer.innerHTML = calendarHtml + summaryHtml;
-    if(legendContainer) legendContainer.innerHTML = legendHtml;
-}
-
-async function renderFullSessionCalendar() {
-    let startDate = new Date(2026, 2, 1);
-    let endDate = new Date(2027, 1, 28);
-    let allDates = [];
-    let current = new Date(startDate);
-    while (current <= endDate) { allDates.push(formatDate(current)); current.setDate(current.getDate() + 1); }
-    let fetchPromises = allDates.map(dateStr => supabase1.from("students_attendence").select("stu_attendence_att_status_id").eq("stu_id", currentReportStudentId).eq("stu_attendence_date", dateStr).maybeSingle());
-    let results = await Promise.all(fetchPromises);
-    let dateStatusMap = new Map();
-    let statusCounts = {};
-    for(let st of attendanceStatuses) statusCounts[st.att_status_id] = 0;
-    for(let i=0; i<allDates.length; i++) {
-        let statusId = results[i]?.data?.stu_attendence_att_status_id || null;
-        dateStatusMap.set(allDates[i], statusId);
-        if(statusId) statusCounts[statusId] = (statusCounts[statusId]||0)+1;
-    }
-    let gridHtml = '';
-    let monthNames = ['Mar 2026', 'Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026', 'Oct 2026', 'Nov 2026', 'Dec 2026', 'Jan 2027', 'Feb 2027'];
-    for(let m=0; m<12; m++) {
-        let year = (m<10) ? 2026 : 2027;
-        let monthIdx = (m<10) ? (2+m) : (2+m-12);
-        let firstDay = new Date(year, monthIdx, 1);
-        let startWeekday = firstDay.getDay();
-        let calStart = new Date(year, monthIdx, 1);
-        calStart.setDate(1 - startWeekday);
-        gridHtml += `<div class="fw-bold mt-2 mb-1 text-primary">${monthNames[m]}</div><div class="calendar-grid" style="margin-bottom:15px">`;
-        gridHtml += `<div class="cal-day cal-day-label">Sun</div><div class="cal-day cal-day-label">Mon</div><div class="cal-day cal-day-label">Tue</div><div class="cal-day cal-day-label">Wed</div><div class="cal-day cal-day-label">Thu</div><div class="cal-day cal-day-label">Fri</div><div class="cal-day cal-day-label">Sat</div>`;
-        for(let i=0; i<42; i++) {
-            let d = new Date(calStart);
-            d.setDate(calStart.getDate() + i);
-            let isCurrentMonth = (d.getMonth() === monthIdx && d.getFullYear() === year);
-            let dateStr = formatDate(d);
-            let statusId = dateStatusMap.get(dateStr) || null;
-            let statusName = statusId ? getStatusName(statusId) : '—';
-            let bgColor = statusId ? getStatusBgColor(statusId) : '#f8fafc';
-            let textColor = statusId ? getStatusTextColor(statusId) : '#6c757d';
-            gridHtml += `<div class="cal-day" style="background:${bgColor}; color:${textColor}; opacity:${isCurrentMonth?1:0.4}"><div><strong>${d.getDate()}</strong></div><div class="cal-status-badge">${statusName.substring(0,3)}</div></div>`;
-        }
-        gridHtml += `</div>`;
-    }
-    let summaryHtml = '<div class="status-summary">';
-    for(let st of attendanceStatuses) {
-        let count = statusCounts[st.att_status_id]||0;
-        if(count>0 || st.att_status_id===1 || st.att_status_id===2)
-            summaryHtml += `<div class="summary-badge" style="background:${getStatusBgColor(st.att_status_id)}; color:${getStatusTextColor(st.att_status_id)}"><span class="legend-dot" style="background:${getStatusBgColor(st.att_status_id)}"></span> ${st.att_status_type}: ${count}</div>`;
-    }
-    summaryHtml += '</div>';
-    let legendHtml = '';
-    for(let st of attendanceStatuses) legendHtml += `<div><span class="legend-dot" style="background:${getStatusBgColor(st.att_status_id)}; border:1px solid ${getStatusTextColor(st.att_status_id)}"></span> ${st.att_status_type}</div>`;
-    const calendarContainer = document.getElementById('reportCalendarContainer');
-    const legendContainer = document.getElementById('reportLegend');
-    if(calendarContainer) calendarContainer.innerHTML = gridHtml + summaryHtml;
-    if(legendContainer) legendContainer.innerHTML = legendHtml;
-}
-
-function setReportFilter(filter) {
-    reportFilter = filter;
-    const filterMonthBtn = document.getElementById('filterThisMonth');
-    const filterAllBtn = document.getElementById('filterAllSession');
-    const monthNav = document.getElementById('monthNavContainer');
-    if(filter === 'month') {
-        if(filterMonthBtn) filterMonthBtn.classList.add('active');
-        if(filterAllBtn) filterAllBtn.classList.remove('active');
-        if(monthNav) monthNav.style.display = 'flex';
-        renderMonthCalendar();
-    } else {
-        if(filterMonthBtn) filterMonthBtn.classList.remove('active');
-        if(filterAllBtn) filterAllBtn.classList.add('active');
-        if(monthNav) monthNav.style.display = 'none';
-        renderFullSessionCalendar();
-    }
-}
-
-function changeReportMonth(delta) { currentReportMonth.setMonth(currentReportMonth.getMonth() + delta); renderMonthCalendar(); }
-
+// ==================== INITIALIZATION ====================
 async function init() {
     await loadClassrooms();
     await loadStatuses();
@@ -933,10 +819,6 @@ const applyMarkBtn = document.getElementById('applyGlobalMarkAllBtn');
 const classFilter = document.getElementById('classroomFilter');
 const toggleGroup = document.getElementById('toggleGroupView');
 const searchInput = document.getElementById('attendanceSearch');
-const filterMonth = document.getElementById('filterThisMonth');
-const filterAll = document.getElementById('filterAllSession');
-const prevMonth = document.getElementById('prevMonthBtn');
-const nextMonth = document.getElementById('nextMonthBtn');
 const goToDateBtn = document.getElementById('goToDateBtn');
 
 if(prevBtn) prevBtn.addEventListener('click', () => changeDate(-1));
@@ -948,16 +830,11 @@ if(applyMarkBtn) applyMarkBtn.addEventListener('click', applyGlobalMarkAll);
 if(classFilter) classFilter.addEventListener('change', applyClassroomFilter);
 if(toggleGroup) toggleGroup.addEventListener('change', toggleGroupView);
 if(searchInput) searchInput.addEventListener('input', () => renderAttendanceList());
-if(filterMonth) filterMonth.addEventListener('click', () => setReportFilter('month'));
-if(filterAll) filterAll.addEventListener('click', () => setReportFilter('all'));
-if(prevMonth) prevMonth.addEventListener('click', () => changeReportMonth(-1));
-if(nextMonth) nextMonth.addEventListener('click', () => changeReportMonth(1));
 if(goToDateBtn) goToDateBtn.addEventListener('click', goToSelectedDate);
 
 window.updateAttendanceStatus = updateAttendanceStatus;
 window.markGroupAll = markGroupAll;
 window.toggleGroupCollapse = toggleGroupCollapse;
-window.openReportModal = openReportModal;
 window.goBackToDashboard = goBackToDashboard;
 window.openAttendanceReport = openAttendanceReport;
 window.closeAttendanceReport = closeAttendanceReport;
