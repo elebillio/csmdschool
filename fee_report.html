@@ -190,6 +190,76 @@
   .stat-badge h4 { margin: 0; font-size: 0.8rem; font-weight: 700; }
   .stat-badge p { margin: 0; font-size: 0.45rem; opacity: 0.8; }
   
+  /* Footer Summary Styles */
+  .footer-summary {
+    background: #f8fafc;
+    border-top: 2px solid #1e3c72;
+    padding: 10px 12px;
+    margin-top: 8px;
+    border-radius: 8px;
+    font-size: 0.6rem;
+    flex-shrink: 0;
+  }
+  .footer-summary-title {
+    font-weight: 700;
+    color: #1e3c72;
+    margin-bottom: 6px;
+    font-size: 0.65rem;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+  }
+  .monthly-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .month-item {
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+    padding: 4px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+  .month-name {
+    font-weight: 700;
+    color: #1e3c72;
+    font-size: 0.55rem;
+  }
+  .month-paid {
+    color: #10b981;
+    font-weight: 600;
+    font-size: 0.55rem;
+  }
+  .month-due {
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 0.55rem;
+  }
+  .total-summary {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+    font-weight: 700;
+  }
+  .total-label {
+    color: #1e3c72;
+  }
+  .total-paid {
+    color: #10b981;
+  }
+  .total-due {
+    color: #ef4444;
+  }
+  .total-rate {
+    color: #1e3c72;
+  }
+  
   .print-btn, .export-btn, .pdf-btn {
     border-radius: 25px;
     padding: 3px 10px;
@@ -242,28 +312,6 @@
     margin: 0 auto 8px;
   }
   
-  /* PDF-specific styles */
-  .pdf-header {
-    text-align: center;
-    padding: 10px;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: white;
-    border-radius: 8px;
-    margin-bottom: 15px;
-  }
-  .pdf-header .school-name {
-    font-size: 14px;
-    font-weight: bold;
-  }
-  .pdf-header .report-title {
-    font-size: 11px;
-    opacity: 0.9;
-  }
-  .pdf-header .date {
-    font-size: 9px;
-    opacity: 0.7;
-  }
-  
   @media print {
     body { background: white; padding: 0; margin: 0; }
     .back-btn, .print-btn, .export-btn, .pdf-btn, .filter-section button, .filter-section select, .filter-section .form-label { display: none !important; }
@@ -272,7 +320,7 @@
     .report-table-wrapper { overflow: visible !important; }
     .report-table { width: 100%; table-layout: auto; }
     .report-table th, .report-table td { border: 1px solid #ddd; }
-    .paid-cell, .due-cell, .partial-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .paid-cell, .due-cell, .partial-cell, .footer-summary { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -326,6 +374,18 @@
       <div class="text-center py-2">
         <div style="font-size: 1.5rem;">💰</div>
         <p class="text-muted mt-1" style="font-size: 0.65rem;">Select session and class</p>
+      </div>
+    </div>
+    
+    <!-- Footer Summary with Month-wise Details -->
+    <div id="footerSummary" class="footer-summary" style="display: none;">
+      <div class="footer-summary-title">📊 Month-wise Summary</div>
+      <div id="monthlySummaryContainer" class="monthly-summary"></div>
+      <div class="total-summary">
+        <span class="total-label">📌 TOTAL:</span>
+        <span class="total-paid" id="footerTotalPaid">PKR 0</span>
+        <span class="total-due" id="footerTotalDue">PKR 0</span>
+        <span class="total-rate" id="footerCollectionRate">0%</span>
       </div>
     </div>
   </div>
@@ -428,6 +488,7 @@ async function generateReport() {
     
     if (students.length === 0) {
       container.innerHTML = '<div class="text-center py-2 text-muted"><div style="font-size:1.5rem;">👥</div><p>No students</p></div>';
+      document.getElementById('footerSummary').style.display = 'none';
       return;
     }
     
@@ -457,6 +518,11 @@ async function generateReport() {
     html += '<tr></thead><tbody>';
     
     let grandPaid = 0, grandDue = 0;
+    let monthlyTotals = {};
+    
+    for (const month of sessionMonths) {
+      monthlyTotals[month.monthName] = { paid: 0, due: 0 };
+    }
     
     for (const student of students) {
       let totalPaid = 0, totalDue = 0;
@@ -479,6 +545,8 @@ async function generateReport() {
           const due = Number(fee.stu_due) || 0;
           totalPaid += paid;
           totalDue += due;
+          monthlyTotals[month.monthName].paid += paid;
+          monthlyTotals[month.monthName].due += due;
           
           let cellClass = '';
           if (due === 0 && paid > 0) cellClass = 'paid-cell';
@@ -516,9 +584,29 @@ async function generateReport() {
     `;
     document.getElementById('summaryCard').style.display = 'block';
     
+    // Update Month-wise Footer Summary
+    let monthlyHtml = '';
+    for (const month of sessionMonths) {
+      const paid = monthlyTotals[month.monthName].paid;
+      const due = monthlyTotals[month.monthName].due;
+      monthlyHtml += `
+        <div class="month-item">
+          <div class="month-name">${month.monthName}</div>
+          <div class="month-paid">PKR ${paid.toLocaleString()}</div>
+          <div class="month-due">Due: ${due.toLocaleString()}</div>
+        </div>
+      `;
+    }
+    document.getElementById('monthlySummaryContainer').innerHTML = monthlyHtml;
+    document.getElementById('footerTotalPaid').innerHTML = `PKR ${grandPaid.toLocaleString()}`;
+    document.getElementById('footerTotalDue').innerHTML = `PKR ${grandDue.toLocaleString()}`;
+    document.getElementById('footerCollectionRate').innerHTML = `${collectionRate}%`;
+    document.getElementById('footerSummary').style.display = 'block';
+    
   } catch (error) {
     console.error(error);
     container.innerHTML = '<div class="text-center py-2 text-danger"><div style="font-size:1.5rem;">❌</div><p>Error</p></div>';
+    document.getElementById('footerSummary').style.display = 'none';
   }
 }
 
@@ -558,12 +646,10 @@ function exportToPDF() {
   const className = classObj ? classObj.class_room_no : 'Class';
   const sessionId = document.getElementById('sessionSelect').value;
   const sessionName = sessionId === '1' ? '2024-2025' : (sessionId === '2' ? '2025-2026' : '2026-2027');
-  
-  // Get current date and time
   const now = new Date();
   const dateStr = now.toLocaleString();
   
-  // Create a new div for PDF content with header
+  // Create a new div for PDF content with header and footer
   const pdfContent = document.createElement('div');
   pdfContent.style.padding = '15px';
   pdfContent.style.backgroundColor = 'white';
@@ -571,26 +657,19 @@ function exportToPDF() {
   
   // Add header (school name)
   pdfContent.innerHTML = `
-    <div class="pdf-header" style="text-align: center; padding: 12px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 8px; margin-bottom: 15px;">
-      <div class="school-name" style="font-size: 14px; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
-      <div class="report-title" style="font-size: 11px; opacity: 0.9; margin-top: 3px;">Fee Report | ${className} | Session ${sessionName}</div>
-      <div class="date" style="font-size: 9px; opacity: 0.7; margin-top: 3px;">Generated on: ${dateStr}</div>
+    <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 8px; margin-bottom: 15px;">
+      <div style="font-size: 14px; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
+      <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">Fee Report | ${className} | Session ${sessionName}</div>
+      <div style="font-size: 9px; opacity: 0.7; margin-top: 3px;">Generated on: ${dateStr}</div>
     </div>
   `;
   
-  // Clone the element content (without buttons, selects, labels)
+  // Clone the element content
   const cloneElement = element.cloneNode(true);
   
-  // Remove filter section (buttons, selects, labels)
+  // Remove filter section
   const filterSection = cloneElement.querySelector('.filter-section');
   if (filterSection) filterSection.remove();
-  
-  // Remove buttons from summary card
-  const summaryCard = cloneElement.querySelector('.summary-card');
-  if (summaryCard) {
-    const btns = summaryCard.querySelectorAll('button');
-    btns.forEach(btn => btn.remove());
-  }
   
   pdfContent.appendChild(cloneElement);
   
