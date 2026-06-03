@@ -68,7 +68,6 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
   }
   
   .filter-section {
@@ -102,13 +101,11 @@
     border: 1px solid #e2e8f0;
     background: white;
     flex: 1;
-    min-height: 0;
     width: 100%;
   }
   
   .report-table {
-    width: max-content;
-    min-width: 100%;
+    width: 100%;
     border-collapse: collapse;
     font-size: 0.6rem;
     table-layout: auto;
@@ -116,7 +113,7 @@
   
   .report-table th {
     background: #f1f5f9;
-    padding: 5px 5px;
+    padding: 8px 5px;
     text-align: center;
     font-weight: 600;
     color: #1e293b;
@@ -129,7 +126,7 @@
   }
   
   .report-table td {
-    padding: 4px 4px;
+    padding: 6px 4px;
     text-align: center;
     border-bottom: 1px solid #eef2f8;
     vertical-align: middle;
@@ -157,7 +154,7 @@
     background: #e0f2fe;
     font-size: 0.6rem;
     white-space: nowrap;
-    min-width: 55px;
+    min-width: 65px;
   }
   
   .paid-cell { background: #d1fae5; color: #065f46; font-weight: 600; }
@@ -212,13 +209,12 @@
   .monthly-summary {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    justify-content: space-between;
-    margin-bottom: 10px;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 8px;
   }
   .month-item {
-    flex: 1;
-    min-width: 60px;
+    min-width: 70px;
     text-align: center;
     padding: 4px;
     background: white;
@@ -243,7 +239,7 @@
   .total-summary {
     display: flex;
     justify-content: space-between;
-    padding-top: 8px;
+    padding-top: 6px;
     border-top: 1px solid #e2e8f0;
     font-weight: 700;
   }
@@ -515,7 +511,7 @@ async function generateReport() {
     }
     
     html += '<th>Paid</th><th>Due</th><th>%</th>';
-    html += '<tr></thead><tbody>';
+    html += '</td></thead><tbody>';
     
     let grandPaid = 0, grandDue = 0;
     let monthlyTotals = {};
@@ -649,32 +645,33 @@ function exportToPDF() {
   const now = new Date();
   const dateStr = now.toLocaleString();
   
-  // Create a new div for PDF content with header and footer
-  const pdfContent = document.createElement('div');
-  pdfContent.style.padding = '15px';
-  pdfContent.style.backgroundColor = 'white';
-  pdfContent.style.fontFamily = 'Arial, sans-serif';
+  // Clone the element
+  const cloneElement = element.cloneNode(true);
   
-  // Add header (school name)
-  pdfContent.innerHTML = `
-    <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 8px; margin-bottom: 15px;">
+  // Create a wrapper div for PDF
+  const pdfWrapper = document.createElement('div');
+  pdfWrapper.style.padding = '10px';
+  pdfWrapper.style.backgroundColor = 'white';
+  pdfWrapper.style.fontFamily = 'Arial, sans-serif';
+  pdfWrapper.style.width = '100%';
+  
+  // Add header
+  pdfWrapper.innerHTML = `
+    <div style="text-align: center; padding: 10px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 8px; margin-bottom: 15px;">
       <div style="font-size: 14px; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
       <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">Fee Report | ${className} | Session ${sessionName}</div>
       <div style="font-size: 9px; opacity: 0.7; margin-top: 3px;">Generated on: ${dateStr}</div>
     </div>
   `;
   
-  // Clone the element content
-  const cloneElement = element.cloneNode(true);
-  
-  // Remove filter section
+  // Remove filter section from clone
   const filterSection = cloneElement.querySelector('.filter-section');
   if (filterSection) filterSection.remove();
   
-  pdfContent.appendChild(cloneElement);
+  pdfWrapper.appendChild(cloneElement);
   
   const opt = {
-    margin: [0.3, 0.3, 0.3, 0.3],
+    margin: [0.2, 0.2, 0.2, 0.2],
     filename: `fee_report_${className}_${sessionName}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: false, logging: false, allowTaint: true },
@@ -682,7 +679,7 @@ function exportToPDF() {
   };
   
   setTimeout(() => {
-    html2pdf().set(opt).from(pdfContent).save().then(() => {
+    html2pdf().set(opt).from(pdfWrapper).save().then(() => {
       loadingOverlay.classList.remove('show');
     }).catch(err => {
       console.error("PDF Error:", err);
