@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover"/>
+<title>Exam Result Report | The Leads High School</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+  * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { 
+    height: 100%; 
+    margin: 0; 
+    padding: 0; 
+    background: #f0f4f8;
+  }
+  body { 
+    padding: 0; 
+    margin: 0; 
+    display: flex;
+    flex-direction: column;
+  }
+  .app-container { 
+    max-width: 100%;
+    margin: 0 auto; 
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+  }
+  
+  .detail-header { 
+    background: linear-gradient(135deg, #1e3c72, #2a5298); 
+    padding: 10px 16px; 
+    color: white; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-radius: 16px 16px 0 0;
+    flex-shrink: 0;
+  }
+  .back-btn { 
+    background: rgba(255,255,255,0.2); 
+    border: none; 
+    border-radius: 20px; 
+    padding: 5px 12px; 
+    color: white; 
+    font-size: 0.7rem; 
+    cursor: pointer; 
+    display: inline-flex; 
+    align-items: center; 
+    gap: 4px;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.3); }
+  
+  .report-card {
+    background: white;
+    border-radius: 0 0 16px 16px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .filter-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+  
+  .filter-section .row {
+    margin: 0 -4px;
+  }
+  .filter-section .col-md-4 {
+    padding: 0 4px;
+  }
+  .filter-section .form-label {
+    margin-bottom: 2px;
+    font-size: 0.65rem;
+  }
+  .filter-section .form-select-sm, .filter-section .btn-sm {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+  
+  .info-note {
+    background: #e0f2fe;
+    border-left: 3px solid #0284c7;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.6rem;
+    color: #0369a1;
+    margin-top: 8px;
+  }
+  
+  .report-table-wrapper {
+    overflow-x: auto;
+    overflow-y: auto;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+  }
+  
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7rem;
+    table-layout: auto;
+    min-width: 800px;
+  }
+  
+  /* Fixed header */
+  .report-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f1f5f9;
+    z-index: 20;
+    border: 1px solid #e2e8f0;
+    padding: 8px 6px;
+    text-align: center;
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 0.7rem;
+    vertical-align: middle;
+  }
+  
+  /* Fixed left column - ONLY Student Detail column */
+  .report-table th:nth-child(2),
+  .report-table td:nth-child(2) {
+    position: sticky;
+    left: 0;
+    background: white;
+    z-index: 15;
+    min-width: 180px;
+    max-width: 220px;
+    white-space: normal;
+    word-wrap: break-word;
+    text-align: left;
+  }
+  
+  .report-table th:nth-child(2) {
+    background: #f1f5f9;
+    z-index: 25;
+    text-align: center;
+  }
+  
+  .report-table td:nth-child(2) {
+    background: white;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 2px 0 5px -2px rgba(0,0,0,0.05);
+  }
+  
+  /* First column (#) - normal scrolling */
+  .report-table th:first-child,
+  .report-table td:first-child {
+    position: static;
+    min-width: 40px;
+    text-align: center;
+  }
+  
+  /* Other cells */
+  .report-table td {
+    padding: 8px 6px;
+    text-align: center;
+    border: 1px solid #eef2f8;
+    vertical-align: middle;
+    font-size: 0.7rem;
+  }
+  
+  .report-table tr:hover td {
+    background: #f8fafc;
+  }
+  
+  .report-table tr:hover td:nth-child(2) {
+    background: #f8fafc;
+  }
+  
+  /* Class Group Header */
+  .class-group-header {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .class-group-header td {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    padding: 10px 12px;
+    text-align: left;
+  }
+  
+  .school-header {
+    text-align: center;
+    padding: 12px;
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .school-name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  
+  .exam-info {
+    font-size: 0.7rem;
+    opacity: 0.9;
+    margin-top: 4px;
+  }
+  
+  .grade-a-plus { background: #e0e7ff; color: #3730a3; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  .grade-a { background: #d1fae5; color: #065f46; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  .grade-b-plus { background: #cffafe; color: #155e75; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  .grade-b { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  .grade-c { background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  .grade-e { background: #fed7aa; color: #9a3412; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  .grade-f { background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 12px; font-weight: 600; display: inline-block; }
+  
+  .rank-1-badge { background: #fbbf24; color: #78350f; padding: 2px 8px; border-radius: 20px; font-weight: 600; display: inline-block; }
+  .rank-2-badge { background: #cbd5e1; color: #1e293b; padding: 2px 8px; border-radius: 20px; font-weight: 600; display: inline-block; }
+  .rank-3-badge { background: #fdba74; color: #7c2d12; padding: 2px 8px; border-radius: 20px; font-weight: 600; display: inline-block; }
+  
+  .print-btn, .export-btn, .pdf-btn {
+    border-radius: 25px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    border: none;
+  }
+  .print-btn { background: #475569; color: white; }
+  .print-btn:hover { background: #334155; }
+  .export-btn { background: #10b981; color: white; }
+  .export-btn:hover { background: #059669; }
+  .pdf-btn { background: #ef4444; color: white; }
+  .pdf-btn:hover { background: #dc2626; }
+  
+  .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #1e3c72; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  .pdf-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    visibility: hidden;
+    opacity: 0;
+    transition: 0.2s;
+  }
+  .pdf-loading.show {
+    visibility: visible;
+    opacity: 1;
+  }
+  .pdf-loading-content {
+    background: white;
+    padding: 15px 25px;
+    border-radius: 15px;
+    text-align: center;
+  }
+  .pdf-spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #1e3c72;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 8px;
+  }
+  
+  .summary-card {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    color: white;
+    flex-shrink: 0;
+  }
+  
+  .summary-stats {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .stat-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: 25px;
+    padding: 3px 10px;
+    text-align: center;
+  }
+  
+  .stat-badge h4 { margin: 0; font-size: 0.9rem; font-weight: 700; }
+  .stat-badge p { margin: 0; font-size: 0.5rem; opacity: 0.8; }
+  
+  @media print {
+    body { background: white; padding: 0; margin: 0; }
+    .back-btn, .print-btn, .export-btn, .pdf-btn, .filter-section button, .filter-section select, .filter-section .form-label { display: none !important; }
+    .report-card { padding: 0; margin: 0; box-shadow: none; }
+    .filter-section { display: none !important; }
+    .report-table-wrapper { overflow: visible !important; }
+    .report-table { min-width: 100%; }
+    .report-table th:nth-child(2),
+    .report-table td:nth-child(2) {
+      position: static;
+      background: white;
+    }
+    .report-table th, .report-table td { border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="detail-header">
+    <button class="back-btn" onclick="goBack()">← Back</button>
+    <div style="text-align: center; flex: 1;">
+      <div style="font-size: 0.7rem; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
+      <div style="font-size: 0.55rem; opacity: 0.8;">Examination Result Report</div>
+    </div>
+    <div>
+      <button class="print-btn me-1" onclick="window.print()">🖨️ Print</button>
+      <button class="pdf-btn me-1" onclick="exportToPDF()">📄 PDF</button>
+      <button class="export-btn" onclick="exportToExcel()">📎 Export</button>
+    </div>
+  </div>
+  
+  <div class="report-card">
+    <div class="filter-section">
+      <div class="row g-1 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label fw-bold">Select Exam Type</label>
+          <select id="examTypeSelect" class="form-select form-select-sm">
+            <option value="">-- Select Exam Type --</option>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label fw-bold">Select Class</label>
+          <select id="classFilterSelect" class="form-select form-select-sm">
+            <option value="all">-- All Classes --</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary btn-sm w-100" id="loadReportBtn" onclick="generateResultCard()">🔍 Generate</button>
+        </div>
+      </div>
+      <div class="info-note mt-2">
+        ℹ️ <strong>Result Report</strong> | Students are <strong>sorted by Position (Rank)</strong> within each class | Top rank appears first | Student Detail column is <strong>fixed left</strong> | Headers are <strong>fixed top</strong>
+      </div>
+    </div>
+    
+    <div class="summary-card" id="summaryCard" style="display: none;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-1">
+        <h6 class="mb-0" id="reportTitle" style="font-size: 0.7rem;">Result Report</h6>
+        <div class="summary-stats" id="summaryStats"></div>
+      </div>
+    </div>
+    
+    <div id="resultContainer" class="report-table-wrapper">
+      <div class="text-center py-3">
+        <div style="font-size: 1.5rem;">🏆</div>
+        <p class="text-muted mt-1" style="font-size: 0.7rem;">Select exam type and class to generate result card</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="pdfLoading" class="pdf-loading">
+  <div class="pdf-loading-content">
+    <div class="pdf-spinner"></div>
+    <p>Generating PDF...</p>
+    <small>Please wait</small>
+  </div>
+</div>
+
+<script>
+const supabaseUrl = "https://tqcfcztyvmedmuhohpps.supabase.co";
+const supabaseKey = "sb_publishable_mnk4CySLaCI-FwtKJ9DhMg_z852ATHH";
+const supabase1 = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+let allExamTypes = [];
+let allDateSheets = [];
+let allSubjects = [];
+let allClassrooms = [];
+let allStudents = [];
+let allExamResults = [];
+let allBooks = [];
+let allSessions = [];
+let currentSessionId = null;
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>]/g, m => m === '&' ? '&amp;' : (m === '<' ? '&lt;' : '&gt;'));
+}
+
+function goBack() {
+  if (window.parent && window.parent !== window) {
+    try {
+      if (typeof window.parent.closeIframe === 'function') {
+        window.parent.closeIframe();
+      } else {
+        window.parent.location.href = 'examination.html';
+      }
+    } catch(e) {
+      window.location.href = 'examination.html';
+    }
+  } else {
+    window.location.href = 'examination.html';
+  }
+}
+
+function getClassName(id) {
+  const c = allClassrooms.find(c => c.class_room_id == id);
+  return c ? c.class_room_no : 'Unknown Class';
+}
+
+function getClassroomSerial(id) {
+  const c = allClassrooms.find(c => c.class_room_id == id);
+  return c ? (c.class_room_serial || 999) : 999;
+}
+
+function getBookName(id) {
+  const b = allBooks.find(b => b.subject_books_id == id);
+  return b ? b.subject_books_name : 'Unknown Subject';
+}
+
+function getSessionName(id) {
+  const s = allSessions.find(s => s.session_id == id);
+  return s ? s.session_name : `Session ${id}`;
+}
+
+async function loadCurrentSession() {
+  const { data, error } = await supabase1.from("sch_sessions_default").select("session_id").limit(1);
+  if (!error && data && data.length > 0) {
+    currentSessionId = data[0].session_id;
+  }
+}
+
+async function loadSessions() {
+  const { data, error } = await supabase1.from("sch_sessions").select("*").order("session_id", { ascending: false });
+  if (data && data.length > 0) {
+    allSessions = data;
+  } else {
+    allSessions = [];
+  }
+}
+
+async function loadExamTypes() {
+  const { data, error } = await supabase1.from("exam_type").select("*").order("exam_type_id", { ascending: false });
+  if (data) {
+    allExamTypes = data;
+  }
+  const examTypeSelect = document.getElementById('examTypeSelect');
+  if (examTypeSelect) {
+    examTypeSelect.innerHTML = '<option value="">-- Select Exam Type --</option>';
+    for (const et of allExamTypes) {
+      examTypeSelect.innerHTML += `<option value="${et.exam_type_id}">${escapeHtml(et.exam_type1)}</option>`;
+    }
+  }
+}
+
+async function loadClasses() {
+  const { data, error } = await supabase1.from("class_rooms").select("*").order("class_room_serial");
+  if (error) return;
+  allClassrooms = data || [];
+  
+  const classFilter = document.getElementById('classFilterSelect');
+  if (classFilter) {
+    classFilter.innerHTML = '<option value="all">-- All Classes --</option>';
+    for (const cls of allClassrooms) {
+      classFilter.innerHTML += `<option value="${cls.class_room_id}">${escapeHtml(cls.class_room_no)}</option>`;
+    }
+  }
+}
+
+async function loadDateSheets() {
+  const { data, error } = await supabase1.from("exam_date_sheet").select("*");
+  if (!error && data) {
+    allDateSheets = data;
+  }
+}
+
+async function loadSubjects() {
+  const { data, error } = await supabase1.from("subjects").select("*, subject_books!inner(*)").eq("sub_status", true);
+  if (!error && data) {
+    allSubjects = data;
+  }
+}
+
+async function loadBooks() {
+  const { data, error } = await supabase1.from("subject_books").select("*");
+  if (!error && data) {
+    allBooks = data;
+  }
+}
+
+async function loadStudents() {
+  const { data, error } = await supabase1.from("students").select("*").order("stu_name");
+  if (!error && data) {
+    allStudents = data;
+  }
+}
+
+async function loadExamResults() {
+  const { data, error } = await supabase1.from("examinations").select("*");
+  if (!error && data) {
+    allExamResults = data;
+  }
+}
+
+async function getStudentAbsentCount(studentId) {
+  if (!currentSessionId) return 0;
+  const { data, error } = await supabase1.from("students_attendence")
+    .select("stu_attendence_att_status_id")
+    .eq("stu_id", studentId)
+    .eq("session_id", currentSessionId);
+  if (error || !data) return 0;
+  return data.filter(record => record.stu_attendence_att_status_id === 2).length;
+}
+
+function getGradeInfo(percentage) {
+  if (percentage >= 90) return { text: 'A+', class: 'grade-a-plus', remarks: 'Excellent', order: 7 };
+  if (percentage >= 80) return { text: 'A', class: 'grade-a', remarks: 'Excellent', order: 6 };
+  if (percentage >= 70) return { text: 'B+', class: 'grade-b-plus', remarks: 'Very Good', order: 5 };
+  if (percentage >= 60) return { text: 'B', class: 'grade-b', remarks: 'Good', order: 4 };
+  if (percentage >= 50) return { text: 'C', class: 'grade-c', remarks: 'Satisfactory', order: 3 };
+  if (percentage >= 40) return { text: 'E', class: 'grade-e', remarks: 'Need Improvement', order: 2 };
+  return { text: 'F', class: 'grade-f', remarks: 'Fail', order: 1 };
+}
+
+async function generateResultCard() {
+  const container = document.getElementById('resultContainer');
+  const examTypeId = document.getElementById('examTypeSelect').value;
+  const selectedClassId = document.getElementById('classFilterSelect').value;
+  
+  if (!examTypeId) {
+    container.innerHTML = '<div class="text-center py-3 text-muted"><div style="font-size:1.5rem;">🏆</div><p>Please select an exam type</p></div>';
+    document.getElementById('summaryCard').style.display = 'none';
+    return;
+  }
+  
+  container.innerHTML = '<div class="text-center py-3"><div class="loading-spinner"></div><p>Loading result card...</p></div>';
+  
+  try {
+    const dateSheetsForExam = allDateSheets.filter(ds => ds.exam_date_sheet_exam_type_id == examTypeId);
+    
+    let subjectsByClass = {};
+    for (const ds of dateSheetsForExam) {
+      const subject = allSubjects.find(s => s.sub_id == ds.exam_date_sheet_sub_id);
+      if (subject) {
+        const classId = subject.sub_classroom_id;
+        if (!subjectsByClass[classId]) {
+          subjectsByClass[classId] = [];
+        }
+        subjectsByClass[classId].push({
+          id: subject.sub_id,
+          name: getBookName(subject.sub_subject_book_id),
+          max_marks: subject.sub_remarks || 100,
+          date_sheet_id: ds.exam_date_sheet_id
+        });
+      }
+    }
+    
+    let classIds = Object.keys(subjectsByClass);
+    if (selectedClassId !== 'all') {
+      classIds = classIds.filter(id => id == selectedClassId);
+    }
+    
+    if (classIds.length === 0) {
+      container.innerHTML = '<div class="text-center py-3 text-muted"><div style="font-size:1.5rem;">📚</div><p>No subjects found for this exam and class</p></div>';
+      document.getElementById('summaryCard').style.display = 'none';
+      return;
+    }
+    
+    classIds.sort((a, b) => getClassroomSerial(a) - getClassroomSerial(b));
+    
+    let allClassesResults = [];
+    let totalStudentsOverall = 0;
+    let totalPassedOverall = 0;
+    let totalFailedOverall = 0;
+    let totalPercentageSum = 0;
+    let studentCountForAvg = 0;
+    
+    for (const classId of classIds) {
+      const subjectsList = subjectsByClass[classId];
+      const students = allStudents.filter(s => s.stu_class_room_id == classId);
+      
+      if (students.length === 0) continue;
+      
+      let studentsResults = [];
+      
+      for (const student of students) {
+        let totalObtained = 0;
+        let totalMax = 0;
+        let subjectMarks = [];
+        
+        for (const subject of subjectsList) {
+          const result = allExamResults.find(r => 
+            r.stu_id === student.stu_id && 
+            r.exam_exam_date_sheet_id === subject.date_sheet_id
+          );
+          
+          let obtained = 0;
+          let isAbsent = false;
+          
+          if (result) {
+            if (result.exam_absentees === 1) {
+              isAbsent = true;
+            } else if (result.exam_sub_marks_obtain !== null && result.exam_sub_marks_obtain !== '') {
+              obtained = Math.round(parseFloat(result.exam_sub_marks_obtain) || 0);
+              totalObtained += obtained;
+            }
+          }
+          
+          totalMax += subject.max_marks;
+          subjectMarks.push({
+            name: subject.name,
+            obtained: obtained,
+            max: subject.max_marks,
+            isAbsent: isAbsent
+          });
+        }
+        
+        const percentage = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
+        const grade = getGradeInfo(percentage);
+        const absentDays = await getStudentAbsentCount(student.stu_id);
+        
+        studentsResults.push({
+          id: student.stu_id,
+          name: student.stu_name,
+          father: student.stu_father,
+          admission_no: student.stu_admission_no,
+          address: student.stu_address || student.stu_city || '',
+          total_obtained: totalObtained,
+          total_max: totalMax,
+          percentage: percentage,
+          grade: grade,
+          absent_days: absentDays,
+          subject_marks: subjectMarks,
+          has_result: totalObtained > 0
+        });
+        
+        totalStudentsOverall++;
+        if (percentage >= 40) totalPassedOverall++;
+        else totalFailedOverall++;
+        totalPercentageSum += percentage;
+        studentCountForAvg++;
+      }
+      
+      // Calculate ranks within class (sort by percentage desc)
+      studentsResults.sort((a, b) => b.percentage - a.percentage);
+      let rank = 1;
+      for (let i = 0; i < studentsResults.length; i++) {
+        if (i > 0 && studentsResults[i].percentage < studentsResults[i-1].percentage) {
+          rank = i + 1;
+        }
+        studentsResults[i].rank = rank;
+      }
+      
+      // ========== SORT BY POSITION (RANK) - RANK 1 FIRST ==========
+      studentsResults.sort((a, b) => {
+        // Students with results come first
+        if (a.has_result && !b.has_result) return -1;
+        if (!a.has_result && b.has_result) return 1;
+        // Then sort by rank (lower rank number = better position)
+        if (a.rank && b.rank) return a.rank - b.rank;
+        if (a.rank) return -1;
+        if (b.rank) return 1;
+        // Finally by name
+        return a.name.localeCompare(b.name);
+      });
+      
+      allClassesResults.push({
+        class_id: classId,
+        class_name: getClassName(classId),
+        subjects: subjectsList,
+        students: studentsResults
+      });
+    }
+    
+    const avgPercentage = studentCountForAvg > 0 ? (totalPercentageSum / studentCountForAvg) : 0;
+    
+    const examType = allExamTypes.find(et => et.exam_type_id == examTypeId);
+    const examName = examType ? examType.exam_type1 : 'Examination';
+    const sessionName = currentSessionId ? getSessionName(currentSessionId) : 'Current Session';
+    const className = selectedClassId !== 'all' ? getClassName(selectedClassId) : 'All Classes';
+    
+    let html = generateReportHTML(allClassesResults, examName, sessionName, className);
+    container.innerHTML = html;
+    
+    document.getElementById('reportTitle').innerHTML = `${examName} Result Report - ${className}`;
+    document.getElementById('summaryStats').innerHTML = `
+      <div class="stat-badge"><h4>${totalStudentsOverall}</h4><p>Total Students</p></div>
+      <div class="stat-badge"><h4>${totalPassedOverall}</h4><p>Passed</p></div>
+      <div class="stat-badge"><h4>${totalFailedOverall}</h4><p>Failed</p></div>
+      <div class="stat-badge"><h4>${avgPercentage.toFixed(1)}%</h4><p>Avg Percentage</p></div>
+    `;
+    document.getElementById('summaryCard').style.display = 'block';
+    
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = '<div class="text-center py-3 text-danger"><div style="font-size:1.5rem;">❌</div><p>Error loading result card</p></div>';
+  }
+}
+
+function generateReportHTML(classesData, examName, sessionName, className) {
+  let html = `
+    <div class="school-header">
+      <div class="school-name">🏫 THE LEADS HIGH SCHOOL (RAJA PUR)</div>
+      <div class="exam-info">Session ${escapeHtml(sessionName)} > ${escapeHtml(examName)} > Result Report: ${escapeHtml(className)}</div>
+    </div>
+  `;
+  
+  let globalSerial = 1;
+  
+  for (const classData of classesData) {
+    const subjects = classData.subjects;
+    const students = classData.students;
+    const clsName = classData.class_name;
+    
+    const classTotalStudents = students.length;
+    const classPassed = students.filter(s => s.percentage >= 40).length;
+    const classFailed = classTotalStudents - classPassed;
+    const classAvgPercentage = students.reduce((sum, s) => sum + s.percentage, 0) / classTotalStudents;
+    
+    html += `
+      <table class="report-table" style="margin-top: 20px;">
+        <thead>
+          <tr class="class-group-header">
+            <td colspan="${subjects.length + 9}" style="background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 12px;">
+              <strong><i class="bi bi-building me-2"></i>${escapeHtml(clsName)}</strong>
+              <span class="badge bg-light text-dark ms-2">${classTotalStudents} Students</span>
+              <span class="badge bg-success ms-2">Passed: ${classPassed}</span>
+              <span class="badge bg-danger ms-2">Failed: ${classFailed}</span>
+              <span class="badge bg-info ms-2">Avg: ${classAvgPercentage.toFixed(1)}%</span>
+              <span class="badge bg-warning ms-2">🏆 Sorted by Position</span>
+             </td>
+            </tr>
+            <tr>
+              <th rowspan="2">#</th>
+              <th rowspan="2">Student Detail</th>
+    `;
+    
+    for (const subject of subjects) {
+      html += `<th>${escapeHtml(subject.name)}<br><small>${subject.max_marks}</small></th>`;
+    }
+    
+    html += `
+              <th rowspan="2">Total<br><small>${subjects.reduce((sum, s) => sum + s.max_marks, 0)}</small></th>
+              <th rowspan="2">%age</th>
+              <th rowspan="2">Grade</th>
+              <th rowspan="2">Position</th>
+              <th rowspan="2">Absent<br>Days</th>
+              <th rowspan="2">Remarks</th>
+            </tr>
+            <tr>
+    `;
+    
+    for (let i = 0; i < subjects.length; i++) {
+      html += `<th style="font-weight: normal; font-size: 0.65rem;">Obtained</th>`;
+    }
+    
+    html += `</tr>
+        </thead>
+        <tbody>
+    `;
+    
+    for (const student of students) {
+      const rankDisplay = student.rank === 1 ? '🥇 1st' : (student.rank === 2 ? '🥈 2nd' : (student.rank === 3 ? '🥉 3rd' : `${student.rank}th`));
+      const rankClass = student.rank === 1 ? 'rank-1-badge' : (student.rank === 2 ? 'rank-2-badge' : (student.rank === 3 ? 'rank-3-badge' : ''));
+      
+      html += `<tr>
+        <td>${globalSerial++}</td>
+        <td style="text-align: left;">
+          <strong>${escapeHtml(student.name)}</strong><br>
+          <small class="text-muted">${escapeHtml(student.father)}</small><br>
+          <small class="text-muted">${escapeHtml(student.address) || '—'}</small>
+         </td>
+      `;
+      
+      for (const subject of student.subject_marks) {
+        if (subject.isAbsent) {
+          html += `<td class="text-danger" style="color: #dc2626;"><strong>❌ A</strong></td>`;
+        } else {
+          html += `<td>${subject.obtained}</td>`;
+        }
+      }
+      
+      html += `
+        <td><strong>${student.total_obtained}</strong></td>
+        <td><strong>${student.percentage.toFixed(1)}%</strong></td>
+        <td><span class="${student.grade.class}">${student.grade.text}</span></td>
+        <td><span class="${rankClass}">${rankDisplay}</span></td>
+        <td>${student.absent_days}</td>
+        <td>${student.grade.remarks}</td>
+      </tr>`;
+    }
+    
+    html += `
+        </tbody>
+      </table>
+    `;
+  }
+  
+  return html;
+}
+
+function exportToExcel() {
+  const tables = document.querySelectorAll('.report-table');
+  if (tables.length === 0) { alert("Generate result card first"); return; }
+  
+  let allCsv = [];
+  
+  tables.forEach((table, index) => {
+    const rows = table.querySelectorAll('tr');
+    rows.forEach(row => {
+      const rowData = [];
+      const cols = row.querySelectorAll('th, td');
+      cols.forEach(col => {
+        let text = col.innerText.replace(/\n/g, ' ').replace(/,/g, ';');
+        rowData.push(text);
+      });
+      if (rowData.length > 0) {
+        allCsv.push(rowData.join(','));
+      }
+    });
+    if (index < tables.length - 1) {
+      allCsv.push('');
+    }
+  });
+  
+  const blob = new Blob(["\uFEFF" + allCsv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `exam_result_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportToPDF() {
+  const element = document.querySelector('.report-card');
+  if (!element) { alert("Generate result card first"); return; }
+  
+  const loadingOverlay = document.getElementById('pdfLoading');
+  loadingOverlay.classList.add('show');
+  
+  const examTypeId = document.getElementById('examTypeSelect').value;
+  const examType = allExamTypes.find(et => et.exam_type_id == examTypeId);
+  const examName = examType ? examType.exam_type1 : 'Examination';
+  const now = new Date();
+  const dateStr = now.toLocaleString();
+  
+  const pdfWrapper = document.createElement('div');
+  pdfWrapper.style.padding = '15px';
+  pdfWrapper.style.backgroundColor = 'white';
+  pdfWrapper.style.fontFamily = 'Arial, sans-serif';
+  pdfWrapper.style.width = '100%';
+  
+  pdfWrapper.innerHTML = `
+    <div style="text-align: center; padding: 12px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 8px; margin-bottom: 15px;">
+      <div style="font-size: 14px; font-weight: bold;">🏫 THE LEADS HIGH SCHOOL (DINGA)</div>
+      <div style="font-size: 11px; opacity: 0.9; margin-top: 3px;">Examination Result Report | ${escapeHtml(examName)}</div>
+      <div style="font-size: 9px; opacity: 0.7; margin-top: 3px;">Generated on: ${dateStr}</div>
+    </div>
+  `;
+  
+  const cloneElement = element.cloneNode(true);
+  const filterSection = cloneElement.querySelector('.filter-section');
+  if (filterSection) filterSection.remove();
+  const summaryCard = cloneElement.querySelector('#summaryCard');
+  if (summaryCard) summaryCard.remove();
+  
+  pdfWrapper.appendChild(cloneElement);
+  
+  const opt = {
+    margin: [0.3, 0.3, 0.3, 0.3],
+    filename: `exam_result_${examName.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: false, logging: false, allowTaint: true },
+    jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+  };
+  
+  setTimeout(() => {
+    html2pdf().set(opt).from(pdfWrapper).save().then(() => {
+      loadingOverlay.classList.remove('show');
+    }).catch(err => {
+      console.error("PDF Error:", err);
+      loadingOverlay.classList.remove('show');
+      alert("PDF failed. Please use Print button.");
+    });
+  }, 100);
+}
+
+document.getElementById('examTypeSelect')?.addEventListener('change', generateResultCard);
+document.getElementById('classFilterSelect')?.addEventListener('change', generateResultCard);
+document.getElementById('loadReportBtn')?.addEventListener('click', generateResultCard);
+
+async function init() {
+  await loadCurrentSession();
+  await loadSessions();
+  await loadExamTypes();
+  await loadClasses();
+  await loadDateSheets();
+  await loadBooks();
+  await loadSubjects();
+  await loadStudents();
+  await loadExamResults();
+}
+
+init();
+
+window.goBack = goBack;
+window.exportToExcel = exportToExcel;
+window.exportToPDF = exportToPDF;
+window.generateResultCard = generateResultCard;
+</script>
+</body>
+</html>
