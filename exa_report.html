@@ -728,13 +728,8 @@ async function generateResultCard() {
 }
 
 function generateReportHTML(classesData, examName, sessionName, className) {
-  let html = `
-    <div class="school-header">
-      <div class="school-name">🏫 THE LEADS HIGH SCHOOL (RAJA PUR)</div>
-      <div class="exam-info">Session ${escapeHtml(sessionName)} > ${escapeHtml(examName)} > Result Report: ${escapeHtml(className)}</div>
-    </div>
-  `;
-  
+ 
+  let html=``;
   let globalSerial = 1;
   
   for (const classData of classesData) {
