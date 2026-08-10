@@ -107,6 +107,8 @@
   .class-fee-value { color: #1e3c72; }
   .concession-value { color: #f59e0b; }
   .fee-scale-value { color: #10b981; }
+  .paid-fee-value { color: #10b981; }
+  .due-fee-value { color: #ef4444; }
   
   .family-header {
     background: linear-gradient(135deg, #ec489a, #be185d);
@@ -117,46 +119,6 @@
     border-radius: 20px 20px 0 0;
     margin-top: 8px;
     margin-bottom: 16px;
-  }
-  
-  .summary-cards {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  .summary-card-item {
-    flex: 1;
-    background: #f8fafc;
-    border-radius: 16px;
-    padding: 12px 8px;
-    text-align: center;
-    border: 1px solid #eef2f8;
-  }
-  .summary-label {
-    font-size: 0.6rem;
-    color: #64748b;
-    text-transform: uppercase;
-  }
-  .summary-value {
-    font-size: 1rem;
-    font-weight: 700;
-    margin-top: 4px;
-  }
-  .total-fee { color: #1e3c72; }
-  .paid-fee { color: #10b981; }
-  .due-fee { color: #ef4444; }
-  
-  .progress-custom {
-    height: 6px;
-    border-radius: 10px;
-    background: #e2e8f0;
-    margin: 15px 0;
-  }
-  .progress-bar-custom {
-    height: 6px;
-    border-radius: 10px;
-    background: #10b981;
-    width: 0%;
   }
   
   .fee-row {
@@ -183,6 +145,46 @@
     margin-left: 8px;
     vertical-align: middle;
   }
+
+  .total-label {
+    font-size: 0.65rem;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 10px;
+    border-radius: 30px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+  
+  .no-record-msg {
+    text-align: center;
+    padding: 20px;
+    color: #94a3b8;
+  }
+  .no-record-msg i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .opening-balance-box {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    color: white;
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .opening-balance-box .label {
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+  .opening-balance-box .amount {
+    font-size: 1rem;
+    font-weight: 700;
+  }
 </style>
 </head>
 <body>
@@ -200,6 +202,9 @@ let viewerStudent = null;
 let allFees = [];
 let allClassrooms = [];
 let siblingStudents = [];
+
+// Opening balance - hardcoded as per your requirement
+const OPENING_BALANCE = 33200;
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -263,14 +268,24 @@ async function loadSiblingStudents() {
 }
 
 async function loadStudentFeeDetails(studentId) {
-  const { data, error } = await supabase1
+  // Try with string first
+  let result = await supabase1
     .from("student_pay_scale")
     .select("*")
-    .eq("stu_id", studentId)
-    .order("stu_issu_date", { ascending: false });
+    .eq("stu_id", String(studentId));
   
-  if (!error && data) {
-    return data;
+  // If no data, try with number
+  if (!result.data || result.data.length === 0) {
+    result = await supabase1
+      .from("student_pay_scale")
+      .select("*")
+      .eq("stu_id", Number(studentId));
+  }
+  
+  if (!result.error && result.data) {
+    // Sort by id descending
+    result.data.sort((a, b) => (b.id || 0) - (a.id || 0));
+    return result.data;
   }
   return [];
 }
@@ -354,24 +369,71 @@ function formatDate(dateStr) {
   } catch(e) { return dateStr; }
 }
 
-function getTotalFee(fees) {
-  return fees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
+function getMonthName(dateStr) {
+  if(!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+  } catch(e) { return dateStr; }
 }
 
-function getPaidFee(fees) {
+// ========== SUM FUNCTIONS ==========
+function getTotalClassFee(fees) {
+  return fees.reduce((sum, f) => sum + (Number(f.stu_fee_fix) || 0), 0);
+}
+
+function getTotalConcession(fees) {
+  return fees.reduce((sum, f) => sum + (Number(f.stu_fee_con) || 0), 0);
+}
+
+function getTotalFeeScale(fees) {
+  return fees.reduce((sum, f) => sum + (Number(f.stu_fee_scale) || 0), 0);
+}
+
+function getTotalPaid(fees) {
   return fees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
 }
 
-function getDueFee(fees) {
-  return getTotalFee(fees) - getPaidFee(fees);
+function getTotalDue(fees) {
+  let total = 0;
+  for (const f of fees) {
+    const feeScale = Number(f.stu_fee_scale) || 0;
+    const other = Number(f.stu_other_amount) || 0;
+    const paid = Number(f.stu_paid) || 0;
+    total += feeScale + other - paid;
+  }
+  return total;
+}
+
+function getRecordDue(fee) {
+  const feeScale = Number(fee.stu_fee_scale) || 0;
+  const other = Number(fee.stu_other_amount) || 0;
+  const paid = Number(fee.stu_paid) || 0;
+  return feeScale + other - paid;
 }
 
 function renderStudentInfoCard(student, isCurrent = false, fees = null) {
   const imgUrl = getStudentImageUrl(student);
   const initial = student.stu_name?.charAt(0).toUpperCase() || '?';
-  const totalFee = fees ? getTotalFee(fees) : 0;
-  const paidFee = fees ? getPaidFee(fees) : 0;
-  const dueFee = fees ? getDueFee(fees) : 0;
+  
+  let totalClassFee = 0;
+  let totalConcession = 0;
+  let totalFeeScale = 0;
+  let totalPaid = 0;
+  let totalDue = 0;
+  let recordCount = 0;
+  
+  if (fees && fees.length > 0) {
+    recordCount = fees.length;
+    totalClassFee = getTotalClassFee(fees);
+    totalConcession = getTotalConcession(fees);
+    totalFeeScale = getTotalFeeScale(fees);
+    totalPaid = getTotalPaid(fees);
+    totalDue = getTotalDue(fees);
+  }
+  
+  // Add opening balance to total due
+  const totalDueWithOpening = totalDue + OPENING_BALANCE;
   
   let avatarHtml = '';
   if (imgUrl) {
@@ -384,6 +446,28 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
   const highlightClass = isCurrent ? 'highlight' : '';
   const currentBadge = isCurrent ? '<span class="current-student-badge"><i class="bi bi-star-fill me-1"></i>You</span>' : '';
   
+  if (recordCount === 0) {
+    return `
+      <div class="student-info-card ${highlightClass}">
+        <div class="d-flex gap-3 align-items-center">
+          <div style="position:relative;">${avatarHtml}</div>
+          <div>
+            <div class="student-name">${escapeHtml(student.stu_name)} ${currentBadge}</div>
+            <div class="student-details">${escapeHtml(student.stu_admission_no)} | ${getClassroomName(student.stu_class_room_id)}</div>
+          </div>
+        </div>
+        <div class="opening-balance-box">
+          <span class="label"><i class="bi bi-wallet2 me-1"></i>Opening Balance</span>
+          <span class="amount">PKR ${OPENING_BALANCE.toLocaleString()}</span>
+        </div>
+        <div class="no-record-msg">
+          <i class="bi bi-receipt text-muted"></i>
+          <span class="text-muted">No fee records found</span>
+        </div>
+      </div>
+    `;
+  }
+  
   return `
     <div class="student-info-card ${highlightClass}">
       <div class="d-flex gap-3 align-items-center">
@@ -391,24 +475,41 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
         <div>
           <div class="student-name">${escapeHtml(student.stu_name)} ${currentBadge}</div>
           <div class="student-details">${escapeHtml(student.stu_admission_no)} | ${getClassroomName(student.stu_class_room_id)}</div>
+          <div class="total-label"><i class="bi bi-calculator me-1"></i>Total (${recordCount} records)</div>
         </div>
       </div>
-      ${fees ? `
-        <div class="fee-row-table">
-          <div class="fee-col">
-            <div class="fee-col-label">Class Fee</div>
-            <div class="fee-col-value class-fee-value">PKR ${totalFee.toLocaleString()}</div>
-          </div>
-          <div class="fee-col">
-            <div class="fee-col-label">Concession</div>
-            <div class="fee-col-value concession-value">PKR ${dueFee.toLocaleString()}</div>
-          </div>
-          <div class="fee-col">
-            <div class="fee-col-label">Fee Scale</div>
-            <div class="fee-col-value fee-scale-value">PKR ${paidFee.toLocaleString()}</div>
-          </div>
+      
+      <!-- Opening Balance -->
+      <div class="opening-balance-box">
+        <span class="label"><i class="bi bi-wallet2 me-1"></i>Opening Balance</span>
+        <span class="amount">PKR ${OPENING_BALANCE.toLocaleString()}</span>
+      </div>
+      
+      <div class="fee-row-table">
+        <div class="fee-col">
+          <div class="fee-col-label">Class Fee</div>
+          <div class="fee-col-value class-fee-value">PKR ${totalClassFee.toLocaleString()}</div>
         </div>
-      ` : ''}
+        <div class="fee-col">
+          <div class="fee-col-label">Concession</div>
+          <div class="fee-col-value concession-value">PKR ${totalConcession.toLocaleString()}</div>
+        </div>
+        <div class="fee-col">
+          <div class="fee-col-label">Net Fee</div>
+          <div class="fee-col-value fee-scale-value">PKR ${totalFeeScale.toLocaleString()}</div>
+        </div>
+      </div>
+      <div class="fee-row-table" style="margin-top: 4px; padding-top: 4px; border-top: none;">
+        <div class="fee-col">
+          <div class="fee-col-label">Paid</div>
+          <div class="fee-col-value paid-fee-value">PKR ${totalPaid.toLocaleString()}</div>
+        </div>
+        <div class="fee-col" style="background: #fef3c7;">
+          <div class="fee-col-label">Total Due</div>
+          <div class="fee-col-value due-fee-value" style="font-size: 1rem; color: #dc2626;">PKR ${totalDueWithOpening.toLocaleString()}</div>
+        </div>
+      </div>
+      ${totalDueWithOpening <= 0 ? '<div class="text-center mt-2"><span class="badge bg-success">✓ All Paid</span></div>' : ''}
     </div>
   `;
 }
@@ -416,12 +517,6 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
 function renderFeePage(siblingFeesData) {
   const container = document.getElementById('appContainer');
   
-  const totalFee = getTotalFee(allFees);
-  const paidFee = getPaidFee(allFees);
-  const dueFee = getDueFee(allFees);
-  const paidPercentage = totalFee > 0 ? Math.round((paidFee / totalFee) * 100) : 0;
-  
-  // Build siblings HTML
   let siblingsHtml = '';
   if (siblingStudents && siblingStudents.length > 0) {
     for (let i = 0; i < siblingStudents.length; i++) {
@@ -439,7 +534,6 @@ function renderFeePage(siblingFeesData) {
         <div style="width: 70px;"></div>
       </div>
       <div class="p-3">
-        <!-- Current Student Info -->
         ${renderStudentInfoCard(currentStudent, true, allFees)}
         
         ${siblingsHtml ? `
@@ -449,7 +543,6 @@ function renderFeePage(siblingFeesData) {
           ${siblingsHtml}
         ` : ''}
         
-        <!-- Payment History -->
         <div class="mt-3">
           <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Payment History</h6>
           <div style="max-height: 300px; overflow-y: auto;">
@@ -458,14 +551,33 @@ function renderFeePage(siblingFeesData) {
   if(allFees.length === 0) {
     outputHtml += '<div class="text-center py-4 text-muted"><i class="bi bi-receipt" style="font-size: 1.5rem;"></i><br>No fee records found</div>';
   } else {
+    // Show opening balance as first row in history
+    outputHtml += `
+      <div class="fee-row" style="background: #f1f5f9;">
+        <div>
+          <div class="fw-bold">Opening Balance</div>
+          <small class="text-muted">Beginning balance</small>
+        </div>
+        <div class="text-end">
+          <div><strong>PKR ${OPENING_BALANCE.toLocaleString()}</strong></div>
+          <small class="status-due">Due</small>
+        </div>
+      </div>
+    `;
+    
     for(const f of allFees) {
+      const feeScale = Number(f.stu_fee_scale) || 0;
+      const other = Number(f.stu_other_amount) || 0;
+      const paid = Number(f.stu_paid) || 0;
+      const dueAmount = feeScale + other - paid;
+      const totalAmount = feeScale + other;
+      
       let status = '';
       let statusClass = '';
-      const dueAmount = (Number(f.stu_total) || 0) - (Number(f.stu_paid) || 0);
       if (dueAmount <= 0) {
         status = 'Paid';
         statusClass = 'status-paid';
-      } else if ((Number(f.stu_paid) || 0) > 0) {
+      } else if (paid > 0) {
         status = 'Partial';
         statusClass = 'status-partial';
       } else {
@@ -473,17 +585,20 @@ function renderFeePage(siblingFeesData) {
         statusClass = 'status-due';
       }
       
+      const monthName = getMonthName(f.stu_issue_date);
+      
       outputHtml += `
         <div class="fee-row">
           <div>
-            <div class="fw-bold">${f.stu_invoice || 'Invoice'}</div>
-            <small class="text-muted">Issued: ${formatDate(f.stu_issu_date)}</small>
+            <div class="fw-bold">${monthName || f.stu_invoice || 'Invoice #' + f.id}</div>
+            <small class="text-muted">Issued: ${formatDate(f.stu_issue_date)}</small>
             ${f.stu_pay_date ? `<br><small class="text-success">Paid: ${formatDate(f.stu_pay_date)}</small>` : ''}
+            <br><small class="text-muted">Net Fee: PKR ${feeScale.toLocaleString()} ${other > 0 ? '+ Other: PKR ' + other.toLocaleString() : ''}</small>
           </div>
           <div class="text-end">
-            <div><strong>PKR ${(Number(f.stu_total) || 0).toLocaleString()}</strong></div>
+            <div><strong>PKR ${totalAmount.toLocaleString()}</strong></div>
             <small class="${statusClass}">${status}</small>
-            ${dueAmount > 0 && dueAmount < (Number(f.stu_total) || 0) ? `<div><small class="text-warning">Due: PKR ${dueAmount.toLocaleString()}</small></div>` : ''}
+            ${dueAmount > 0 ? `<div><small class="text-danger">Due: PKR ${dueAmount.toLocaleString()}</small></div>` : ''}
           </div>
         </div>
       `;
@@ -497,7 +612,7 @@ function renderFeePage(siblingFeesData) {
         <div class="mt-4 p-3 bg-light rounded-3">
           <small class="text-muted d-flex align-items-center gap-2">
             <i class="bi bi-info-circle-fill text-primary"></i>
-            <span>Fee submission deadline is 10th of every month. Late fee charges may apply.</span>
+            <span>Opening Balance: PKR ${OPENING_BALANCE.toLocaleString()} | Fee = Class Fee - Concession + Other Amount</span>
           </small>
         </div>
       </div>
