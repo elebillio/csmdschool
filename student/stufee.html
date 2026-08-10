@@ -202,9 +202,7 @@ let viewerStudent = null;
 let allFees = [];
 let allClassrooms = [];
 let siblingStudents = [];
-
-// Opening balance - hardcoded as per your requirement
-const OPENING_BALANCE = 33200;
+let openingBalance = 0;
 
 function showToast(message) {
   const toast = document.getElementById('toastMsg');
@@ -325,11 +323,16 @@ async function loadData() {
     const { data, error } = await supabase1.from("students").select("*").eq("stu_id", targetStudentId).single();
     if (!error && data) {
       currentStudent = data;
+      // Get opening balance from student record
+      openingBalance = Number(currentStudent.stu_beginning_balance) || 0;
+      console.log("Opening Balance from student:", openingBalance);
     } else {
       currentStudent = viewerStudent;
+      openingBalance = Number(currentStudent?.stu_beginning_balance) || 0;
     }
   } else {
     currentStudent = viewerStudent;
+    openingBalance = Number(currentStudent?.stu_beginning_balance) || 0;
   }
   
   if(!currentStudent) {
@@ -345,12 +348,15 @@ async function loadData() {
     return;
   }
   
+  console.log("Student:", currentStudent.stu_name, "Opening Balance:", openingBalance);
+  
   const classroomsResult = await supabase1.from("class_rooms").select("*");
   if(classroomsResult.data) allClassrooms = classroomsResult.data;
   
   await loadSiblingStudents();
   
   allFees = await loadStudentFeeDetails(currentStudent.stu_id);
+  console.log("Fee records loaded:", allFees.length);
   
   const siblingFeePromises = siblingStudents.map(async (sibling) => {
     const fees = await loadStudentFeeDetails(sibling.stu_id);
@@ -432,8 +438,11 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
     totalDue = getTotalDue(fees);
   }
   
-  // Add opening balance to total due
-  const totalDueWithOpening = totalDue + OPENING_BALANCE;
+  // Get opening balance from student record
+  const studentOpeningBalance = Number(student.stu_beginning_balance) || 0;
+  
+  // Total due with opening balance
+  const totalDueWithOpening = totalDue + studentOpeningBalance;
   
   let avatarHtml = '';
   if (imgUrl) {
@@ -446,7 +455,7 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
   const highlightClass = isCurrent ? 'highlight' : '';
   const currentBadge = isCurrent ? '<span class="current-student-badge"><i class="bi bi-star-fill me-1"></i>You</span>' : '';
   
-  if (recordCount === 0) {
+  if (recordCount === 0 && studentOpeningBalance === 0) {
     return `
       <div class="student-info-card ${highlightClass}">
         <div class="d-flex gap-3 align-items-center">
@@ -455,10 +464,6 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
             <div class="student-name">${escapeHtml(student.stu_name)} ${currentBadge}</div>
             <div class="student-details">${escapeHtml(student.stu_admission_no)} | ${getClassroomName(student.stu_class_room_id)}</div>
           </div>
-        </div>
-        <div class="opening-balance-box">
-          <span class="label"><i class="bi bi-wallet2 me-1"></i>Opening Balance</span>
-          <span class="amount">PKR ${OPENING_BALANCE.toLocaleString()}</span>
         </div>
         <div class="no-record-msg">
           <i class="bi bi-receipt text-muted"></i>
@@ -479,10 +484,10 @@ function renderStudentInfoCard(student, isCurrent = false, fees = null) {
         </div>
       </div>
       
-      <!-- Opening Balance -->
+      <!-- Opening Balance from student table -->
       <div class="opening-balance-box">
         <span class="label"><i class="bi bi-wallet2 me-1"></i>Opening Balance</span>
-        <span class="amount">PKR ${OPENING_BALANCE.toLocaleString()}</span>
+        <span class="amount">PKR ${studentOpeningBalance.toLocaleString()}</span>
       </div>
       
       <div class="fee-row-table">
@@ -548,22 +553,24 @@ function renderFeePage(siblingFeesData) {
           <div style="max-height: 300px; overflow-y: auto;">
   `;
   
-  if(allFees.length === 0) {
+  if(allFees.length === 0 && openingBalance === 0) {
     outputHtml += '<div class="text-center py-4 text-muted"><i class="bi bi-receipt" style="font-size: 1.5rem;"></i><br>No fee records found</div>';
   } else {
-    // Show opening balance as first row in history
-    outputHtml += `
-      <div class="fee-row" style="background: #f1f5f9;">
-        <div>
-          <div class="fw-bold">Opening Balance</div>
-          <small class="text-muted">Beginning balance</small>
+    // Show opening balance as first row in history if it exists
+    if (openingBalance > 0) {
+      outputHtml += `
+        <div class="fee-row" style="background: #f1f5f9;">
+          <div>
+            <div class="fw-bold">Opening Balance</div>
+            <small class="text-muted">Beginning balance</small>
+          </div>
+          <div class="text-end">
+            <div><strong>PKR ${openingBalance.toLocaleString()}</strong></div>
+            <small class="status-due">Due</small>
+          </div>
         </div>
-        <div class="text-end">
-          <div><strong>PKR ${OPENING_BALANCE.toLocaleString()}</strong></div>
-          <small class="status-due">Due</small>
-        </div>
-      </div>
-    `;
+      `;
+    }
     
     for(const f of allFees) {
       const feeScale = Number(f.stu_fee_scale) || 0;
@@ -612,7 +619,7 @@ function renderFeePage(siblingFeesData) {
         <div class="mt-4 p-3 bg-light rounded-3">
           <small class="text-muted d-flex align-items-center gap-2">
             <i class="bi bi-info-circle-fill text-primary"></i>
-            <span>Opening Balance: PKR ${OPENING_BALANCE.toLocaleString()} | Fee = Class Fee - Concession + Other Amount</span>
+            <span>Opening Balance: PKR ${openingBalance.toLocaleString()} | Fee = Class Fee - Concession + Other Amount</span>
           </small>
         </div>
       </div>
