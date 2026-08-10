@@ -136,7 +136,6 @@
   .stat-card h3 { font-size: 1.2rem; font-weight: 800; margin: 0; color: #1e293b; }
   .stat-card p { margin: 4px 0 0; font-size: 0.6rem; color: #64748b; }
   
-  /* Sibling List Styles */
   .family-card {
     background: white;
     border-radius: 20px;
@@ -201,7 +200,6 @@
     color: #64748b;
   }
   
-  /* Modal Styles */
   .modal-custom {
     display: none;
     position: fixed;
@@ -483,7 +481,6 @@
   <iframe id="moduleIframe" src="about:blank"></iframe>
 </div>
 
-<!-- Custom Modal -->
 <div class="modal-custom" id="actionModal">
   <div class="modal-content-custom">
     <div class="modal-header-custom">
@@ -559,7 +556,6 @@ function getStudentImageUrl(student) {
   return null;
 }
 
-// ==================== ANNOUNCEMENTS FROM DATABASE ====================
 async function loadAnnouncementsFromDB() {
   try {
     const { data, error } = await supabase1
@@ -619,7 +615,6 @@ function renderTicker() {
   tickerContainer.innerHTML = html;
 }
 
-// ==================== ONLINE STATUS FUNCTIONS ====================
 async function updateOnlineStatus(isOnline) {
   if (!currentStudent) return;
   try {
@@ -770,15 +765,27 @@ function doLogout() {
 async function loadMasterData() {
   if (!currentStudent) return;
   
-  const [classrooms, fees, examResults] = await Promise.all([
-    supabase1.from("class_rooms").select("*"),
-    supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id),
-    supabase1.from("examinations").select("*").eq("stu_id", currentStudent.stu_id)
-  ]);
-  
-  if (classrooms.data) allClassrooms = classrooms.data;
-  if (fees.data) allFees = fees.data;
-  if (examResults.data) allExamResults = examResults.data;
+  try {
+    const [classrooms, fees, examResults] = await Promise.all([
+      supabase1.from("class_rooms").select("*"),
+      // Filter by student ID - all records have stu_id = student ID
+      supabase1.from("student_pay_scale").select("*").eq("stu_id", currentStudent.stu_id),
+      supabase1.from("examinations").select("*").eq("stu_id", currentStudent.stu_id)
+    ]);
+    
+    if (classrooms.data) allClassrooms = classrooms.data;
+    if (fees.data && fees.data.length > 0) {
+      allFees = fees.data;
+      console.log("✅ Fee data loaded:", allFees);
+    } else {
+      allFees = [];
+      console.log("ℹ️ No fee records found for student ID:", currentStudent.stu_id);
+    }
+    if (examResults.data) allExamResults = examResults.data;
+  } catch (e) {
+    console.error("❌ Error loading master data:", e);
+    allFees = [];
+  }
 }
 
 function openModuleForStudent(pageName, studentId) {
@@ -902,10 +909,34 @@ function showDashboard() {
   if (currentImgUrl) avatarHtml = `<img src="${currentImgUrl}" class="student-img" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid white;">`;
   else avatarHtml = `<div class="student-avatar">${initial}</div>`;
   
-  const totalFee = allFees.reduce((sum, f) => sum + (Number(f.stu_total) || 0), 0);
-  const paidFee = allFees.reduce((sum, f) => sum + (Number(f.stu_paid) || 0), 0);
-  const dueFee = totalFee - paidFee;
-  const examResultsCount = allExamResults.length;
+  // Calculate current fee due:
+  // Get the latest fee record and show its due amount
+  // Due = stu_fee_scale + stu_other_amount - stu_paid
+  let currentDue = 0;
+  let feeCount = 0;
+  
+  if (allFees && allFees.length > 0) {
+    feeCount = allFees.length;
+    // Sort by id (or date) to get the latest record
+    const sortedFees = [...allFees].sort((a, b) => {
+      // Sort by id descending (higher id = newer)
+      return (b.id || 0) - (a.id || 0);
+    });
+    
+    // Get the latest fee record
+    const latestFee = sortedFees[0];
+    const feeScale = Number(latestFee.stu_fee_scale) || 0;
+    const otherAmount = Number(latestFee.stu_other_amount) || 0;
+    const paid = Number(latestFee.stu_paid) || 0;
+    currentDue = feeScale + otherAmount - paid;
+    
+    console.log("Latest fee record:", latestFee);
+    console.log("Current Due:", currentDue);
+  } else {
+    console.log("ℹ️ No fee records found for student");
+  }
+  
+  const examResultsCount = allExamResults ? allExamResults.length : 0;
   
   // Build siblings list
   let siblingsHtml = '';
@@ -968,8 +999,8 @@ function showDashboard() {
     <div class="stats-row">
       <div class="stat-card">
         <i class="bi bi-cash-stack text-warning"></i>
-        <h3>PKR ${dueFee.toLocaleString()}</h3>
-        <p>Fee Due</p>
+        <h3>PKR ${currentDue.toLocaleString()}</h3>
+        <p>${feeCount > 0 ? 'Current Fee Due' : 'No Fee Records'}</p>
       </div>
       <div class="stat-card">
         <i class="bi bi-trophy-fill text-success"></i>
@@ -1121,7 +1152,6 @@ async function restoreSession() {
   return false;
 }
 
-// Close modal when clicking outside
 document.addEventListener('click', function(e) {
   const modal = document.getElementById('actionModal');
   const modalContent = document.querySelector('.modal-content-custom');
@@ -1130,7 +1160,6 @@ document.addEventListener('click', function(e) {
   }
 });
 
-// Set online status to false when page is closed
 window.addEventListener('beforeunload', async () => {
   if (currentStudent) {
     await updateOnlineStatus(false);
@@ -1175,5 +1204,6 @@ window.openModal = openModal;
 window.closeModal = closeModal;
 window.modalAction = modalAction;
 </script>
+
 </body>
 </html>
